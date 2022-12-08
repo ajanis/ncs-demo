@@ -1,9 +1,17 @@
 # NSO Demonstration
 
 ## NSO Installation
-Download and install Cisco NSO and Cisco NEDs following Cisco Documentation for your local machine OS:
 
+**NOTE:** 
+- You will need to install NSO in order to test this pre-built "ncs-demo" project.
+- Please follow the local-install instructions and check out the [NSO-DEMO REPOSITORY](https://github.wwt.com/ajanis/nso-demo.git) into your NSO installation directory i.e.: ```~/nso/nso-installation/nso-demo```
+- Download and install Cisco NSO and Cisco NEDs following Cisco Documentation for your local machine OS:
 [https://developer.cisco.com/docs/nso/#!getting-and-installing-nso/local-vs-system-installation](https://developer.cisco.com/docs/nso/#!getting-and-installing-nso/local-vs-system-installation)
+
+- If using the "nso-demo" project:
+  - The project-metadata (with device, package, and service configs), the 'access' service template and .yang file, the cisco cli NED packages, and the initial device config have been created for you.
+  - After installing NSO and checking out the "nso-demo" repository, you should be able to start at [Build and start netsim project (network, devices)](#build-and-start-netsim-project-network-devices)
+
 
 ### Quick Install Reference
 
@@ -14,14 +22,15 @@ You can use any directory names and installation paths that you wish.
   - Download files from Cisco
   - Create directory structure
   - Move install packages into ~/nso/ncs-571-pkgs directory
-  - Python 2.7.9 required, create python virtual environment,pyenv,etc.
+  - **Python 2.7.9 required, create python virtual environment,pyenv,etc.**
   - Create NSO local installation in ~nso/nso-installation
   - Source ncsrc file (add to your shell profile)
-  - Create NCS project in ~/nso/ncs-project
-  - Extract NED packages into ~/nso/ncs-project/packages/
+  - Create NCS project in ~/nso/ncs-installation/ncs-demo  **(Repository includes this example project)**
+  - Copy included NED packages from ~/nso/nso-installation/packages/neds/* to ~/nso/nso-installation/ncs-demo/packages/
+  - Extract Additional downloaded NED packages into ~/nso/nso-installation/ncs-demo/packages/
   - Create project metadata file
   - Initialize git repository and add .ignores and project files (optional for demo, strongly recommended for production)
-
+  
 
 ### Creating a Local-Install Project with Version Control
 
@@ -36,21 +45,21 @@ You can use any directory names and installation paths that you wish.
 ```
 * Copy updated NEDs to NSO ```packages``` directory (can also be copied into the NCS project's packages directory)
 ```bash
-❯ tar -C ~/nso/nso-installation/packages/neds -xvzf ~/nso/nso-571-pkgs/ncs-5.7-cisco-ios-6.77.10.tar.gz
-❯ tar -C ~/nso/nso-installation/packages/neds -xvzf ~/nso/nso-571-pkgs/ncs-5.7-cisco-iosxr-cli-7.38.tar.gz
-❯ tar -C ~/nso/nso-installation/packages/neds -xvzf ~/nso/nso-571-pkgs/ncs-5.7-cisco-nx-cli-5.220.tar.gz
+❯ tar -C ~/nso/nso-installation/ncs-demo/packages -xvzf ~/nso/nso-571-pkgs/ncs-5.7-cisco-ios-6.77.10.tar.gz
+❯ tar -C ~/nso/nso-installation/ncs-demo/packages -xvzf ~/nso/nso-571-pkgs/ncs-5.7-cisco-iosxr-cli-7.38.tar.gz
+❯ tar -C ~/nso/nso-installation/ncs-demo/packages -xvzf ~/nso/nso-571-pkgs/ncs-5.7-cisco-nx-cli-5.220.tar.gz
 ```
 * Create NCS Project
 ```bash
 ❯ cd ~/nso/nso-installation
 ❯ source ncsrc
-❯ ncs-project create ncs-project
-❯ cd ncs-project
+❯ ncs-project create ncs-demo
+❯ cd ncs-demo
 ❯ echo '2.7.9' > .python-version
 ```
-* Copy desired neds from nso-installation/packages/neds into ncs-project
+* Copy desired neds from ~/nso/nso-installation/packages/neds/* into ~/nso/nso-installation/ncs-demo/packages/
 ```bash
-❯ cp -a ~/nso/nso-installation/packages/neds/* ~nso/nso-installation/ncs-project/packages/
+❯ cp -a ~/nso/nso-installation/packages/neds/* ~nso/nso-installation/ncs-demo/packages/
 ```
 * Modify ```project-meta-data.xml``` File for Quick Device Setup
 ```xml
