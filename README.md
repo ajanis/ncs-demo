@@ -4,13 +4,13 @@
 
 **NOTE:** 
 - You will need to install NSO in order to test this pre-built "ncs-demo" project.
-- Please follow the local-install instructions and check out the [NSO-DEMO REPOSITORY](https://github.wwt.com/ajanis/nso-demo.git) into your NSO installation directory i.e.: ```~/nso/nso-installation/nso-demo```
+- Please follow the local-install instructions and check out the [NCS-DEMO REPOSITORY](https://github.wwt.com/ajanis/ncs-demo.git) into your NSO installation directory i.e.: ```~/nso/nso-installation/ncs-demo```
 - Download and install Cisco NSO and Cisco NEDs following Cisco Documentation for your local machine OS:
 [https://developer.cisco.com/docs/nso/#!getting-and-installing-nso/local-vs-system-installation](https://developer.cisco.com/docs/nso/#!getting-and-installing-nso/local-vs-system-installation)
 
-- If using the "nso-demo" project:
+- If using the "ncs-demo" project:
   - The project-metadata (with device, package, and service configs), the 'access' service template and .yang file, the cisco cli NED packages, and the initial device config have been created for you.
-  - After installing NSO and checking out the "nso-demo" repository, you should be able to start at [Build and start netsim project (network, devices)](#build-and-start-netsim-project-network-devices)
+  - After installing NSO and checking out the "ncs-demo" repository, you should be able to start at [Build and start netsim project (network, devices)](#build-and-start-netsim-project-network-devices)
 
 
 ### Quick Install Reference
@@ -643,7 +643,7 @@ module access {
 ❯ ncs-project update -y
 ❯ make -C packages/access/src
 mkdir -p ../load-dir
-/Users/janisa/nso-demo/bin/ncsc `ls access-ann.yang  > /dev/null 2>&1 && echo "-a access-ann.yang"` \
+/Users/janisa/nso/nso-installation/bin/ncsc `ls access-ann.yang  > /dev/null 2>&1 && echo "-a access-ann.yang"` \
                 --fail-on-warnings \
                  \
                 -c -o ../load-dir/access.fxs yang/access.yang
