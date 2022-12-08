@@ -1,0 +1,13 @@
+module cisco-iosxr-cli-3.0 {
+  yang-version 1.1;
+  namespace "http://tail-f.com/ns/ned-id/cisco-iosxr-cli-3.0";
+  prefix cisco-iosxr-cli-3.0;
+
+  import cisco-iosxr-cli {
+    prefix family;
+  }
+
+  identity cisco-iosxr-cli-3.0 {
+    base family:cisco-iosxr-cli;
+  }
+}

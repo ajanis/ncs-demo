@@ -1,0 +1,8 @@
+! ios-stats:test/policy-map{}
+
+<root>
+ <list :: . :: Policy Map (\S+)/>
+  <key :: Policy Map (\S+) :: name/>
+  <leaf :: description :: Description: (.+)/>
+ </list>
+</root>

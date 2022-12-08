@@ -1,0 +1,13 @@
+! ios-stats:ip/pim/vrf{}/neighbor{}
+
+<root>
+ <buf-error :: (Multicast not enabled for vrf)|( does not exist) :: clear/>
+ <buf-start :: Address[ ]+Prio/Mode :: clear/>
+ <list :: . :: \n[ ]*(\S+)[ ]+?\S+ />
+  <key :: (\S+) :: address/>
+  <leaf :: interface :: $2/>
+  <leaf :: time :: $3/>
+  <leaf :: version :: $4/>
+  <leaf :: dr :: $5/>
+ </list>
+</root>

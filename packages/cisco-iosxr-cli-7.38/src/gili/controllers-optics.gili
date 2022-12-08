@@ -1,0 +1,7 @@
+! cisco-ios-xr-stats:controllers/Optics{}
+
+<root>
+ <list :: . :: controller Optics(\S+)/>
+  <key :: controller Optics(\S+) :: id/>
+ </list>
+</root>

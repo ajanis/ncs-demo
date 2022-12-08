@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<ncs-package xmlns="http://tail-f.com/ns/ncs-packages">
+  <name>cisco-ios</name>
+  <package-version>6.77.10</package-version>
+  <description>NED package for the Cisco IOS</description>
+  <ncs-min-version>4.4.5</ncs-min-version>
+  <ncs-min-version>4.5.1.1</ncs-min-version>
+  <ncs-min-version>4.6.3</ncs-min-version>
+  <ncs-min-version>4.7.4</ncs-min-version>
+  <component>
+    <name>cisco-ios</name>
+    <ned>
+      <cli>
+        <ned-id xmlns:ios-id="urn:ios-id">ios-id:cisco-ios</ned-id>
+        <java-class-name>com.tailf.packages.ned.ios.IOSNedCli</java-class-name>
+      </cli>
+      <device>
+        <vendor>Cisco</vendor>
+      </device>
+      <option>
+        <name>entitlement-tag</name>
+        <value>regid.2015-10.com.cisco.cisco-ios-NED,1.0_d9eca34d-1f6a-4595-ad74-9c0c57e03c27</value>
+      </option>
+      <!--<option>
+        <name>requires-transaction-states</name>
+      </option>-->
+      <option>
+        <name>show-tag</name>
+        <value>interface</value>
+      </option>
+    </ned>
+  </component>
+  <component>
+    <name>IOSDp</name>
+    <callback>
+      <java-class-name>com.tailf.packages.ned.ios.IOSDp</java-class-name>
+    </callback>
+  </component>
+  <component>
+    <name>upgrade-ned-settings</name>
+    <upgrade>
+      <java-class-name>com.tailf.packages.ned.ios.UpgradeNedSettings</java-class-name>
+    </upgrade>
+  </component>
+</ncs-package>

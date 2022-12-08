@@ -1,0 +1,29 @@
+<project-meta-data xmlns="http://tail-f.com/ns/ncs-project">
+  <name>demo-project</name>
+  <project-version>1.0</project-version>
+  <description>Skeleton for a NCS project</description>
+
+  <netsim>
+    <device>
+      <name>cisco-ios-cli-6.77</name>
+      <prefix>cisco-ios-</prefix>
+      <num-devices>4</num-devices>
+    </device>
+  </netsim>
+
+  <package>
+    <name>cisco-ios-cli-6.77</name>
+    <local/>
+  </package>
+
+  <package>
+    <name>cisco-iosxr-cli-7.38</name>
+    <local/>
+  </package>
+
+  <package>
+    <name>cisco-nx-cli-5.22</name>
+    <local/>
+  </package>
+
+</project-meta-data>

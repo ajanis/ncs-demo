@@ -1,0 +1,303 @@
+module tailf-ncs-scheduler {
+
+  namespace "http://tail-f.com/ns/ncs-scheduler";
+  prefix scheduler;
+
+  import ietf-yang-types {
+    prefix yang;
+  }
+
+  import tailf-common {
+    prefix tailf;
+  }
+
+  organization "Tail-f Systems";
+
+  description
+    "This module contains a collection of YANG definitions for
+     configuring scheduled tasks in NCS.";
+
+  revision 2020-01-16 {
+    description
+      "Released as part of NCS-4.7.6.
+
+       Added sequence-no leaf as part of key to
+       /scheduler/task/history.";
+  }
+
+  revision 2018-06-21 {
+    description
+      "Released as part of NCS-4.7.
+
+       Added /scheduler/task/enabled.
+
+       The type of /scheduler/task/action-name changed from
+       yang:yang-identifier to tailf:identifier-ref.
+
+       Added /scheduler/task/history/result.";
+  }
+
+  revision 2017-11-30 {
+    description
+      "Released as part of NCS-4.5.2.
+
+       Added /scheduler/task/ha-mode.
+       Added /scheduler/task/ha-node-id.
+
+       Added /scheduler/task/time.
+       Added /scheduler/task/keep.
+
+       The type of /scheduler/task/history/duration changed from
+       string to decimal64.";
+  }
+
+  revision 2017-09-28 {
+    description
+      "Released as part of NCS-4.5.
+
+       Initial revision.";
+  }
+
+  container scheduler {
+    description
+      "Time-based job scheduler suitable for scheduling periodic
+       background work.";
+
+    tailf:action suspend {
+      tailf:display-when "../suspended = 'false'";
+      description
+        "Suspend all tasks in the scheduler.";
+      tailf:actionpoint ncsinternal {
+        tailf:internal;
+      }
+    }
+    tailf:action resume {
+      tailf:display-when "../suspended = 'true'";
+      description
+        "Resume all tasks in the scheduler.";
+      tailf:actionpoint ncsinternal {
+        tailf:internal;
+      }
+    }
+
+    leaf suspended {
+      description
+        "Whether the scheduler is suspended or not.";
+      type boolean;
+      default false;
+      config false;
+      tailf:cdb-oper  {
+        tailf:persistent false;
+      }
+    }
+
+    list task {
+      tailf:info "The list of configured tasks.";
+      description
+        "Examples:
+
+           Run sync-from on all devices 2 AM on the 1st every month:
+
+             name: sync
+             schedule: 0 2 1 * *
+             action-name: sync-from
+             action-node: /devices
+
+           Purge the completed queue-item list 4:30 AM every Sunday:
+
+             name: purge
+             schedule: 30 4 * * 0
+             action-name: purge
+             action-node: /devices/commit-queue/completed";
+      key name;
+      leaf name {
+        type string;
+        description
+          "A unique name for this task.";
+      }
+      tailf:callpoint ncs_scheduler {
+        tailf:internal;
+        tailf:set-hook node;
+      }
+      choice trigger {
+        mandatory true;
+        case schedule {
+          leaf schedule {
+            description
+              "Standard Vixie Cron expression to represent the
+               periodicity in which the task should run.
+
+               ---------- minute (0 - 59)
+               | ---------- hour (0 - 23)
+               | | ---------- day of month (1 - 31)
+               | | | ---------- month (1 - 12)
+               | | | | ---------- day of week (0 - 6) (Sunday to Saturday)
+               | | | | |
+               * * * * *";
+            type string;
+            tailf:validate ncs-scheduler {
+              tailf:internal;
+              tailf:dependency ".";
+            }
+          }
+        }
+        case time {
+          leaf time {
+            must "../ha-mode = 'master'" {
+              error-message
+                "Time based tasks can only be configured to run "
+                + "on the HA master node.";
+            }
+            tailf:display-when "../ha-mode = 'master'";
+            description
+              "A particular time when the task should run.
+
+               The task will be triggered at the second.
+               Fractions of the second and time zone will be ignored.";
+            type yang:date-and-time;
+            mandatory true;
+          }
+          leaf keep {
+            description
+              "Keep configured task after it has finished successfully.";
+            type empty;
+          }
+        }
+      }
+      leaf action-node {
+        description
+          "When the task is triggered, the 'action-name' action is invoked
+           on the 'action-node' instance. The action is run as the user
+           that configured the task.
+
+           If the 'action-node' is given as an XPath 1.0 expression, the
+           expression is evaluated with the root as the context node,
+           and the expression must return a node set. The 'action-name'
+           action is invoked on the nodes in this node set.";
+        type union {
+          type instance-identifier;
+          type "yang:xpath1.0";
+        }
+        mandatory true;
+        tailf:validate ncs-scheduler {
+          tailf:internal;
+          tailf:dependency ".";
+        }
+      }
+      leaf action-name {
+        description
+          "The action to be invoked. Can be given either as just the name
+           of the action without a prefix, or the name of the action
+           prefixed with the prefix defined in the YANG module where the
+           action is defined. The prefix is required if more than one
+           action with the given name is present due to augmentations.";
+        type tailf:identifier-ref;
+        mandatory true;
+      }
+      leaf action-params {
+        description
+          "Action parameters in XML format.";
+        type string;
+      }
+      leaf ha-mode {
+        description
+          "The HA mode in which the task will run.
+
+           The setting will not have any effect if HA isn't configured.";
+        type enumeration {
+          enum master;
+          enum slave;
+        }
+        default master;
+      }
+      leaf ha-node-id {
+        when "../ha-mode = 'slave'";
+        type string;
+        description
+          "The HA cluster node on which the task is allowed to run.";
+      }
+      leaf enabled {
+        description
+          "Whether the task is enabled or not.";
+        type boolean;
+        default true;
+      }
+      leaf local-user {
+        tailf:hidden full;
+        type string;
+      }
+
+      leaf is-running {
+        description
+          "Whether the task is currently executing.";
+        type boolean;
+        default false;
+        config false;
+        tailf:cdb-oper  {
+          tailf:persistent false;
+        }
+      }
+
+      list history {
+        description
+          "History of last five runs.";
+        key "when sequence-no";
+        config false;
+        tailf:cdb-oper  {
+          tailf:persistent false;
+        }
+        leaf when {
+          type yang:date-and-time;
+          description
+            "When the task was started.";
+        }
+        leaf sequence-no {
+          type uint8;
+        }
+        leaf duration {
+          type decimal64 {
+            fraction-digits 3;
+          }
+          units "seconds";
+          description
+            "Duration of the task in seconds.";
+        }
+        leaf succeeded {
+          type boolean;
+          description
+            "Whether the task succeeded or failed.";
+        }
+        anyxml result {
+          description
+            "Possible output from the action in XML format.";
+        }
+        leaf info {
+          type string;
+          description
+            "Possible error message in case the task was not successful.";
+        }
+      }
+
+      tailf:action get-next-run-times {
+        description
+          "Display the next run times for the task.";
+        tailf:actionpoint ncsinternal {
+          tailf:internal;
+        }
+        input {
+          leaf display {
+            type uint16 {
+              range "1..100";
+            }
+            default 5;
+          }
+        }
+        output {
+          leaf-list next-run-time {
+            type string;
+          }
+        }
+      }
+    }
+  }
+}

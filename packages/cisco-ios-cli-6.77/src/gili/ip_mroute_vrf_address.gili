@@ -1,0 +1,17 @@
+! ios-stats:mroute/vrf{}/address{}
+
+<root>
+ <buf-error :: Multicast not enabled for vrf :: clear/>
+ <buf-start :: VCD, State/Mode :: clear/>
+ <list :: . :: (\(.*[?=\n.*\n].*) />
+  <key :: [ ]*(\S+)\),\s :: address/>
+  <leaf :: up-time :: ,\s(\S+),\sRP/>
+  <leaf :: rp :: ,\sRP\s(\S+),/>
+  <leaf :: flags :: ,\sflags:\s(\S+)/>
+  <container :: incoming/>
+   <leaf :: interface :: \s+Incoming\sinterface:\s(\S+),\s/>
+   <leaf :: flags :: \s+Incoming\sinterface:\s\S+,\s(\S+\s\S+)\s.*/>
+   <leaf :: address :: \s+Incoming\sinterface:.*\s(\S+)/>
+  </container>
+ </list>
+</root>

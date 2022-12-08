@@ -1,0 +1,12 @@
+! ios-stats:arp/address{}
+
+<root>
+ <list :: . :: \nInternet\s+(\S+)/>
+  <key :: Internet\s+(\S+) :: ip/>
+  <leaf :: protocol :: Internet :: type=constant/>
+  <leaf :: age-mins :: Internet\s+\S+\s+(\S+) :: type=integer/>
+  <leaf :: hardware-addr :: Internet\s+\S+\s+\S+\s+(\S+)/>
+  <leaf :: type :: Internet\s+\S+\s+\S+\s+\S+\s+(\S+)/>
+  <leaf :: interface :: Internet\s+\S+\s+\S+\s+\S+\s+\S+\s+(\S+)/>
+ </list>
+</root>

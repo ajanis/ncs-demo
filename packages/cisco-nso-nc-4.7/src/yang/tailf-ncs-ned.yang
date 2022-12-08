@@ -1,0 +1,39 @@
+module tailf-ncs-ned {
+
+  namespace "http://tail-f.com/ns/ncs-ned";
+  prefix ned;
+
+  organization "Tail-f Systems";
+
+  description
+    "This module defines the Tail-f NCS NED base identities.";
+
+  revision 2016-11-24 {
+    description
+      "Released as part of NCS-4.3.
+
+       Added base identity for NETCONF devices.
+       Added identity lsa-netconf";
+  }
+
+  revision 2011-06-01 {
+    description
+      "Released as part of NCS-1.6.";
+  }
+
+  identity netconf-ned-id {
+  }
+  identity generic-ned-id {
+  }
+  identity cli-ned-id {
+  }
+
+  identity netconf {
+    base netconf-ned-id;
+  }
+
+  identity lsa-netconf {
+    base netconf-ned-id;
+  }
+
+}

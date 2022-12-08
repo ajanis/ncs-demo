@@ -1,0 +1,18 @@
+module a10-acos-cli {
+  yang-version 1.1;
+  namespace "http://tail-f.com/ns/ned-id/a10-acos-cli";
+  prefix a10-acos-cli;
+
+  import tailf-common {
+    prefix tailf;
+  }
+
+  import tailf-ncs-ned {
+    prefix ned;
+  }
+
+  identity a10-acos-cli {
+    tailf:abstract;
+    base ned:cli-ned-id;
+  }
+}

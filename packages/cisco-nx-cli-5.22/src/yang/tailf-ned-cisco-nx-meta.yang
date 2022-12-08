@@ -1,0 +1,901 @@
+module tailf-ned-cisco-nx-meta {
+  namespace 'http://tail-f.com/ned/cisco-nx/meta';
+  prefix cisco-nx-meta;
+
+  import tailf-common {
+    prefix tailf;
+  }
+
+  import tailf-ncs {
+    prefix ncs;
+  }
+
+  import ietf-inet-types {
+    prefix inet;
+  }
+
+  // This import is required when building for CDM style NSOs
+  // Is automatically un-commented in  by the NED build system when
+  // building for NSO >= 5.0
+  //#if (SUPPORTS_CDM == "YES")
+  //  #replace (//) (  )
+  //  import cisco-nx-cli {
+  //    prefix family;
+  //  }
+  //#endif
+
+  revision 2022-01-12 {
+    description "version 5.22.8, see CHANGES";
+  }
+
+  typedef nx-behaviour-select {
+    type union {
+      type enumeration {
+        enum enable {
+          tailf:info "Enable this behaviour";
+        }
+        enum disable {
+          tailf:info "Disable this behaviour";
+        }
+      }
+      type string {
+        tailf:info "=|<|> major.minor;;Enable feature if NX-OS version matches "
+          + "given restriction (e.g. '< 7.0')";
+        pattern "[<|>|=][ ]*[0-9]+\\.[0-9]+";
+      }
+    }
+  }
+
+  grouping nx-nxapi-ssl {
+    container ssl {
+      tailf:info "Use SSL for NXAPI connections (set either 'accept-any' or a server certificate to use SSL)";
+      when "contains(../method, 'nxapi')";
+      choice server-authentication {
+        leaf accept-any {
+          tailf:info "Accept any certificate (unsafe)";
+          description
+            "Accept any SSL certificate presented by the device.
+          Warning! This enables Man in the Middle attacks and
+          should only be used for testing and troubleshooting.";
+          type boolean;
+        }
+        leaf certificate {
+          tailf:info "Use specific DER formated SSL certificate";
+          description
+            "SSL certificate stored in DER format but since it is entered
+          as Base64 it is very similar to PEM but without banners like
+          \"----- BEGIN CERTIFICATE -----\".
+
+          Default uses the default trusted certificates installed in
+          Java JVM.
+
+          An easy way to get the PEM of a server:
+            openssl s_client -connect HOST:PORT
+          ";
+          type binary;
+        }
+      }
+    }
+  }
+
+  grouping nx-connection {
+    container connection {
+      tailf:info "Cisco Nexus connection configuration";
+      leaf number-of-retries {
+        tailf:info "Configure max number of retries the NED will try to"
+          + " connect to the device before giving up. Default 0";
+        type uint8 {
+          range "0..255";
+        }
+        default 0;
+      }
+      leaf time-between-retry {
+        tailf:info "Configure the time in seconds the NED will wait between"
+          +" each connect retry. Default 1s";
+        type uint8 {
+          range "1..255";
+        }
+        default 1;
+      }
+      leaf connector {
+        tailf:info "Change the default connector. Default 'ned-connector-default.json'";
+        type string {
+          tailf:info "WORD;;Connector name (located in src/metadata resources)";
+        }
+      }
+      leaf prompt-timeout {
+        tailf:info "Timeout in milliseconds before sending a newline to wake the device (at login only)";
+        type uint32 {
+          tailf:info "<0|1000-1000000>;;milliseconds before sending newline. 0 disabled (default)";
+          range "0|1000..1000000" {
+            tailf:step 1000;
+          }
+        }
+        default 0;
+      }
+      leaf method {
+        tailf:info "Select method to communicate with the Cisco Nexus device";
+        default "cli";
+        type enumeration {
+          enum "cli" {
+            tailf:info "Use the new NEDCOM connector for SSH/TELNET connect";
+          }
+          enum "nxapi" {
+            tailf:info "Use the NXAPI interface";
+          }
+          enum "nxapi-legacy" {
+            tailf:info "DEPRECATED: Use the NXAPI interface (using legacy apache http client)";
+          }
+        }
+      }
+      leaf device-output-delay {
+        tailf:info "Delay in milliseconds after each config command output to the device";
+        default 0;
+        type uint32 {
+          tailf:info "NUM;;milliseconds (default 0)";
+        }
+      }
+      leaf device-retry-count {
+        tailf:info "Number of times to retry commands that fail transiently";
+        default 60;
+        type uint32 {
+          tailf:info "NUM;;number (default 60)";
+        }
+      }
+      leaf device-retry-delay {
+        tailf:info "Delay in milliseconds after each retry on transient failure";
+        default 1000;
+        type uint32 {
+          tailf:info "NUM;;milliseconds (default 1000)";
+        }
+      }
+      leaf show-interface-all-cmd {
+        tailf:info "Command(s) to use on device to get back all config from interfaces (i.e. including trimmed default values)."
+          +" NOTE: This is used together with the setting 'show-interface-all'";
+        type string;
+      }
+      leaf split-exec-any {
+        tailf:info "Split multi 'exec any' command (separated with ';') so that one command per line is sent to device";
+        default false;
+        type boolean;
+      }
+      leaf send-login-newline {
+        tailf:info "Send an initial newline in the login phase to wake device";
+        type boolean;
+        default false;
+      }
+      leaf use-echo-cmd-in-cli {
+        tailf:info "To make interaction with CLI robust (e.g. to avoid matching config as a prompt), an echo cmd is used as delimiter.";
+        type boolean;
+        default true;
+      }
+      uses nx-nxapi-ssl;
+    }
+  }
+
+  grouping nx-deprecated {
+    container deprecated {
+      tailf:info "Deprecated ned-settings";
+      typedef enabled-disabled {
+        type enumeration {
+          enum "enabled";
+          enum "disabled";
+        }
+      }
+      container connection {
+        tailf:hidden "all";
+        leaf legacy-mode {
+          type enabled-disabled;
+          default "disabled";
+        }
+      }
+    }
+  }
+
+  grouping nx-general {
+    leaf extended-parser {
+      tailf:info "Make the cisco-nx NED handle CLI parsing (i.e. transform the "
+        +"running-config from the device to the model based config tree).";
+      default "auto";
+      type enumeration {
+        enum "auto" {
+          tailf:info "Uses turbo-mode when available, will use fastest available"
+            + "method to load data to NSO. If NSO doesn't support data-loading "
+            + "from CLI NED, robust-mode is used.";
+        }
+        enum "turbo-mode" {
+          tailf:info "The NED executes the whole command parsing by itself, "
+            + "completely bypassing the NSO CLI parser. The configuration "
+            + "dump is transferred to NSO using maapi setvalues call.";
+        }
+        enum "turbo-xml-mode" {
+          tailf:info "The NED executes the whole command parsing by itself, "
+            + "completely bypassing the NSO CLI parser. The configuration "
+            + "dump is transferred to NSO in XML format.";
+        }
+        enum "robust-mode" {
+          tailf:info "Makes the NED filter the configuration so that unmodele"
+            + "d content is removed before being passed to the NSO CLI-engine"
+            + ". This protects against configuration ending up at the wrong l"
+            + "evel when NSO CLI parser fallbacks (which potentially can caus"
+            + "e following config to be skipped).";
+        }
+      }
+    }
+    leaf log-verbose {
+      tailf:info "Enabled extra verbose logging in NED (for debugging)";
+      default "false";
+      type boolean;
+    }
+    // cisco-nx auto-prompts *
+    list auto-prompts {
+      tailf:info "Pre-stored answers to device prompting questions.";
+      tailf:cli-suppress-mode;
+      tailf:cli-delete-when-empty;
+      tailf:cli-compact-syntax;
+      tailf:cli-incomplete-command;
+      key id;
+      leaf id {
+        type string {
+          tailf:info "WORD;;List id, any string (NOTE: list is matched sorted on id).";
+        }
+      }
+      leaf question {
+        tailf:info "Device question, regular expression";
+        mandatory true;
+        type string {
+          tailf:info "WORD;;Question, regexp format";
+        }
+      }
+      leaf answer {
+        tailf:info "Answer to device question";
+        mandatory true;
+        type string {
+          tailf:info "WORD;;Answer to device question or the word 'ENTER' for LF+CR";
+        }
+      }
+    }
+    container system-interface-defaults {
+      tailf:info "Settings to handle dynamic defaults of interfaces ('system default switchport'), see README section 11.";
+      leaf handling {
+        tailf:info "Set how the system interface defaults should be handled (see README).";
+        default "disable";
+        type enumeration {
+          enum disable {
+            tailf:info "Disable the handling of dynamic interface defaults";
+          }
+          enum auto {
+            tailf:info "Inspect how system default is set on device to automatically determine switchport/shutdown, NOTE: Currenly only works with CLI, not NXAPI";
+          }
+          enum explicit {
+            tailf:info "Explicitly set defaults to use (must be set under 'explicit')";
+          }
+        }
+      }
+      container explicit {
+        tailf:info "Values to use for switchport defaults (i.e. corresponding to 'system default switchport' and 'system default switchport shutdown' on device";
+        when "../handling='explicit'";
+        container system-default-switchport {
+          leaf switchport {
+            tailf:info "Default to switchport (i.e. default Ethernet and port-channel interfaces to layer 2 or 3 ports)";
+            type boolean;
+          }
+          leaf shutdown {
+            tailf:info "Default shutdown state of physical ports (default admin state for Ethernet port, corresponding to 'system default switchport shutdown'";
+            type boolean;
+          }
+        }
+      }
+      leaf default-l3-port-shutdown {
+        tailf:info "Set this to true if L3 ports are by default 'no shutdown' eventhough the system default is L2 ports with default 'shutdown'";
+        when "../handling='auto'";
+        default true;
+        type boolean;
+      }
+      leaf default-fc-shutdown {
+        tailf:info "Set this to reflect default 'shutdown' state for fc (and vfc) interfaces (same as 'system default switchport shutdown san', which however doesn't seem to show up reliably on device, hence can't be used to determine default)";
+        when "../handling!='disable'";
+        default true;
+        type boolean;
+      }
+    }
+    container live-status {
+      tailf:info "Configure NED settings related to live-status.";
+      leaf time-to-live {
+        tailf:info "Define time-to-live for data fetched from the device"
+          +" via live-status.(default 50)";
+        type int32;
+        default 50;
+      }
+    }
+    container api {
+      tailf:info "Configure API (new API features/changes)";
+      leaf snmp-server-enable-all-traps {
+        tailf:info "Enable the all-traps API. Set to > 0 for minimum traps, < 0 for max missing traps and 0 to disable (default)";
+        type int32;
+        default 0;
+      }
+    }
+  }
+
+  grouping nx-persistence {
+    container persistence {
+      tailf:info "Cisco Nexus persistence configuration";
+      leaf model {
+        tailf:info "Select the config persistence method on Cisco Nexus device (default is 'strict')";
+        default "strict";
+        type enumeration {
+          enum "strict" {
+            tailf:info "Always persist config on device as part of NCS transaction";
+          }
+          enum "never" {
+            tailf:info "Never persist config on device as part of NCS transaction";
+          }
+          enum "schedule" {
+            tailf:info "Schedule persistence of config that is defined by schedule/time below";
+          }
+        }
+      }
+      container schedule {
+        when "../model='schedule'" {
+          tailf:dependency "../model";
+        }
+        leaf name {
+          tailf:info "Name of scheduler schedule to use (i.e. scheduler schedule name <name>)";
+          type string;
+        }
+        leaf time {
+          tailf:info "Number of minutes after transaction until config is to be persisted on device (default 1)";
+          type uint16 {
+            tailf:info "<1-59>;;time in minutes after which device config has to be persisted";
+            range "1..59";
+          }
+          default 1;
+        }
+      }
+    }
+  }
+
+  grouping nx-transaction {
+    container transaction {
+      tailf:info "Cisco Nexus transaction configuration";
+      leaf trans-id-method {
+        tailf:info "Select the method for calculating transaction-id";
+        default "config-data";
+        type enumeration {
+          enum "config-hash" {
+            tailf:info "Use a snapshot of the running config for calculation";
+          }
+          enum "config-data" {
+            tailf:info "Use a snapshot of the data of only the modeled parts of running config for calculation (default)";
+          }
+          enum "device-command" {
+            tailf:info "Use a device-side command to get a value to use for trans-id";
+          }
+        }
+      }
+      leaf trans-id-cmd {
+        when "../trans-id-method='device-command'" {
+          tailf:dependency "../trans-id-method";
+        }
+        tailf:info "Command(s) to use on device to get back a unique id for a specific device state (e.g. simplest might be a 'cli alias')";
+        default "delete volatile:///ncstransconf.tmp no-prompt ; show running-config | exclude Time: > volatile:///ncstransconf.tmp ; show file volatile:///ncstransconf.tmp md5sum ; delete volatile:///ncstransconf.tmp no-prompt";
+        type string;
+      }
+      list config-abort-warning {
+        tailf:info "Configure additional device warnings that shall be treated as errors"+
+          " and trigger an abort in the NED. Enter as a regex";
+        tailf:cli-suppress-mode;
+        tailf:cli-delete-when-empty;
+        key warning;
+        leaf warning {
+          tailf:cli-multi-word-key;
+          type string {
+            tailf:info "Warning regular expression (will be matched MULTILINE), e.g. '^.*interface.* does not exist.*$'";
+          }
+        }
+      }
+      list config-ignore-error {
+        tailf:info "Configure additional device errors that shall be treated as warnings"+
+          " (i.e. to be ignored, not aborting transaction)";
+        tailf:cli-suppress-mode;
+        tailf:cli-delete-when-empty;
+        key error;
+        leaf error {
+          tailf:cli-multi-word-key;
+          type string {
+            tailf:info "Error regular expression (will be matched MULTILINE), e.g. '^.*password not.*$'";
+          }
+        }
+      }
+      leaf enable-portchannel-set-hook {
+        tailf:info "There is a set-hook to replicate configuration to joined interfaces for channel-groups (i.e. when port-channel interface is updated, certain config is replicated in the same transaction, within NSO, to stay in sync with device which has this behaviour). The same can easily be achieved in a service, which is more efficient since set-hooks can cause huge overhead. Specifically, if channel-groups are not configured, this set-hook can be disabled, it is of no use then.";
+        default true;
+        type boolean;
+      }
+      leaf abort-on-diff {
+        tailf:info
+          "\nEnable to detect diff immediately when config is applied (i.e. in commit/abort/revert).\n"
+          + "If a diff is detected an exception is thrown, having the effect in commit that the transaction\n"
+          + "is aborted (showing the diff). Note that this means some overhead in commit, where whole config\n"
+          + "needs to be retrieved from device to do compare. However, if transaction id is enabled\n"
+          + "(i.e. use-transaction-id = true) or commit no-overwrite is used, the whole config is fetched\n"
+          + "before commit, and also after in case of transaction id. So if transaction id is disabled,\n"
+          + "and normal commit is used instead of 'commit no-overwrite', the feature 'abort-on-diff'\n"
+          + "is another variant to detect OOB changes, silently dropped config, and unknown side-effects\n"
+          + "to config (i.e. all causing a diff compared to NSO state). In fact, it's the only method which\n"
+          + "guarantees that the config was actually applied as desired. Also note, that if this feature\n"
+          + "is enabled, the fetched config will be cached for 10 seconds after commit. This has the effect\n"
+          + "that if transaction-id is enabled, the cached config will be used, which is strictly correct,\n"
+          + "i.e. if there was no diff, the transaction id should be calculated on that config.";
+        default false;
+        type boolean;
+      }
+      leaf trace-on-diff {
+        tailf:info "Enable to trace diff compared to previous config in commit and/or check-sync. Will impose some overhead on commit since whole config must be fetched immediately to compare (see 'abort-on-diff' for more info on this)";
+        default never;
+        type enumeration {
+          enum never { tailf:info "Disable trace"; }
+          enum check-sync { tailf:info "Only trace diff to previous config in get-trans-id (i.e. in check-sync and when NSO needs transaction id), i.e. every time a new transaction id is calculated, the diff compared to the config used for the previously calculated transaction id is traced (level info)"; }
+          enum commit { tailf:info "Only trace if a diff is detected when config is applied (i.e. in commit/abort/revert the config after apply is compared to expected state in NSO), the trace is done on level error"; }
+          enum always { tailf:info "Trace diff both in commit and check-sync"; }
+        }
+      }
+      leaf config-cache-ttl {
+        tailf:info "Set to non-zero to enable caching of device running-config. Value set is number of seconds to wait before the cached config expires, implying that next time config is needed it will be re-fetched from device. This means that in this \"time-window\" the config can potentially change on device, e.g. by out-of-band edit, but this is of course always the case, the device config known to NSO is only a snapshot in time. When NSO applies new config, the cache is refreshed immmediately.";
+        default 0;
+        type uint32 { tailf:info "<ttl>;;Seconds to wait before re-fetching config from device."; }
+      }
+      list inject-on-enter-exit-mode {
+        tailf:info "Use to inject extra lines at enter/exit of mode in diff to send to device (optionally giving key to limit to specific list-entry)";
+        key path;
+        leaf path {
+          tailf:info "Schema path to list/container which contains mode to operate in";
+          type string;
+        }
+        leaf key {
+          tailf:info "Key value of list entry to operate in, i.e. limit injection to only one list-entry.";
+          type string;
+        }
+        leaf on-enter {
+          tailf:info "CLI line to inject at first mode enter in diff";
+          type string;
+        }
+        leaf on-exit {
+          tailf:info "CLI line to inject at last mode exit in diff";
+          type string;
+        }
+      }
+    }
+  }
+
+  grouping nx-behaviours {
+    container behaviours {
+      tailf:info "Cisco Nexus NED behaviours, selected automatically per nx-os version according default value (e.g. syntax-variations)";
+      leaf iface-vlan-ipv6-secondary {
+        tailf:info "Enable this if ipv6 secondary address has 'secondary' keywo"
+          + "rd (default is enabled for nx-os version <6.2)";
+        default "<6.2";
+        type nx-behaviour-select;
+      }
+      leaf show-interface-all {
+        tailf:info "Enable this to use 'show running-config interface all' to g"
+          +"et full configuration for all interfaces to avoid problems with hid"
+          +"den defaults.";
+        default "disable";
+        type nx-behaviour-select;
+      }
+      leaf show-interface-extras {
+        tailf:info "When this setting is enabled (together with 'show-interface-all'), mtu and flowcontrol will also be included in result, disable this setting to exclude these.";
+        when "../show-interface-all != 'disable'";
+        default "enable";
+        type nx-behaviour-select;
+      }
+      leaf show-class-map-all {
+        tailf:info "Enable this to use 'show running-config all | sec class-map"
+          +"' to also get default (hidden) class-maps into CDB. (NOTE: only wor"
+          +"ks in CLI mode, not NXAPI";
+        default "disable";
+        type nx-behaviour-select;
+      }
+      leaf use-show-diff {
+        tailf:info "Enable this to use 'show running-config | diff to dramatica"
+          +"lly reduce traffic from device due to 'show running-config'. This s"
+          +"etting is not enabled by default due to problems on older devices.";
+        default "disable";
+        type nx-behaviour-select;
+      }
+      leaf port-channel-load-balance-ethernet {
+        tailf:info "Enable port-channel load-balance ethernet syntax (dynamically e"
+          +"enabled on nx5k device regardless of nx-os version)";
+        default "<5.3";
+        type nx-behaviour-select;
+      }
+      leaf default-notification-mac-move {
+        tailf:info "When enabled, notification mac-move is default, i.e. trimme"
+          +"d and negation is shown (default enabled when nx-os version > 6.0)";
+        default ">6.0";
+        type nx-behaviour-select;
+      }
+      leaf default-lacp-suspend-individual {
+        tailf:info "When enabled, 'lacp suspend-individual' is default, i.e. tr"
+          +"immed and negation is shown (default enabled when nx-os version > 5"
+          +".1)";
+        default ">5.1";
+        type nx-behaviour-select;
+      }
+      leaf vrf-member-l3-redeploy {
+        tailf:info "Enable this to use automatically redeploy L3-config (curren"
+          +"tly only 'ip + ipv6 + fabric' in Ethernet/Vlan/Bdi/Tunnel interfaces "
+          +"when updating 'vrf member' on interface, i.e. which normally fluses l3 config).";
+        default "enable";
+        type nx-behaviour-select;
+      }
+      leaf switchport-mtu-redeploy {
+        tailf:info "Enable this to use automatically redeploy mtu on interface "
+          + "when toggling to switchport (otherwise mtu is reset)";
+        default "disable";
+        type nx-behaviour-select;
+      }
+      leaf default-unsupported-transceiver {
+        tailf:info "When enabled, 'service unsupported-transceiver' is default,"
+          +"i.e. trimmed and negation is shown.";
+        default ">6.1";
+        type nx-behaviour-select;
+      }
+      leaf default-qos-ns-buffer-profile-mesh {
+        tailf:info "When enabled, 'mesh' is the default (i.e. trimmed) value"
+          +"for 'hardware qos ns-buffer-profile', otherwise burst is considered"
+          +" default";
+        default "disable";
+        type nx-behaviour-select;
+      }
+      leaf default-copp-profile-strict {
+        tailf:info "When enabled, the default value for copp profile will be 's"
+          +"trict' (i.e. 'copp profile strict' will be implied when device send"
+          +"s no copp profile in 'show running-config'). Use this to avoid send"
+          +"ing 'no copp profile' when rolling back a change for nx-os versions"
+          +" that disallow that.";
+        default "disable";
+        type nx-behaviour-select;
+      }
+      leaf no-logging-event-link-status-default {
+        tailf:info "When enabled, the default value of 'logging event link-stat"
+          +"us default' is off, (i.e. the trimmed value)";
+        default "<7.0";
+        type nx-behaviour-select;
+      }
+      leaf force-join-channel-group {
+        tailf:info "Enable this to always use 'force' keyword when joining inte"
+          +"rface to channel-group (e.g. 'channel-group N force mode active')";
+        default "disable";
+        type nx-behaviour-select;
+      }
+      leaf network-address-validation {
+        tailf:info "Enable this to validate network addresses where modeled just as ipv4-address-and-prefix-length";
+        default "enable";
+        type nx-behaviour-select;
+      }
+      leaf cleartext-provisioning {
+        tailf:info "Enable this to allow for cleartext key/password provisioning without going out-of-sync"
+          +"(i.e. where device obfuscates/encrypts value in running-config), this will store cleartext values in CDB";
+        default "enable";
+        type nx-behaviour-select;
+      }
+      leaf cleartext-stored-encrypted {
+        tailf:info "When 'cleartext-provisioning' is enabled, enable this setting to enforce stored"
+          + "values, in CDB, to be encrypted using NSO's built in encryption types (e.g. 'tailf:aes-cfb-128-encrypted-string')."
+          + "NOTE: the type of the values in the yang-model of cisco-nx is NOT the encrypted type, "
+          + "it is still plain 'string', however, the service template/code used to set the values must use an encrypted type.";
+        default "disable";
+        when "../cleartext-provisioning='enable'";
+        type nx-behaviour-select;
+      }
+      leaf vtp-support {
+        tailf:info "Enable this for full support for configuring vtp (which partially is not shown in normal config). "
+          + "This will cause the command 'show vtp status ; show vtp password' to be sent in addition "
+          + "to the normal 'show running-config' to get the device configuration.";
+        default "disable";
+        type nx-behaviour-select;
+      }
+      leaf true-mtu-values {
+        tailf:info "Enable this when mtu shown with 'show running-config interface all' doesn't show true MTU of port.";
+        default "disable";
+        type nx-behaviour-select;
+      }
+      leaf dayzero-included {
+        tailf:info "Enable this to include some 'day-zero' config in model (e.g. 'system admin-vdc' and 'system default switchport'). NOTE: this config is by default marked 'read-only', enable ned-setting 'dayzero-permit-write' to be able to write it too.";
+        default "disable";
+        type nx-behaviour-select;
+      }
+      leaf dayzero-permit-write {
+        tailf:info "Enable this to allow writing 'day-zero' config (see setting 'dayzero-included'), if disabled and this config is changed, it will cause transaction to ABORT";
+        when "../dayzero-included != 'disable'";
+        default "disable";
+        type nx-behaviour-select;
+      }
+      leaf support-per-module-obfl {
+        tailf:info "Enable this to be able to configure per-module OBFL config (i.e. 'hw-module logging onboard module N ...')";
+        default "disable";
+        type nx-behaviour-select;
+      }
+      leaf verify-spanning-tree-vlan {
+        tailf:info "Enable this to verify 'spanning-tree vlan ...' commands when applied, this avoids out-of-sync since device some times don't give error for faulty ranges. NOTE: The feature 'transaction abort-on-diff' is a more generic implementation which can be used in the general case of silently dropped config and/or side-effects et.c.";
+        default "disable";
+        type nx-behaviour-select;
+      }
+      leaf lldp-tlv-select-support {
+        tailf:info "Enable this for full support for configuring 'lldp tlv-select ...' (which is not shown in normal config). "
+          + "This will cause the command 'show running-config all | inc \"^lldp tlv-select .*\"' to be sent in addition "
+          + "to the normal 'show running-config' to get the device configuration.";
+        default "disable";
+        type nx-behaviour-select;
+      }
+      leaf inject-trunk-allowed-all-vlans {
+        tailf:info "Enable this to reflect the hidden default of 'all', i.e. whole range of vlans is allowed by default on trunk ports. This has the effect that the leaf-list switchport/trunk/allowed/vlan/ids is populated with 1-4094 by default (which is the hidden default on device), which reflects the true value of the leaf-list on device. This implies that the 'none' state must be handled separately (i.e. clearing the range, means 'none' must be set in choice)";
+        default "disable";
+        type nx-behaviour-select;
+      }
+      leaf buggy-snmp-traps-quirk {
+        tailf:info "Enable this to do an extra 'show running-config all | inc \"traps bfd|traps pim\"' to support strange behaviour of thes snmp-server traps which seems to change their hidden default value after having been toggled";
+        default "disable";
+        type nx-behaviour-select;
+      }
+      leaf support-case-insensitive-type {
+        tailf:info "When this setting is enabled (default), leaf nodes which are annotated with 'nx:case-insensitive-type' will be handled as such, hence when diff is calculated or a compare-config is done in NSO, the value is compared case-insensitive (e.g. if value set in CDB is Loopback0 and device actually stored loopback0, it is still considered equal).";
+        default "enable";
+        type nx-behaviour-select;
+      }
+      leaf trim-defaults-in-snmp-traps-diff {
+        tailf:info "When this setting is enabled, leaf nodes which have a default value, and which gets the default value set by NSO, eventhough it already has its default value on device will be trimmed from diff sent to device (NOTE: as name implies, this feature currently only works under /snmp-server/enable/traps).";
+        default "enable";
+        type nx-behaviour-select;
+      }
+      leaf dayzero-copp-profile-strict {
+        tailf:info "If device has been provisioned without a copp profile (i.e. defaults to strict), which is later reset with /control-plane/system-policy/input, it will not be possible to back out of that. Enable this ned-setting to handle the situation, i.e. applying 'copp profile strict' when removing the control-plane/system-policy/input (i.e. as opposed to sending 'no service-policy input ...' to device).";
+        default "disable";
+        type nx-behaviour-select;
+      }
+      leaf ipv6-snooping-policy {
+        tailf:info "Enable this setting to be able to configure ipv6 snooping policies.";
+        default "disable";
+        type nx-behaviour-select;
+      }
+    }
+  }
+
+  grouping nx-proxy {
+    container proxy {
+      tailf:info "Configure NED to access device via a proxy";
+      leaf remote-connection {
+        tailf:info "Connection type between proxy and device";
+        type enumeration {
+          enum "ssh";
+          enum "telnet";
+          enum "serial";
+        }
+      }
+      leaf remote-address {
+        tailf:info "Address of host behind the proxy";
+        tailf:display-when "not (../remote-connection='serial')";
+        type inet:ip-address;
+      }
+      leaf remote-port {
+        tailf:info "Port of host behind the proxy";
+        tailf:display-when "not (../remote-connection='serial')";
+        type uint16;
+      }
+      leaf remote-command {
+        tailf:info "Connection command used to initiate proxy on device. Optional for ssh/telnet. "
+          +"Accepts $address, $port, $name for inserting remote-xxx config";
+        type string;
+      }
+      leaf remote-name {
+        tailf:info "User name on the device behind the proxy";
+        type string;
+      }
+      leaf remote-password {
+        tailf:info "Password on the device behind the proxy";
+        type tailf:aes-cfb-128-encrypted-string;
+      }
+      leaf remote-secondary-password {
+        tailf:info "Second password (e.g. enable) on the device behind the proxy"
+          +" .WARNING MUST UPDATE connector template to use!";
+        type tailf:aes-cfb-128-encrypted-string;
+      }
+      leaf authgroup {
+        tailf:info "Authentication credentials for the device behind the proxy";
+        type string {
+          tailf:info "WORD;;devices authgroup group";
+        }
+      }
+      leaf proxy-prompt {
+        tailf:info "Prompt pattern on the proxy host (not needed if proxy is an cisco device)";
+        tailf:display-when "not (../remote-connection='serial')";
+        type string;
+      }
+      leaf proxy-prompt2 {
+        tailf:info "Prompt pattern on the proxy after sending telnet/ssh command";
+        type string;
+      }
+      leaf remote-ssh-args {
+        tailf:info "Additional arguments used to establish proxy connection (appended to end of ssh cmd line).";
+        tailf:display-when "not (../remote-command)";
+        type string;
+      }
+      leaf send-login-newline {
+        tailf:info "Send a newline after connected to the proxy to wake up the device for a login prompt";
+        type boolean;
+        default false;
+      }
+    }
+    container proxy2 {
+      tailf:info "Configure double-proxy setup: NSO <-> proxy <-> proxy2 <-> device";
+      leaf remote-connection {
+        tailf:info "Connection type between proxy2 and device";
+        type enumeration {
+          enum "ssh" {
+            tailf:info "SSH jump host proxy";
+          }
+          enum "telnet" {
+            tailf:info "TELNET jump host proxy";
+          }
+        }
+      }
+      leaf remote-address {
+        tailf:info "Address of device behind the proxy2";
+        tailf:display-when "not (../remote-connection='exec')";
+        type inet:ip-address;
+      }
+      leaf remote-port {
+        tailf:info "Port of device behind the proxy2";
+        tailf:display-when "not (../remote-connection='exec')";
+        type uint16;
+        default 22;
+      }
+      leaf proxy-prompt {
+        tailf:info "Prompt pattern on the proxy2 host";
+        type string;
+      }
+      leaf proxy-prompt2 {
+        tailf:info "Prompt pattern on the proxy2 after sending telnet/ssh command";
+        type string;
+      }
+      leaf remote-command {
+        tailf:info "Connection command used to initiate proxy2 on proxy";
+        type string;
+      }
+      leaf remote-name {
+        tailf:info "User name on the device behind the proxy2";
+        type string;
+      }
+      leaf remote-password {
+        tailf:info "Password on the device behind the proxy2";
+        type tailf:aes-cfb-128-encrypted-string;
+      }
+      leaf authgroup {
+        tailf:info "Authentication credentials for the device behind the proxy2";
+        type string {
+          tailf:info "WORD;;devices authgroup group";
+        }
+      }
+      leaf send-login-newline {
+        tailf:info "Send a newline after connected to the device to wake it up for a login prompt";
+        type boolean;
+        default false;
+      }
+      leaf remote-ssh-args {
+        tailf:info "Additional arguments used to establish proxy2 connection (appended to end of ssh cmd line)";
+        tailf:display-when "not (../remote-command)";
+        type string {
+          tailf:info "WORD;;optional ssh arguments";
+        }
+      }
+    }
+  }
+
+  grouping developer-progress-verbosity {
+    leaf progress-verbosity {
+      tailf:info "Maximum NED verbosity level which will get written in devel.log file";
+      type enumeration {
+        enum disabled {
+          value -1;
+        }
+        enum normal {
+          value 0;
+        }
+        enum verbose {
+          value 1;
+        }
+        enum very-verbose {
+          value 2;
+        }
+        enum debug {
+          value 3;
+        }
+      }
+      default debug;
+    }
+  }
+
+
+  /// ========================================================================
+  /// devices device platform
+  /// ========================================================================
+
+
+  /// ========================================================================
+  /// ned-settings
+  /// ========================================================================
+
+  augment "/ncs:devices/ncs:global-settings/ncs:ned-settings" {
+    container cisco-nx {
+      tailf:info "Global settings for cisco-nx";
+      uses nx-connection;
+      uses nx-deprecated;
+      uses nx-persistence;
+      uses nx-transaction;
+      uses nx-behaviours;
+      uses nx-proxy;
+      uses nx-general;
+      container developer {
+        tailf:info "Contains settings used by the NED developers";
+        uses developer-progress-verbosity;
+      }
+    }
+  }
+
+  augment "/ncs:devices/ncs:profiles/ncs:profile/ncs:ned-settings" {
+    container cisco-nx {
+      tailf:info "Per-profile settings for cisco-nx";
+      uses nx-connection;
+      uses nx-deprecated;
+      uses nx-persistence;
+      uses nx-transaction;
+      uses nx-behaviours;
+      uses nx-proxy;
+      uses nx-general;
+    }
+  }
+
+  augment "/ncs:devices/ncs:device/ncs:ned-settings" {
+    // CDM style syntax:
+    //#if (SUPPORTS_CDM == "YES")
+    //#replace (//) (  )
+    //when "derived-from(../ncs:device-type/ncs:cli/ncs:ned-id,'family:cisco-nx-cli')";
+    //#else
+    when "../ncs:device-type/ncs:cli/ncs:ned-id = 'cisco-nx-id:cisco-nx'";
+    //#endif
+
+    container cisco-nx {
+      tailf:info "Per-device settings for cisco-nx";
+      uses nx-connection;
+      uses nx-deprecated;
+      uses nx-persistence;
+      uses nx-transaction;
+      uses nx-behaviours;
+      uses nx-proxy;
+      uses nx-general;
+      container developer {
+        tailf:info "Contains settings used by the NED developers";
+        leaf load-from-file {
+          tailf:info "Make the NED load a file containing raw device config when doing sync-from.";
+          type string;
+        }
+        leaf debug-xml {
+          tailf:info "Log XML which cli-parser generates from config.";
+          default false;
+          type boolean;
+        }
+        leaf debug-prepare {
+          tailf:info "When enabled, will apply device-specific transforms on nets"
+            +"im output as well to be able to do dry-run to netsim for inspecting"
+            +"diffs.";
+          default false;
+          type boolean;
+        }
+        uses developer-progress-verbosity;
+      }
+    }
+  }
+}

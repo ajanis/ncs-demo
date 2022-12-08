@@ -1,0 +1,41 @@
+{
+    "pattern" : {
+        "promptDevice" :      "^.*([>][ ]?)$",
+        "promptPriv" :        "^.*([#][ ]?(?:.\\[.+m)?)$",
+        "promptLogin" :       "^.*([Ll]ogin|[Uu]ser|[Uu]sername):[ ]?$",
+        "promptPassword" :    "[Pp]assword:[ ]?$",
+        "promptIgnore" :      "copy of each such license is available at",
+	"errorLogin" :     "([Bb]ad )|unreachable|closed|fatal|denied|reset|([Ee]rror)|([Ff]ailure)|([Ii]nvalid).*"
+    },
+    "command" : {
+    },
+    "state": {
+        "new" : [
+            {"expect": null,                "action": "connect()",      "nextState": "login"}
+        ],
+        "login" : [
+            {"expect": "$promptLogin",         "action": "sendUsername()", "nextState": "login"},
+            {"expect": "$promptPassword",      "action": "sendPassword()", "nextState": "newline2"},
+            {"expect": "$promptDevice",        "action": "enable",         "nextState": "enable"},
+            {"expect": "$promptPriv",          "action": null,             "nextState": "end"},
+            {"expect": "$promptIgnore",        "action": null,             "nextState": "login"},
+            {"expect": "$errorLogin",          "action": "reportError()",  "nextState": "invalid"}
+        ],
+        "newline2" : [
+            {"expect": null,                "action": "sendNewline()",  "nextState": "login2"}
+        ],
+        "login2" : [
+            {"expect": "$promptLogin",      "action": "$(proxy/remote-name)",               "nextState": "login2"},
+            {"expect": "$promptPassword",   "action": "password($(proxy/remote-password))", "nextState": "login2"},
+            {"expect": "$promptDevice",     "action": "enable",         "nextState": "enable"},
+            {"expect": "$promptPriv",       "action": null,             "nextState": "end"},
+            {"expect": "$promptIgnore",     "action": null,             "nextState": "login2"},
+            {"expect": "$errorLogin",     "action": "reportError()",  "nextState": "invalid"}
+        ],
+        "enable" : [
+            {"expect": "$promptPriv",       "action": null,                      "nextState": "end"},
+            {"expect": "$promptPassword",   "action": "sendSecondaryPassword()", "nextState": "enable"},
+            {"expect": "$errorLogin",     "action": "reportError()",           "nextState": "invalid"}
+        ]
+    }
+}

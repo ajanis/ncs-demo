@@ -1,0 +1,28 @@
+{
+    "pattern" : {
+        "promptDevice" :   "\\A\\S.*>",
+        "promptPriv" :     "\\A[^\\# ]+#[ ]?$",
+        "promptLogin" :    "^.*([Ll]ogin|[Uu]ser|[Uu]sername):[ ]?$",
+        "promptPassword" : "[Pp]assword:[ ]?$",
+        "errorLogin" :     "([Aa]uthentication [Ff]ail)|([Bb]ad [Pp]assword)|([Ll]ogin [Ii]nvalid)|([Aa]ccess [Dd]enied)|([Pp]ermission [Dd]enied)|([Rr]equest [Dd]enied)"
+    },
+    "command" : {
+    },
+    "state": {
+        "new" : [
+            {"expect": null,             "action": "connect()",       "nextState": "login"}
+        ],
+        "login" : [
+            {"expect": "$promptLogin",    "action": "sendUsername()", "nextState": "login"},
+            {"expect": "$promptPassword", "action": "sendPassword()", "nextState": "login"},
+            {"expect": "$promptDevice",   "action": "enable",         "nextState": "enable"},
+            {"expect": "$promptPriv",     "action": null,             "nextState": "end"},
+            {"expect": "$errorLogin",     "action": "reportError()",  "nextState": "invalid"}
+        ],
+        "enable" : [
+            {"expect": "$promptPriv",     "action": null,                      "nextState": "end"},
+            {"expect": "$promptPassword", "action": "sendSecondaryPassword()", "nextState": "enable"},
+            {"expect": "$errorLogin",     "action": "reportError()",           "nextState": "invalid"}
+        ]
+    }
+}

@@ -1,0 +1,9 @@
+! interface_list
+
+<root>
+ <log-verbose/>
+ <buf-start :: \n-----------/>
+ <list :: . :: \n(?:[*])?[ ]*(\S+)[ ]+?\S+ :: trim/>
+  <key :: (?:[*])?[ ]*(\S+) :: name/>
+ </list>
+</root>

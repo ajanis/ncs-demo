@@ -1,0 +1,207 @@
+#!/usr/bin/env python
+
+from distutils.version import LooseVersion
+import argparse
+import glob
+import re
+import sys
+import os
+
+class Stackelem(object):
+    def __init__(self, show=True, defer=False, replace=[], wastrue=True):
+        self.show = show
+        self.defer = defer
+        self.replace = replace
+        self.wastrue = wastrue
+
+class Stack(object):
+    def __init__(self):
+        self.stack = [Stackelem()]
+
+    def push(self, show=True, defer=False, replace=[], wastrue=True):
+        self.stack.append(Stackelem(show, defer, replace[:], wastrue))
+
+    def show(self, index=-1):
+        return self.stack[index].show
+
+    def defer(self, index=-1):
+        return self.stack[index].defer
+
+    def replace(self, index=-1):
+        return self.stack[index].replace
+
+    def wastrue(self, index=-1):
+        return self.stack[index].wastrue
+
+    def pop(self):
+        self.stack.pop()
+
+    def length(self):
+        return len(self.stack)
+
+class Static(object):
+    variables = {"version": LooseVersion}
+    verbose = False
+
+def vprint(s):
+    if Static.verbose:
+        print(s)
+
+def evaluate(expr):
+    try:
+        e = eval(expr, {'__builtins__': None}, Static.variables)
+    except (NameError, TypeError):
+        e = None
+    vprint("EVAL '%s' = %s" % (expr, e))
+    return e
+
+def literal(v):
+    if v.lower() == "true":
+        v = True
+    elif v.lower() == "false":
+        v = False
+    # elif v.startswith("\"") and v.endswith("\""):
+    #     v = v[1:-1]
+    else:
+        try:
+            v = int(v)
+        except:
+            pass
+    return v
+
+tokens = r"(?P<if>#\s*if\s*\((?P<if_0>.*[^\\])\))|" + \
+         r"(?P<elif>#\s*elif\s*\((?P<elif_0>.*[^\\])\))|" + \
+         r"(?P<else>#\s*else())|" + \
+         r"(?P<endif>#\s*endif())|" + \
+         r"(?P<var>#\s*var\s*\((?P<var_0>\S+)\))|" + \
+         r"(?P<line>#\s*line\s*\((?P<line_0>\S+)\))|" + \
+         r"(?P<define>#\s*define\s+(?P<define_0>\S+)\s+\((?P<define_1>.*[^\\])\))|" + \
+         r"(?P<replace>#\s*replace\s+\((?P<replace_0>.*[^\\])\)\s+\((?P<replace_1>.*[^\\]?)\))"
+
+def ypp(arguments):
+    parser = argparse.ArgumentParser()
+    parser.add_argument('files', nargs='*')
+    parser.add_argument("--from", action="append", dest="fr", default=[])
+    parser.add_argument("--to", action="append", default=[])
+    parser.add_argument("--var", action="append")
+    parser.add_argument("--out-dir")
+    parser.add_argument("--verbose", action="store_true")
+    args = parser.parse_args(arguments)
+    if len(args.fr) != len(args.to):
+        raise ValueError("Number of --from and --to must match")
+    if not args.var:
+        args.var = []
+    Static.verbose = args.verbose
+
+    for v in args.var:
+        name,value = v.split("=")
+        Static.variables[name] = literal(value)
+        vprint("SET %s = %s" % (name, value))
+
+    for files in args.files:
+        vprint(files)
+        gfiles = glob.glob(files)
+        if not gfiles:
+            raise IOError("No files found: %s" % files)
+        for name in gfiles:
+            vprint(name)
+            with open(name, "r") as f:
+                text = f.read()
+            # Global replacements
+            if args.fr:
+                for f,t in zip(args.fr, args.to):
+                    while f.endswith("{..}"):
+                        # Remove bracketed part
+                        m = re.search(f.replace("{..}", "{"), text, flags=re.MULTILINE)
+                        if not m:
+                            break
+                        text = text[:m.start()] + text[m.end():]
+                        nest = 1
+                        for i in range(m.start(), len(text)):
+                            if text[i] == "{":
+                                nest += 1
+                            elif text[i] == "}":
+                                nest -= 1
+                            if nest <= 0:
+                                text = text[:m.start()] + t + text[i+1:]
+                                break
+                    else:
+                        text = re.sub(f, t, text, flags=re.MULTILINE)
+            # Conditionals
+            ntext = []
+            stack = Stack()
+            for line in text.split("\n"):
+                show = False
+                matched = False
+                for match in re.finditer(tokens, line):
+                    matched = True
+                    if match.group("if"):
+                        v = evaluate(match.group("if_0"))
+                        stack.push(v == None or (stack.show() and bool(v)),
+                                   v == None, stack.replace(), bool(v))
+                        vprint("#if (%s) (%s,%s)" % (match.group("if_0"), v, stack.show()))
+                        show = True
+                    elif match.group("elif"):
+                        v = evaluate(match.group("elif_0"))
+                        stack.stack[-1].show = stack.defer() or v == None \
+                            or (stack.show(-2) and bool(v) and not stack.wastrue())
+                        stack.stack[-1].defer = stack.defer() or v == None
+                        stack.stack[-1].wastrue = stack.wastrue() or bool(v)
+                        vprint("#elif (%s) (%s,%s)" % (match.group("elif_0"), v, stack.show()))
+                        show = True
+                    elif match.group("else"):
+                        stack.stack[-1].show = stack.defer() \
+                                               or (stack.show(-2) and not stack.wastrue())
+                        vprint("#else (%s)" % stack.show())
+                        show = True
+                    elif match.group("endif"):
+                        if stack.length() > 1:
+                            stack.pop()
+                        vprint("#endif")
+                        show = True
+                    elif match.group("var"):
+                        if stack.show() and not stack.defer():
+                            v = evaluate(match.group("var_0"))
+                            if v != None:
+                                line = line.replace(match.group("var"), str(v))
+                                vprint("#var(%s) => %s" % (match.group("var_0"), str(v)))
+                    elif match.group("line"):
+                        if stack.show() and not stack.defer():
+                            v = evaluate(match.group("line_0"))
+                            if v != None:
+                                line = str(v)
+                                vprint("#line(%s) => (%s)" % (match.group("line_0"), str(v)))
+                    elif match.group("define"):
+                        if stack.show() and not stack.defer():
+                            Static.variables[match.group("define_0")] = literal(match.group("define_1"))
+                            vprint("#define %s (%s)" %
+                                   (match.group("define_0"), match.group("define_1")))
+                    elif match.group("replace"):
+                        if stack.show() and not stack.defer():
+                            stack.stack[-1].replace.append((match.group("replace_0"),
+                                                            match.group("replace_1")))
+                            vprint("#replace (%s) (%s)" %
+                                   (match.group("replace_0"), match.group("replace_1")))
+                # Syntax errors only in verbose mode to speed things up
+                if Static.verbose and not matched \
+                   and re.search(r"#\s*(if|elif|else|endif|var|line|define|replace)", line):
+                    raise ValueError("Syntax error: \"%s\"" % line)
+                if show or stack.show():
+                    oline = line
+                    if not matched:
+                        # Only replace non-ypp lines
+                        for f,t in stack.replace():
+                            line = re.sub(f, t, line)
+                    vprint("SHOW '%s' -> '%s'" % (oline, line))
+                    ntext.append(line)
+                else:
+                    vprint("HIDE '%s'" % line)
+
+            if args.out_dir:
+                name = args.out_dir + "/" + os.path.basename(name)
+
+            with open(name, "w") as f:
+                f.write("\n".join(ntext))
+
+if __name__ == '__main__':
+    ypp(sys.argv[1:])

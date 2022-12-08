@@ -1,0 +1,1335 @@
+// =========================================================================
+//                          CISCO-IOS NED STATS
+// =========================================================================
+
+module tailf-ned-cisco-ios-stats {
+  namespace "urn:ios-stats";
+  prefix ios-stats;
+
+  import tailf-common {
+    prefix tailf;
+  }
+
+  import ietf-interfaces {
+    prefix ietf-interfaces;
+  }
+
+  import ietf-ip {
+    prefix ietf-ip;
+  }
+
+
+  // =========================================================================
+  // TYPEDEF
+  // =========================================================================
+
+  // IPv4 prefix (address and mask length) in A.B.C.D/P format
+  typedef ipv4-prefix {
+    type string {
+      pattern
+      '(([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])\.){3}'
+      +  '([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])'
+      + '/(([0-9])|([1-2][0-9])|(3[0-2]))';
+    }
+  }
+
+  // IPv6 prefix in standard format
+  typedef ipv6-prefix {
+    type string {
+      pattern '((:|[0-9a-fA-F]{0,4}):)([0-9a-fA-F]{0,4}:){0,5}'
+      + '((([0-9a-fA-F]{0,4}:)?(:|[0-9a-fA-F]{0,4}))|'
+      + '(((25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])\.){3}'
+      + '(25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])))'
+      + '(/(([0-9])|([0-9]{2})|(1[0-1][0-9])|(12[0-8])))';
+      pattern '(([^:]+:){6}(([^:]+:[^:]+)|(.*\..*)))|'
+      + '((([^:]+:)*[^:]+)?::(([^:]+:)*[^:]+)?)'
+      + '(/.+)';
+    }
+  }
+
+
+  // =========================================================================
+  //                        MODEL
+  // =========================================================================
+
+
+  /// ========================================================================
+  /// access-tunnel
+  /// ========================================================================
+
+  container access-tunnel {
+    tailf:info "show access tunnel";
+    config false;
+
+    // access-tunnel summary *
+    list summary {
+      tailf:info "show access-tunnel summary";
+      tailf:meta-data "ned-livestats:parser-info" {
+        tailf:meta-value "{'template':'access-tunnel_summary.gili','show':'show access-tunnel summary'}";
+      }
+      key name;
+      leaf name {
+        type string;
+      }
+      leaf source-ip {
+        type string;
+      }
+      leaf source-port {
+        type string;
+      }
+      leaf destination-ip {
+        type string;
+      }
+      leaf destination-port {
+        type string ;
+      }
+      leaf vrf-id {
+        type string;
+      }
+    }
+
+    // access-tunnel detail *
+    list detail {
+      tailf:info "show access-tunnel detail";
+      tailf:meta-data "ned-livestats:parser-info" {
+        tailf:meta-value "{'template':'access-tunnel_detail.gili','show':'show access-tunnel summary'}";
+      }
+      key ifId;
+      leaf name {
+        type string;
+      }
+      leaf ifId {
+        type string;
+      }
+      leaf up-time {
+        type string;
+      }
+    }
+  }
+
+
+  /// ========================================================================
+  /// arp
+  /// ========================================================================
+  // Note: show-entry can't be supported, device missing support for 'show arp %s'
+
+  // arp
+  container arp {
+    tailf:info "show arp";
+    config false;
+    uses arp-grouping {
+      refine address {
+        tailf:meta-data "ned-livestats:parser-info" {
+          tailf:meta-value "{'template':'arp_address.gili','show':'show arp'}";
+        }
+      }
+    }
+
+    // arp vrf *
+    list vrf {
+      tailf:info "show arp vrf";
+      tailf:meta-data "ned-livestats:parser-info" {
+        tailf:meta-value "{'template':'arp_vrf.gili','show':'show vrf',"+
+          "'show-entry':{'cmd':'!noop','template':'noop.gili','run-after-show':false}}";
+      }
+      key name;
+      leaf name {
+        type string;
+      }
+      uses arp-grouping {
+        refine address {
+          tailf:meta-data "ned-livestats:parser-info" {
+            tailf:meta-value "{'template':'arp_vrf_address.gili','show':'show arp vrf %s'}";
+          }
+        }
+      }
+    }
+  }
+
+  grouping arp-grouping {
+    list address {
+      key ip;
+      leaf ip {
+        type string;
+      }
+      leaf protocol {
+        type string;
+      }
+      leaf age-mins {
+        type uint32;
+      }
+      leaf hardware-addr {
+        type string;
+      }
+      leaf "type" {
+        type string;
+      }
+      leaf interface {
+        type string;
+      }
+    }
+  }
+
+
+  /// ========================================================================
+  /// bgp
+  /// ========================================================================
+
+  container bgp {
+    tailf:info "BGP information";
+    config false;
+    container ipv4 {
+      tailf:info "Address family";
+      container unicast {
+        tailf:info "Address Family modifier";
+
+        // bgp ipv4 unicast neighbors *
+        list neighbors {
+          tailf:meta-data "ned-livestats:parser-info" {
+            tailf:meta-value "{'template':'bgp_neighbors.gili','show':'show bgp ipv4 unicast neighbors',"+
+              "'show-entry':{'cmd':'show bgp ipv4 unicast neighbors %s','template':'bgp_neighbors.gili','trim-top-node':true,'run-after-show':false}}";
+          }
+          key id;
+          leaf id {
+            type string;
+          }
+          uses bgp-neighbor-content-grouping;
+        }
+      }
+    }
+
+    container vpnv4 {
+      tailf:info "Address family";
+      container unicast {
+        tailf:info "Address Family modifier";
+
+        // bgp vpnv4 unicast neighbors *
+        list neighbors {
+          tailf:info "Only shows non-vrf entries. WARNING: DEPRECATED, use 'bgp vpnv4 unicast all neighbors' list";
+          tailf:meta-data "ned-livestats:parser-info" {
+            tailf:meta-value "{'template':'bgp_neighbors.gili','show':'show bgp vpnv4 unicast all neighbors',"+
+              "'show-entry':{'cmd':'show bgp vpnv4 unicast all neighbors %s','template':'bgp_neighbors.gili','trim-top-node':true,'run-after-show':false}}";
+          }
+          key id;
+          leaf id {
+            type string;
+          }
+          uses bgp-neighbor-content-grouping;
+        }
+
+        // bgp vpnv4 unicast all neighbors *
+        container all {
+          list neighbors {
+            tailf:meta-data "ned-livestats:parser-info" {
+              tailf:meta-value "{'template':'bgp_all_neighbors.gili','show':'show bgp vpnv4 unicast all neighbors',"+
+                "'show-entry':{'cmd':'show bgp vpnv4 unicast all neighbors %s','template':'bgp_all_neighbors.gili','trim-top-node':true,'run-after-show':false}}";
+            }
+            key "id vrf";
+            leaf id {
+              type string;
+            }
+            leaf vrf {
+              type string;
+            }
+            uses bgp-neighbor-content-grouping;
+          }
+        }
+
+        // bgp vpnv4 unicast vrf * neighbors *
+        list vrf {
+          tailf:meta-data "ned-livestats:parser-info" {
+            tailf:meta-value "{'template':'vrf_trim.gili','show':'show vrf',"+
+              "'show-entry':{'cmd':'!noop','template':'noop.gili','run-after-show':false}}";
+          }
+          key name;
+          leaf name {
+            type string;
+          }
+          list neighbors {
+            tailf:meta-data "ned-livestats:parser-info" {
+              tailf:meta-value "{'template':'bgp_neighbors_vrf.gili','show':'show bgp vpnv4 unicast vrf %s neighbors',"+
+                "'show-entry':{'cmd':'show bgp vpnv4 unicast vrf %s neighbors %s','template':'bgp_neighbors_vrf.gili','trim-top-node':true,'run-after-show':false}}";
+            }
+            key id;
+            leaf id {
+              type string;
+            }
+            uses bgp-neighbor-content-grouping;
+          }
+        }
+      }
+    }
+  }
+
+  grouping bgp-neighbor-content-grouping {
+    leaf remote-as {
+      type string;
+    }
+    leaf link {
+      type enumeration {
+        enum internal;
+        enum external;
+      }
+    }
+    leaf peer-group {
+      type string;
+    }
+    leaf admin-state {
+      type string;
+    }
+    leaf bgp-state {
+      type string;
+    }
+    leaf bgp-state-uptime {
+      type string;
+    }
+    leaf last-reset {
+      type string;
+    }
+    list address-family {
+      key name;
+      leaf name {
+        type string;
+      }
+      leaf prefixes-current-sent {
+        type uint32;
+      }
+      leaf prefixes-current-rcvd {
+        type uint32;
+      }
+    }
+  }
+
+
+  /// ========================================================================
+  /// cdp
+  /// ========================================================================
+
+  // cdp neighbors *
+  container cdp {
+    tailf:info "show cdp";
+    config false;
+    list neighbors {
+      tailf:info "show cdp neighbors";
+      tailf:meta-data "ned-livestats:parser-info" {
+        tailf:meta-value "{'template':'cdp_neighbors.gili','show':'show cdp neighbors detail',"+
+          "'show-entry':{'cmd':'show cdp neighbors %s detail','template':'cdp_neighbors.gili','trim-top-node':true,'run-after-show':false}}";
+      }
+      key local-interface;
+      leaf local-interface {
+        type string;
+      }
+      leaf device-id {
+        type string;
+      }
+      leaf hold-time {
+        type string;
+      }
+      leaf capability {
+        type string;
+      }
+      leaf platform {
+        type string;
+      }
+      leaf port-id {
+        type string;
+      }
+    }
+  }
+
+
+  /// ========================================================================
+  /// crypto
+  /// ========================================================================
+
+  container crypto {
+    config false;
+    container session {
+      list interface {
+        tailf:meta-data "ned-livestats:parser-info" {
+          tailf:meta-value "{'template':'interface_list.gili','show':'show interfaces summary',"+
+            "'show-entry':{'cmd':'!noop','template':'noop.gili','run-after-show':false}}";
+        }
+        key name;
+        leaf name {
+          type string;
+        }
+        container data {
+          tailf:cli-drop-node-name;
+          presence true;
+          tailf:meta-data "ned-livestats:parser-info" {
+            tailf:meta-value "{'template':'crypto_session_interface.gili','show':'show crypto session interface %s detail'}";
+          }
+          leaf status {
+            type string;
+          }
+          container peer {
+            leaf address {
+              type string;
+            }
+            leaf port {
+              type uint16;
+            }
+            leaf fvrf {
+              type string;
+            }
+            leaf ivrf {
+              type string;
+            }
+          }
+          container ipsec-flow {
+            leaf active-sa {
+              type uint32;
+            }
+            leaf origin {
+              type string;
+            }
+            leaf inbound-decrp-pkts {
+              type uint32;
+            }
+            leaf outbound-encrp-pkts {
+              type uint32;
+            }
+          }
+        }
+      }
+    }
+  }
+
+
+  /// ========================================================================
+  /// device-tracking-database
+  /// ========================================================================
+
+  // device-tracking-database *
+  list device-tracking-database {
+    tailf:info "show device-tracking database";
+    config false;
+    tailf:meta-data "ned-livestats:parser-info" {
+      tailf:meta-value "{'template':'device-tracking-database.gili','show':'show device-tracking database'}";
+    }
+    key network-layer-address;
+    leaf network-layer-address {
+      type string;
+    }
+    leaf code {
+      type string;
+    }
+    leaf link-layer-address {
+      type string;
+    }
+    leaf interface {
+      type string;
+    }
+    leaf vlan {
+      type uint16;
+    }
+    leaf prlvl {
+      type string;
+    }
+    leaf age {
+      type string;
+    }
+    leaf state {
+      type string;
+    }
+    leaf time-left-secs {
+      type uint32;
+    }
+    leaf try {
+      type uint32;
+    }
+  }
+
+
+  /// ========================================================================
+  /// interfaces
+  /// ========================================================================
+
+  // interfaces *
+  list interfaces {
+    tailf:info "show interfaces";
+    tailf:meta-data "ned-livestats:parser-info" {
+      tailf:meta-value "{'template':'interfaces.gili','show':'show interfaces | include line|address',"+
+        "'show-entry':{'cmd':'show interfaces %s | include line|address','template':'interfaces.gili','trim-top-node':true,'run-after-show':false}}";
+    }
+    config false;
+    key "type name";
+    leaf "type" {
+      type string;
+    }
+    leaf name {
+      type string;
+    }
+
+    leaf admin-status {
+      type enumeration {
+        enum up {
+          value 1;
+        }
+        enum down {
+          value 2;
+        }
+      }
+    }
+    leaf ip-address {
+      type union {
+        type ipv4-prefix;
+        type ipv6-prefix;
+      }
+    }
+    leaf mac-address {
+      type string;
+    }
+  }
+
+
+  /// ========================================================================
+  /// inventory
+  /// ========================================================================
+
+  // inventory *
+  list inventory {
+    tailf:info "show inventory";
+    config false;
+    tailf:meta-data "ned-livestats:parser-info" {
+      tailf:meta-value "{'template':'inventory.gili','show':'show inventory'}";
+    }
+    key name;
+    leaf name {
+      type string;
+    }
+    leaf descr {
+      type string;
+    }
+    leaf sn {
+      type string;
+    }
+  }
+
+
+  /// ========================================================================
+  /// ip
+  /// ========================================================================
+
+  container ip {
+    config false;
+
+    // ip dhcp snooping binding *
+    container dhcp {
+      tailf:info "show ip dhcp snooping binding";
+      container snooping {
+        tailf:info "show ip dhcp snooping binding";
+        list binding {
+          tailf:info "show ip dhcp snooping binding";
+          tailf:meta-data "ned-livestats:parser-info" {
+            tailf:meta-value "{'template':'ip_dhcp_snooping_binding.gili','show':'show ip dhcp snooping binding'}";
+          }
+          key mac-address;
+          leaf mac-address {
+            type string;
+          }
+          leaf ip-address {
+            type string;
+          }
+          leaf lease {
+            type int16;
+          }
+          leaf type {
+            type string;
+          }
+          leaf vlan {
+            type int16;
+          }
+          leaf interface {
+            type string;
+          }
+        }
+      }
+    }
+
+    // ip pim
+    container pim {
+      tailf:info "show ip pim";
+
+      // ip pim tunnel Tunnel *
+      container tunnel {
+        tailf:info "show ip pim all-vrfs tunnel";
+        list Tunnel {
+          tailf:info "show ip pim all-vrfs tunnel";
+          tailf:meta-data "ned-livestats:parser-info" {
+            tailf:meta-value "{'template':'ip_pim_tunnel_Tunnel.gili','show':'show ip pim all-vrfs tunnel'}";
+          }
+          key id;
+          leaf id {
+            type int32;
+          }
+          leaf type {
+            type string;
+          }
+          leaf rp {
+            type string;
+          }
+          leaf source {
+            type string;
+          }
+          leaf state {
+            type string;
+          }
+          leaf last-event {
+            type string;
+          }
+          leaf vrf {
+            type string;
+          }
+        }
+      }
+
+      // ip pim vrf * neighbor *
+      list vrf {
+        tailf:info "show ip pim vrf * neighbor";
+        tailf:meta-data "ned-livestats:parser-info" {
+          tailf:meta-value "{'template':'vrf_trim.gili','show':'show vrf',"+
+            "'show-entry':{'cmd':'!noop','template':'noop.gili','run-after-show':false}}";
+        }
+        key name;
+        leaf name {
+          type string;
+        }
+        list neighbor {
+          tailf:meta-data "ned-livestats:parser-info" {
+            tailf:meta-value "{'template':'ip_pim_vrf_neighbor.gili','show':'show ip pim vrf %s neighbor'}";
+          }
+          key address;
+          leaf address {
+            type string;
+          }
+          leaf interface {
+            type string;
+          }
+          leaf time {
+            type string;
+          }
+          leaf version {
+            type string;
+          }
+          leaf dr {
+            type string;
+          }
+        }
+      }
+    }
+
+    // ip mroute vrf *
+    container mroute {
+      tailf:info "show ip mroute vrf *";
+      list vrf {
+        tailf:info "show ip mroute vrf *";
+        tailf:meta-data "ned-livestats:parser-info" {
+          tailf:meta-value "{'template':'vrf_trim.gili','show':'show vrf',"+
+            "'show-entry':{'cmd':'!noop','template':'noop.gili','run-after-show':false}}";
+        }
+        key name;
+        leaf name {
+          type string;
+        }
+        list address {
+          tailf:meta-data "ned-livestats:parser-info" {
+            tailf:meta-value "{'template':'ip_mroute_vrf_address.gili','show':'show ip mroute vrf %s'}";
+          }
+          key address;
+          leaf address {
+            type string;
+          }
+          leaf up-time {
+            type string;
+          }
+          leaf rp {
+            type string;
+          }
+          leaf flags {
+            type string;
+          }
+          list outgoing {
+            tailf:meta-data "ned-livestats:parser-info" {
+              tailf:meta-value "{'show':{'cmd':'show ip mroute vrf %s %s','arg':['../../name','../address']},'template':'ip_mroute_vrf_address_outgoing.gili'}";
+            }
+            key interface;
+            leaf interface {
+              type string;
+            }
+            leaf address {
+              type string;
+            }
+            leaf mode {
+              type string;
+            }
+            leaf up-time {
+              type string;
+            }
+          }
+          container incoming {
+            leaf interface {
+              type string;
+            }
+            leaf flags {
+              type string;
+            }
+            leaf address {
+              type string;
+            }
+          }
+        }
+      }
+    }
+  }
+
+
+  /// ========================================================================
+  /// lisp
+  /// ========================================================================
+
+  container lisp {
+    tailf:info "show lisp";
+    config false;
+
+    // lisp session *
+    list session {
+      tailf:info "show lisp session";
+      tailf:meta-data "ned-livestats:parser-info" {
+        tailf:meta-value "{'template':'lisp_session.gili','show':'show lisp session'}";
+      }
+      key peer;
+      leaf peer {
+        type string;
+      }
+      leaf state {
+        type string;
+      }
+      leaf up-down {
+        type string;
+      }
+      leaf in-out {
+        type string;
+      }
+      leaf users {
+        type uint32;
+      }
+    }
+
+    // lisp site *
+    list site {
+      tailf:info "show lisp site";
+      tailf:meta-data "ned-livestats:parser-info" {
+        tailf:meta-value "{'template':'lisp_site.gili','show':'show lisp site'}";
+      }
+      key name;
+      leaf name {
+        type string;
+      }
+      list registrations {
+        key "instance EID-prefix";
+        leaf instance {
+          type int16;
+        }
+        leaf EID-prefix {
+          type string;
+        }
+        leaf last-register {
+          type string;
+        }
+        leaf up {
+          type string;
+        }
+        leaf last-registered-by {
+          type string;
+        }
+      }
+    }
+
+    // lisp eid-table vrf *
+    list eid-table-vrf {
+      tailf:info "show lisp eid-table vrf";
+      tailf:meta-data "ned-livestats:parser-info" {
+        tailf:meta-value "{'template':'lisp_eid-table-vrf.gili','show':'show vrf',"+
+          "'show-entry':{'cmd':'!noop','template':'noop.gili','run-after-show':false}}";
+      }
+      key vrf;
+      leaf vrf {
+        type string;
+      }
+      // lisp eid-table vrf * dynamic-eid *
+      list dynamic-eid {
+        tailf:info "show lisp eid-table vrf * dynamic-eid";
+        tailf:meta-data "ned-livestats:parser-info" {
+          tailf:meta-value "{'template':'lisp_eid-table-vrf_dynamic-eid.gili','show':'show lisp eid-table vrf %s dynamic-eid'}";
+        }
+        key name;
+        leaf name {
+          type string;
+        }
+        leaf eid-prefix {
+          type string;
+        }
+        leaf locator-set {
+          type string;
+        }
+        leaf map-servers {
+          type string;
+        }
+        leaf map-notify-group {
+          type string;
+        }
+        leaf roam-dyneid-discovered {
+          type uint32;
+        }
+      }
+    }
+
+    // lisp map-cache instance-id *
+    container map-cache {
+      tailf:info "show ip lisp map-cache";
+      list instance-id {
+        tailf:info "show ip lisp map-cache instance-id";
+        tailf:meta-data "ned-livestats:parser-info" {
+          tailf:meta-value "{'template':'lisp_map-cache_instance-id.gili','show':'show run | include instance-id | exclude exit'}";
+        }
+        key id;
+        leaf id {
+          type uint32;
+        }
+        list host {
+          tailf:meta-data "ned-livestats:parser-info" {
+            tailf:meta-value "{'template':'lisp_map-cache_instance-id_host.gili','show':'show ip lisp map-cache instance-id %s'}";
+          }
+          key ip;
+          leaf ip {
+            type string;
+          }
+          leaf host-uptime {
+            type string;
+          }
+          leaf expires {
+            type string;
+          }
+          leaf via {
+            type string;
+          }
+          leaf action {
+            type string;
+          }
+          leaf locator {
+            type string;
+          }
+          leaf locator-uptime {
+            type string;
+          }
+          leaf state {
+            type string;
+          }
+          leaf pri-wgt {
+            type string;
+          }
+          leaf encap-iid {
+            type string;
+          }
+        }
+      }
+    }
+  }
+
+
+  /// ========================================================================
+  /// lldp
+  /// ========================================================================
+
+  // lldp neighbors *
+  container lldp {
+    tailf:info "show lldp";
+    config false;
+    list neighbors {
+      tailf:info "show lldp neighbors detail";
+      tailf:meta-data "ned-livestats:parser-info" {
+        tailf:meta-value "{'template':'lldp_neighbors.gili','show':'show lldp neighbors detail'}";
+      }
+      key local-interface;
+      leaf local-interface {
+        type string;
+      }
+      leaf chassis-id {
+        type string;
+      }
+      leaf port-id {
+        type string;
+      }
+      leaf device-id {
+        type string;
+      }
+      leaf time-remaining {
+        type string;
+      }
+      leaf capability {
+        type string;
+      }
+    }
+  }
+
+
+  /// ========================================================================
+  /// running-config
+  /// ========================================================================
+
+  // running-config license udi
+  container running-config {
+    tailf:info "Read only 'config' still shown in running-config on device";
+    presence true;
+    config false;
+    tailf:meta-data "ned-livestats:parser-info" {
+      tailf:meta-value "{'template':'running-config.gili','show':'show run | include license udi'}";
+    }
+    container license {
+      container udi {
+        tailf:info "show run | include license udi";
+        leaf pid {
+          type string;
+        }
+        leaf sn {
+          type string;
+        }
+      }
+    }
+  }
+
+
+  /// ========================================================================
+  /// version
+  /// ========================================================================
+
+  // version
+  container version {
+    tailf:info "show version";
+    config false;
+    presence true;
+    tailf:meta-data "ned-livestats:parser-info" {
+      tailf:meta-value "{'template':'version.gili','show':'show version | include revision|Version|rocessor|License|dummy'}";
+    }
+    leaf name {
+      type string;
+    }
+    leaf version {
+      type string;
+    }
+    leaf xe-version {
+      type string;
+    }
+    leaf model {
+      type string;
+    }
+    leaf serial-number {
+      type string;
+    }
+    container license {
+      leaf level {
+        type string;
+      }
+      leaf "type" {
+        type string;
+      }
+    }
+  }
+
+
+  /// ========================================================================
+  /// vrf
+  /// ========================================================================
+
+  list vrf {
+    tailf:info "show vrf";
+    tailf:meta-data "ned-livestats:parser-info" {
+      tailf:meta-value "{'template':'vrf.gili','show':'show vrf',"+
+        "'show-entry':{'cmd':'!noop','template':'noop.gili','run-after-show':false}}";
+    }
+    key name;
+    leaf name {
+      type string {
+        tailf:info "WORD;;VRF name";
+      }
+    }
+  }
+
+
+  // =========================================================================
+  //                        INTERNAL DEBUG STATS
+  // =========================================================================
+
+
+  /// ========================================================================
+  /// test
+  /// ========================================================================
+
+  // test policy-map *
+  container test {
+    list policy-map {
+      tailf:meta-data "ned-livestats:parser-info" {
+        tailf:meta-value "{'template':'test_policy-map.gili','show':'show policy-map'}";
+      }
+      config false;
+      key name;
+      leaf name {
+        type string;
+      }
+      leaf description {
+        type string;
+      }
+      list class {
+        tailf:meta-data "ned-livestats:parser-info" {
+          tailf:meta-value "{'template':'test_policy-map_class.gili',"
+            +"'show':{'cmd':'show policy-map %s','arg':['../name']}}";
+        }
+        key name;
+        leaf name {
+          type string;
+        }
+        leaf priority {
+          type string;
+        }
+      }
+    }
+  }
+
+
+  /// ========================================================================
+  /// exec
+  /// ========================================================================
+
+  container exec {
+    tailf:info "Execute commands on device";
+
+    // show [arg 1] .. [arg N]
+    tailf:action show {
+      tailf:info "Execute show commands. DEPRECATED, use 'any'";
+      tailf:actionpoint ncsinternal {
+        tailf:internal;
+      }
+      input {
+        list auto-prompts {
+          tailf:cli-suppress-mode;
+          key question;
+          leaf question {
+            type string;
+          }
+          leaf answer {
+            type string;
+          }
+        }
+        leaf-list args {
+          tailf:cli-drop-node-name;
+          tailf:cli-flat-list-syntax;
+          type string {
+            tailf:info "show argument(s)";
+          }
+        }
+      }
+      output {
+        leaf result {
+          type string;
+        }
+      }
+    }
+
+    // clear [arg 1] .. [arg N]
+    tailf:action clear {
+      tailf:info "Reset functions. DEPRECATED, use 'any'";
+      tailf:actionpoint ncsinternal {
+        tailf:internal;
+      }
+      input {
+        list auto-prompts {
+          tailf:cli-suppress-mode;
+          key question;
+          leaf question {
+            type string;
+          }
+          leaf answer {
+            type string;
+          }
+        }
+        leaf-list args {
+          tailf:cli-drop-node-name;
+          tailf:cli-flat-list-syntax;
+          type string {
+            tailf:info "clear argument(s)";
+          }
+        }
+      }
+      output {
+        leaf result {
+          type string;
+        }
+      }
+    }
+
+    // ping [arg 1] .. [arg N]
+    tailf:action ping {
+      tailf:info "Send echo messages. DEPRECATED, use 'any'";
+      tailf:actionpoint ncsinternal {
+        tailf:internal;
+      }
+      input {
+        list auto-prompts {
+          tailf:cli-suppress-mode;
+          key question;
+          leaf question {
+            type string;
+          }
+          leaf answer {
+            type string;
+          }
+        }
+        leaf-list args {
+          tailf:cli-drop-node-name;
+          tailf:cli-flat-list-syntax;
+          type string {
+            tailf:info "ping argument(s)";
+          }
+        }
+      }
+      output {
+        leaf result {
+          type string;
+        }
+      }
+    }
+
+    // copy [arg 1] .. [arg N]
+    tailf:action copy {
+      tailf:info "Copy from one file to another. DEPRECATED, use 'any'";
+      tailf:actionpoint ncsinternal {
+        tailf:internal;
+      }
+      input {
+        list auto-prompts {
+          tailf:cli-suppress-mode;
+          key question;
+          leaf question {
+            type string;
+          }
+          leaf answer {
+            type string;
+          }
+        }
+        leaf-list args {
+          tailf:cli-drop-node-name;
+          tailf:cli-flat-list-syntax;
+          type string {
+            tailf:info "copy argument(s)";
+          }
+        }
+      }
+      output {
+        leaf result {
+          type string;
+        }
+      }
+    }
+
+    // reload [arg 1] .. [arg N]
+    tailf:action reload {
+      tailf:info "Halt and perform a cold restart. DEPRECATED, use 'any'";
+      tailf:actionpoint ncsinternal {
+        tailf:internal;
+      }
+      input {
+        list auto-prompts {
+          tailf:cli-suppress-mode;
+          key question;
+          leaf question {
+            type string;
+          }
+          leaf answer {
+            type string;
+          }
+        }
+        leaf-list args {
+          tailf:cli-drop-node-name;
+          tailf:cli-flat-list-syntax;
+          type string {
+            tailf:info "reload argument(s)";
+          }
+        }
+      }
+      output {
+        leaf result {
+          type string;
+        }
+      }
+    }
+
+    // traceroute [arg 1] .. [arg N]
+    tailf:action traceroute {
+      tailf:info "Trace route to destination. DEPRECATED, use 'any'";
+      tailf:actionpoint ncsinternal {
+        tailf:internal;
+      }
+      input {
+        list auto-prompts {
+          tailf:cli-suppress-mode;
+          key question;
+          leaf question {
+            type string;
+          }
+          leaf answer {
+            type string;
+          }
+        }
+        leaf-list args {
+          tailf:cli-drop-node-name;
+          tailf:cli-flat-list-syntax;
+          type string {
+            tailf:info "traceroute argument(s)";
+          }
+        }
+      }
+      output {
+        leaf result {
+          type string;
+        }
+      }
+    }
+
+    // license [arg 1] .. [arg N]
+    tailf:action license {
+      tailf:info "Smart licensing Commands. DEPRECATED, use 'any'";
+      tailf:actionpoint ncsinternal {
+        tailf:internal;
+      }
+      input {
+        list auto-prompts {
+          tailf:cli-suppress-mode;
+          key question;
+          leaf question {
+            type string;
+          }
+          leaf answer {
+            type string;
+          }
+        }
+        leaf-list args {
+          tailf:cli-drop-node-name;
+          tailf:cli-flat-list-syntax;
+          type string {
+            tailf:info "license argument(s)";
+          }
+        }
+      }
+      output {
+        leaf result {
+          type string;
+        }
+      }
+    }
+
+    // verify [arg 1] .. [arg N]
+    tailf:action verify {
+      tailf:info "Verify a file. DEPRECATED, use 'any'";
+      tailf:actionpoint ncsinternal {
+        tailf:internal;
+      }
+      input {
+        list auto-prompts {
+          tailf:cli-suppress-mode;
+          key question;
+          leaf question {
+            type string;
+          }
+          leaf answer {
+            type string;
+          }
+        }
+        leaf-list args {
+          tailf:cli-drop-node-name;
+          tailf:cli-flat-list-syntax;
+          type string {
+            tailf:info "verify argument(s)";
+          }
+        }
+      }
+      output {
+        leaf result {
+          type string;
+        }
+      }
+    }
+
+    // any [arg 1] .. [arg N]
+    tailf:action any {
+      tailf:info "Execute any command(s) on device. See README for details";
+      tailf:actionpoint ncsinternal {
+        tailf:internal;
+      }
+      input {
+        list auto-prompts {
+          tailf:cli-suppress-mode;
+          key question;
+          leaf question {
+            type string;
+          }
+          leaf answer {
+            type string;
+          }
+        }
+        leaf-list args {
+          tailf:cli-drop-node-name;
+          tailf:cli-flat-list-syntax;
+          type string {
+            tailf:info "WORD;;any \"<cmd> [option(s)]\", e.g: any \"show ppp summary\"";
+          }
+        }
+      }
+      output {
+        leaf result {
+          type string;
+        }
+      }
+    }
+
+    // any-hidden "[arg 1] .. [arg N]"
+    tailf:action any-hidden {
+      tailf:info "Execute any command(s) on device, nothing will be logged. See README for details";
+      tailf:actionpoint ncsinternal {
+        tailf:internal;
+      }
+      input {
+        list auto-prompts {
+          tailf:cli-suppress-mode;
+          key question;
+          leaf question {
+            type string;
+          }
+          leaf answer {
+            type string;
+          }
+        }
+        leaf args {
+          tailf:cli-drop-node-name;
+          tailf:suppress-echo true;
+          mandatory true;
+          type string {
+            tailf:info "WORD;;any-hidden \"<cmd> [option(s)]\", e.g: any-hidden \"show ppp summary\"";
+          }
+        }
+      }
+      output {
+        leaf result {
+          type string;
+        }
+      }
+    }
+  }
+
+
+  /// ========================================================================
+  //                          EOF
+  /// ========================================================================
+
+}

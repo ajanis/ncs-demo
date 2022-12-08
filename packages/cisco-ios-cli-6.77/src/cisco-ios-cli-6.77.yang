@@ -1,0 +1,13 @@
+module cisco-ios-cli-6.77 {
+  yang-version 1.1;
+  namespace "http://tail-f.com/ns/ned-id/cisco-ios-cli-6.77";
+  prefix cisco-ios-cli-6.77;
+
+  import cisco-ios-cli {
+    prefix family;
+  }
+
+  identity cisco-ios-cli-6.77 {
+    base family:cisco-ios-cli;
+  }
+}

@@ -1,0 +1,13 @@
+! asa-stats:vpn-sessiondb_anyconnect
+
+<root>
+ <list :: . :: Username\s+: (\S+)/>
+  <key :: Username\s+: (\S+)\s+?Index\s+: (\d+) :: username :: index/>
+  <leaf :: login-time :: Login Time\s+: (.+)/>
+  <leaf :: duration :: Duration\s+: (\S+)/>
+  <leaf :: inactivity :: Inactivity\s+: (\S+)/>
+  <leaf :: tx-bytes :: Bytes Tx\s+: (\d+)/>
+  <leaf :: rx-bytes :: Bytes Rx\s+: (\d+)/>
+  <leaf :: status :: Inactivity\s+: (\S+) :: type=activity/>
+ </list>
+</root>

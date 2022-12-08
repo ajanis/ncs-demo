@@ -1,0 +1,13 @@
+module cisco-nx-cli-5.22 {
+  yang-version 1.1;
+  namespace "http://tail-f.com/ns/ned-id/cisco-nx-cli-5.22";
+  prefix cisco-nx-cli-5.22;
+
+  import cisco-nx-cli {
+    prefix family;
+  }
+
+  identity cisco-nx-cli-5.22 {
+    base family:cisco-nx-cli;
+  }
+}

@@ -1,0 +1,826 @@
+module tailf-ned-cisco-asa-meta {
+  namespace "http://cisco.com/ned/asa-meta";
+  prefix asa-meta;
+
+  import tailf-common {
+    prefix tailf;
+  }
+  import tailf-ncs {
+    prefix ncs;
+  }
+  import ietf-inet-types {
+    prefix inet;
+  }
+
+  // This import is required when building for CDM style NSOs.
+  // Is automatically removed by the NED build system when
+  // building for old style NSOs.
+  import cisco-asa-cli {
+    prefix family;
+  }
+
+
+  // =========================================================================
+  // REVISION
+  // =========================================================================
+
+  revision 2019-07-19 {
+    description "6.6.10, see CHANGES";
+  }
+
+
+  /// =========================================================================
+  /// GROUPING
+  /// =========================================================================
+
+  grouping cisco-asa-ned-settings-grouping {
+
+    container cisco-asa {
+      tailf:info "cisco-asa ned-settings";
+
+      // log-verbose
+      leaf log-verbose {
+        tailf:info "Enabled extra verbose logging in NED (for debugging)";
+        type boolean;
+        default false;
+      }
+
+      // cisco-asa extended-parser
+      leaf extended-parser {
+        tailf:info "Make the cisco-asa NED handle CLI parsing (i.e. transform the "
+          +"running-config from the device to the model based config tree)";
+        type enumeration {
+          enum "disabled" {
+            tailf:info "Load configuration the standard way";
+          }
+          enum "turbo-mode" {
+            tailf:info "The NED executes the whole command parsing by itself, "
+              + "completely bypassing the NSO CLI parser. The configuration "
+              + "dump is transferred to NSO using maapi setvalues call";
+          }
+          enum "turbo-xml-mode" {
+            tailf:info "The NED executes the whole command parsing by itself, "
+              + "completely bypassing the NSO CLI parser. The configuration "
+              + "dump is transferred to NSO in XML format";
+          }
+          enum "robust-mode" {
+            tailf:info "Makes the NED filter the configuration so that unmodeled"
+              + " content is removed before being passed to the NSO CLI-engine."
+              + " This protects against configuration ending up at the wrong"
+              + " level when NSO CLI parser fallbacks (which potentially can"
+              + " cause following config to be skipped)";
+          }
+          enum "auto" {
+            tailf:info "Uses turbo-mode when available, will use fastest available"
+              + "method to load data to NSO. If NSO doesn't support data-loading "
+              + "from CLI NED, robust-mode is used.";
+          }
+        }
+        default auto;
+      }
+
+      // cisco-asa connection
+      container connection {
+        tailf:info "Connection configuration";
+
+        // cisco-asa connection connector
+        leaf connector {
+          tailf:info "Change the default connector. Default 'ned-connector-default.json'";
+          type string {
+            tailf:info "WORD;;Connector name (located in src/metadata resources)";
+          }
+        }
+
+        // cisco-asa connection number-of-retries
+        leaf number-of-retries {
+          tailf:info "Configure max number of extra retries the NED will try to"
+            + " connect to the device before giving up. Default 1";
+          type uint8 {
+            range "0..255";
+          }
+          default 1;
+        }
+
+        // cisco-asa connection time-between-retry
+        leaf time-between-retry {
+          tailf:info "Configure the time in seconds the NED will wait between"
+            +" each connect retry. Default 1s";
+          type uint8 {
+            range "1..255";
+          }
+          default 1;
+        }
+
+        // cisco-asa connection prompt-timeout
+        leaf prompt-timeout {
+          tailf:info "Timeout in milliseconds before sending a newline to wake the device (at login only)";
+          type uint32 {
+            tailf:info "<0|1000-1000000>;;milliseconds before sending newline. 0 disabled (default)";
+            range "0|1000..1000000" {
+              tailf:step 1000;
+            }
+          }
+          default 0;
+        }
+      }
+
+      // cisco-asa proxy
+      container proxy {
+        tailf:info "cisco-asa proxy ned-settings";
+        leaf remote-connection {
+          tailf:info "Connection type between proxy and device";
+          type enumeration {
+            enum "ssh" {
+              tailf:info "SSH jump host proxy";
+            }
+            enum "telnet" {
+              tailf:info "TELNET jump host proxy";
+            }
+            enum "serial" {
+              tailf:info "terminal server proxy";
+            }
+          }
+        }
+        leaf remote-address {
+          tailf:info "Address of host behind the proxy";
+          type inet:ip-address;
+        }
+        leaf remote-port {
+          tailf:info "Port of host behind the proxy";
+          type uint16;
+        }
+        leaf remote-name {
+          tailf:info "User name on the device behind the proxy";
+          type string;
+        }
+        leaf remote-password {
+          tailf:info "Password on the device behind the proxy";
+          type tailf:aes-cfb-128-encrypted-string;
+        }
+        leaf remote-secondary-password {
+          tailf:info "Second password (e.g. enable) on the device behind the proxy";
+          type tailf:aes-cfb-128-encrypted-string;
+        }
+        leaf proxy-prompt {
+          tailf:info "Prompt pattern on the proxy before sending telnet/ssh command";
+          type string;
+        }
+        leaf proxy-prompt2 {
+          tailf:info "Prompt pattern on the proxy after sending telnet/ssh command";
+          type string;
+        }
+        leaf remote-ssh-args {
+          tailf:info "Additional arguments used to establish proxy connection";
+          type string;
+        }
+      }
+
+      // cisco-asa read
+      container read {
+        tailf:info "Settings used when reading from device";
+
+        // transaction-id-method
+        leaf transaction-id-method {
+          tailf:info "Method for calculating transaction id";
+          type enumeration {
+            enum config-hash {
+              tailf:info "Use a MD5 checksum of running-config for transaction id (default)";
+            }
+            enum show-checksum {
+              tailf:info "Use built in 'show checksum' Cryptochecksum";
+            }
+            enum config-hash-cached {
+              tailf:info "Same as config-hash except that transaction "+
+                "id method will reuse the last unmodified config from show (sync-from)";
+            }
+          }
+          default config-hash;
+        }
+
+        // cisco-asa read use-startup-config
+        leaf use-startup-config {
+          tailf:info "Set to true if NED should always return startup config (i.e. saved config)";
+          type boolean;
+          default false;
+        }
+
+        // cisco-asa read scp-transfer
+        container scp-transfer {
+          tailf:info "Enable SCP transfer when retrieving config from device";
+          leaf method {
+            type enumeration {
+              enum disabled;
+              enum enabled;
+            }
+            default disabled;
+          }
+        }
+      }
+
+      // cisco-asa write
+      container write {
+        tailf:info "Settings used when writing to device";
+
+        // cisco-asa write memory-setting
+        leaf memory-setting {
+          tailf:info "Configure how and when an applied config is saved"
+            +" to persistent memory on the device";
+          type enumeration {
+            enum "on-commit" {
+              tailf:info "Save configuration immediately after the config"
+                +" has been successfully applied on the device (default)";
+            }
+            enum "disabled" {
+              tailf:info "Disable saving the applied config to persistent memory";
+            }
+            enum "on-commit-all" {
+              tailf:info "Save all contexts (instead of only modified) when using multiple contexts";
+            }
+          }
+          default on-commit;
+        }
+
+        // cisco-asa write config-session-mode
+        leaf config-session-mode {
+          tailf:info "config session mode. Default disabled";
+          type enumeration {
+            enum disabled {
+              tailf:info "Use of config session is disabled (default)";
+            }
+            enum enabled {
+              tailf:info "Use of config session is enabled";
+            }
+            enum enabled-fallback {
+              tailf:info "Use of config session is enabled."
+                +" Fallback to config terminal if fails due to config session specific error";
+            }
+          }
+          default disabled;
+        }
+
+        // cisco-asa write number-of-lines-to-send-in-chunk
+        leaf number-of-lines-to-send-in-chunk {
+          tailf:info "Number of commands lines in a chunk sent by the NED"
+            + " to the device. Default is 32. NOTE: Only a small set of"
+            + " commands can be sent in bulk mode, due to command retries";
+          type uint16 {
+            tailf:info "<1-1000>;;Max number of lines per chunk. Default 32";
+            range "1..1000";
+          }
+          default 32;
+        }
+
+        // cisco-asa write compress-acl-delete
+        leaf compress-acl-delete {
+          tailf:info "Set to true if delete of entire access-lists should be"
+            +" done using the 'clear config access-list <name>' command instead"
+            +" of deleting eachentry individually. Default false";
+          type boolean;
+          default false;
+        }
+
+        // cisco-asa write recreate-acl-threshold
+        leaf recreate-acl-threshold {
+          tailf:info "Threshold when access-list should be re-created from start"
+            +" (clear config +access-list + add back current entries) instead of"
+            +" deleting/adding individual entries. Can be used to optimize performance."
+            +" WARNING: Will fail if an object is refering to the access-list.";
+          type uint32 {
+            tailf:info "<0-4294967295;;If (new) size of access-list < threshold, then recreate list. Default 0 (disabled)";
+          }
+          default 0;
+        }
+
+        // cisco-asa write scp-transfer
+        container scp-transfer {
+          tailf:info "Enable and configure SCP transfer of config to device";
+          leaf threshold {
+            tailf:info "The minimum threshold in bytes when to transfer the config"
+              +" changes using SCP. Default 2147483647";
+            type uint32 {
+              tailf:info "<0-2147483647>;;Minimum threshold in bytes. Default 2147483647";
+              range "0..2147483647";
+            }
+            default 2147483647;
+          }
+        }
+
+        // cisco-asa write slow-newline-delay
+        leaf slow-newline-delay {
+          tailf:info "Delay in milliseconds before sending newline with slow commands (Default 0 = send immediately)";
+          type uint16 {
+            tailf:info "Delay in milliseconds before sending newline with slow commands";
+          }
+          default 0;
+        }
+
+        // cisco-asa write serialize-maapi-acl-read
+        leaf serialize-maapi-acl-read {
+          tailf:info "Serialize access-list Maapi read from CDB in order to avoid NSO performance problem";
+          type boolean;
+          default false;
+        }
+
+        // cisco-asa write config-archive *
+        list config-archive {
+          tailf:info "Contains settings used for config backup on device on commit";
+          description "When config-archive is configured ASA NED will save running-configuration into file(s) on device.
+
+          The running-configuration is copied after NED performs 'wr mem'.
+
+          The errors during copy, if any, should be ignored (with log entry), hence if a copy operation
+          fails the transaction proceeds to success, and any subsequent copy operations are attempted.
+          The transaction succeeds even when all copy operations fail.
+
+          Each list entry, unless disabled, will result in a copy operation.
+
+          The copy operation is performed as
+             copy /noconfirm running-config url
+
+          The url for destination is formed in the following manner:
+            1. Substitution is performed on filename:
+                 %h is replaced with device name, which is NSO /devices/device/name
+                 %d is replaced with NSO system date in YYYY-MM-DD format
+                 %t is replaced with NSO system time in hh.mm.ss format
+                 %i is replaced with NSO Maapi transaction id
+               Each of substitutional sequences is optional.  The sequences can appear in any order.
+               For example following filenames are valid:
+                 config_backup.txt
+                 config_backup_%h.txt
+                 config_backup_%h_%i.txt
+                 config_backup_%h_%dT%t_%i.txt
+                 %i_%d_%h.txt
+
+            2. If type = 'remote' and remote-user or remote-user and remote-password specified,
+               substitution is performed on directory by splicing in user/password, e.g.
+                 directory       scp://server.examle.com/
+                 remote-user     myuser
+                 remote-password mypassword
+                 result          scp://myuser:mypassword@server.examle.com/
+
+            3. Result of directory and filename substitution joined together to form target url
+
+               The NED does not verify resulting url for validity.
+
+          NED does not create directories, hence the copy operation will fail if directory does not exist.
+
+          The copy destination can be local or remote.
+
+          Remote destinations support addition of remote-user/remote-password described above.
+
+          Local destinations support following additional features:
+
+            Maximum files
+
+                After the copy operation completes, NED will:
+
+                  1. Perform directory listing on the device
+                       dir directory
+
+                  2. If the directory contains more then max-files files, NED will remove oldest files,
+                     so that only max-files are left in the directory
+                       delete /noconfirm directoryAndOldFileName
+
+                If max-files is configured, it is critical that the directory is dedicated to keeping
+                the archive, otherwise non-archive files may be removed.  This is especially dangerous
+                if the directory is committed all together or points to the root of local system, which
+                will lead to removal of asa image and startup configuraiton files.
+
+            Repeat on standby
+
+                When this option is configured, the archive will be maintained on standby unit, in addition to
+                primary unit:
+
+                - For each local copy command, the NED will perform the copy on standby unit:
+
+                  Example command for primary unit copy:
+                    copy /noconfirm running-config flash:/archive/config.17325.txt
+
+                  Example command for backup unit copy:
+                    failover exec mate copy /noconfirm running-config flash:/archive/config.17325.txt
+
+                - For each local delete command, the NED will perform the delete on standby unit:
+
+                  Example command for primary unit copy:
+                    delete /noconfirm flash:/archive/config.17325.txt
+
+                  Example command for backup unit copy:
+                    failover exec mate delete /noconfirm flash:/archive/config.17325.txt
+
+          Device command references:
+            copy     https://www.cisco.com/c/en/us/td/docs/security/asa/asa-command-reference/A-H/cmdref1/c4.html#pgfId-2171368
+            delete   https://www.cisco.com/c/en/us/td/docs/security/asa/asa-command-reference/A-H/cmdref1/d1.html#pgfId-2253948
+            dir      https://www.cisco.com/c/en/us/td/docs/security/asa/asa-command-reference/A-H/cmdref1/d2.html#pgfId-1996367
+        ";
+          key id;
+          leaf id {
+            tailf:info "The ID of config-archive entry";
+            type string;
+          }
+          leaf disabled {
+            tailf:info "Disable archiving for specific list entry";
+            type boolean;
+            default false;
+          }
+          leaf type {
+            tailf:info "Type of target local/remote.  Local archiving has additional features.";
+            type enumeration {
+              enum "local" {
+                tailf:info "Local storage, e.g. disk0: flash:";
+              }
+              enum "remote" {
+                tailf:info "Remote storage (e.g. using ftp: scp: tftp:)";
+              }
+            }
+            default local;
+          }
+          leaf directory {
+            tailf:info "URI for target directory, e.g. flash:/archive/ or scp://1.2.3.4:disk0:/archive/";
+            type string;
+          }
+          leaf filename {
+            tailf:info "Filename, use %h,%d,%t,%i for substitution";
+            type string;
+          }
+          leaf remote-user {
+            when "../type = 'remote'";
+            tailf:info "Specify user name device will use to access remote file system";
+            type string;
+            description "User name";
+          }
+          leaf remote-password {
+            when "../type = 'remote'";
+            tailf:info "Specify password device will use to access remote file system";
+            tailf:suppress-echo "true";
+            type tailf:aes-cfb-128-encrypted-string;
+            description "Password";
+          }
+          leaf repeat-on-standby {
+            when "../type = 'local'";
+            tailf:info "Perform same config archive operation on standby unit";
+            type boolean;
+            default false;
+          }
+          leaf max-files {
+            when "../type = 'local' and ../directory and (../directory != '/' and ../directory != 'flash:/' and ../directory != 'disk0:/' and ../directory != 'disk1:/' and ../directory != 'flash:' and ../directory != 'disk0:' and ../directory != 'disk1:')";
+            tailf:info "Maximum number of files to keep on local storage";
+            type uint16 {
+              tailf:info "<0-1000>;;Maximum number of archive files. 0 for no maximum. Default 10";
+              range "0..1000";
+            }
+            default 10;
+          }
+        }
+      }
+
+      // cisco-asa scp-transfer
+      container scp-transfer {
+        tailf:info "SCP Client configuration";
+        leaf directory {
+          tailf:info "Path to temporary config file used to copy from/to running-config";
+          type string {
+            tailf:info "WORD;;Path ending with '/'. Use %c for config-url. Default 'disk0:/'";
+          }
+          default "disk0:/";
+        }
+        leaf file {
+          tailf:info "Temporary config file name used to copy from/to running-config";
+          type string {
+            tailf:info "WORD;;Temporary file name. Use %h,%d,%t,%i (see config-archive/filename) or %x for r|w or %c for context";
+          }
+          default "%c-scp%i-%x.cfg";
+        }
+        leaf cli-keepalive-interval {
+          tailf:info "CLI keepalive interval in seconds used during SCP upload to avoid timeout on CLI session";
+          type uint32 {
+            tailf:info "0-4294967;;CLI keepalive interval in seconds. 0 = disabled (default)";
+            range "0..4294967";
+          }
+          default 0;
+        }
+        leaf cli-fallback {
+          tailf:info "Fallback to use CLI if SCP upload/download fails for this transaction. Default disabled";
+          type enumeration {
+            enum "enabled" {
+              tailf:info "enabled, fallback to CLI if SCP fails";
+            }
+            enum "disabled" {
+              tailf:info "disabled, do not fallback to CLI if SCP fails";
+            }
+          }
+          default "disabled";
+        }
+        leaf number-of-retries {
+          tailf:info "Maximum number of extra retries the NED will try to"
+            + " connect before giving up. Default 0";
+          type uint8 {
+            tailf:info "<0-255>;;Max number of retries. Default 0";
+            range "0..255";
+          }
+          default 0;
+        }
+        leaf time-between-retry {
+          tailf:info "Time in seconds the NED will wait between each connect retry. Default 1s";
+          type uint8 {
+            tailf:info "<1-255>;;Time between connection retry in seconds. Default 1";
+            range "1..255";
+          }
+          default 1;
+        }
+        leaf max-sessions {
+          tailf:info "Maximum number of sessions open at the same time. Default 1";
+          type uint8 {
+            tailf:info "<1-255>;;Maximum number of open SSH sessions. Default 1";
+            range "1..255";
+          }
+          default 1;
+        }
+        leaf device-name {
+          tailf:info "Device name for the SCP server if different from this device. Used by user contexts";
+          type leafref {
+            tailf:info "WORD;;Device name";
+            path "/ncs:devices/ncs:device/ncs:name";
+          }
+        }
+        leaf device2-address {
+          tailf:info "Second (standby) device address for active/active failover mode with group 2 (secondary) contexts";
+          type inet:host {
+            tailf:info "WORD;;Second device address. Credentials/port read from primary device, i.e. device-name";
+          }
+        }
+        leaf device-lookup {
+          tailf:info "Set to true if NED should connect to admin device prior to SCP to determine correct IP"
+            +" (instead of intelligent guess with fallback)";
+          type boolean;
+          default false;
+        }
+      }
+
+      // cisco-asa context
+      container context {
+        tailf:info "Context settings";
+
+        // cisco-asa context name
+        leaf name {
+          tailf:info "Specify context name for single context login on multiple mode device";
+          type string {
+            tailf:info "WORD;;Symbolic name of the context";
+          }
+        }
+
+        // cisco-asa context list *
+        list "list" {
+          tailf:info "Managed contexts list";
+          tailf:cli-suppress-mode;
+          tailf:cli-delete-when-empty;
+          ordered-by "user";
+          key name;
+          leaf name {
+            tailf:cli-suppress-range;
+            type string {
+              tailf:info "WORD;;Context name";
+            }
+          }
+          leaf hide-configuration {
+            tailf:info "Set if want to hide context configuration. Default shown";
+            tailf:cli-boolean-no;
+            type boolean;
+            default false;
+          }
+        }
+      }
+
+      // cisco-asa admin-device
+      container admin-device {
+        tailf:info "admin SSH connection to single context multiple mode device";
+
+        // cisco-asa admin-device name
+        leaf name {
+          tailf:info "Host name for the admin context on which the context resides";
+          type leafref {
+            path "/ncs:devices/ncs:device/ncs:name";
+          }
+        }
+
+        // cisco-asa admin-device method
+        leaf method {
+          tailf:info "Method to use to pull user-context config from the admin-device";
+          type enumeration {
+            enum "maapi" {
+              tailf:info "Use MAAPI to pull the config from the admin-device";
+            }
+            enum "ssh" {
+              tailf:info "Use a direct SSH connection to the admin-device to pull the config (default). Closed after use";
+            }
+            enum "ssh-reuse" {
+              tailf:info "Use a direct SSH connection to the admin-device to pull the config. Reused, i.e. kept open";
+            }
+          }
+          default ssh;
+        }
+
+        // cisco-asa admin-device number-of-retries
+        leaf number-of-retries {
+          tailf:info "Configure max number of extra retries the NED will try to"
+            + " connect to the admin device before giving up. Default 0";
+          type uint8 {
+            range "0..255";
+          }
+          default 0;
+        }
+
+        // cisco-asa admin-device time-between-retry
+        leaf time-between-retry {
+          tailf:info "Configure the time in seconds the NED will wait between"
+            +" each admin connect retry. Default 1s";
+          type uint8 {
+            range "1..255";
+          }
+          default 1;
+        }
+
+        // cisco-asa admin-device max-sessions
+        leaf max-sessions {
+          tailf:info "Configure the maximum number of sessions open at the same time. Default 1";
+          type uint8 {
+            range "1..255";
+          }
+          default 1;
+        }
+      }
+
+      // cisco-asa auto
+      container auto {
+        tailf:info "Configure auto (dynamic behaviour)";
+
+        // cisco-asa auto context-config-url-file-delete
+        leaf context-config-url-file-delete {
+          tailf:info "Delete config-url file when updating context / config-url (default: true)";
+          type boolean;
+          default true;
+        }
+      }
+
+      // cisco-asa live-status
+      container live-status {
+        tailf:info "Configure NED settings related to live-status";
+
+        // cisco-asa live-status time-to-live
+        leaf time-to-live {
+          tailf:info "Define time-to-live for data fetched from the device"
+            +" via live-status.(default 50)";
+          type int32;
+          default 50;
+        }
+
+        // cisco-asa live-status template-root
+        leaf template-root {
+          tailf:info "GILI template root, for template debugging, e.g. '/tmp/gili'";
+          type string {
+            tailf:info "WORD;;Path to GILI templates";
+          }
+        }
+
+        // cisco-asa live-status auto-prompts *
+        list auto-prompts {
+          tailf:info "Pre-stored answers to device prompting questions";
+          tailf:cli-suppress-mode;
+          tailf:cli-delete-when-empty;
+          tailf:cli-compact-syntax;
+          tailf:cli-incomplete-command;
+          ordered-by user;
+          key id;
+          leaf id {
+            type string {
+              tailf:info "WORD;;List id, any string";
+            }
+          }
+          leaf question {
+            tailf:info "Device question, regular expression";
+            type string {
+              tailf:info "WORD;;Question, regexp format";
+            }
+          }
+          leaf answer {
+            tailf:info "Answer to device question";
+            type string {
+              tailf:info "WORD;;Answer to device question or the word 'ENTER' for LF+CR";
+            }
+          }
+        }
+      }
+
+      // cisco-asa developer
+      container developer {
+        tailf:info "Contains settings used for debugging (intended for NED developers)";
+
+        // cisco-asa developer model
+        leaf model {
+          tailf:info "Simulate a model number. Include NETSIM for netsim";
+          type string;
+        }
+
+        // cisco-asa developer trace-level
+        leaf trace-level {
+          tailf:info "Set NED Trace level <info=6(default) | debug=7(log-verbose) | debug2=8 | debug3=9>";
+          type uint8 {
+            tailf:info "<6-9>;;NED Trace level <info=6(default) | debug=7(log-verbose) | debug2=8 | debug3=9>";
+            range "6..9";
+          }
+          default 6; // info
+        }
+
+        // cisco-asa developer progress-verbosity
+        leaf progress-verbosity {
+          tailf:info "Maximum NED verbosity level which will get written in devel.log file";
+          type enumeration {
+            enum disabled {
+              value -1;
+            }
+            enum normal {
+              value 0;
+            }
+            enum verbose {
+              value 1;
+            }
+            enum very-verbose {
+              value 2;
+            }
+            enum debug {
+              value 3;
+            }
+          }
+          default disabled;
+        }
+
+        // cisco-asa developer delay
+        container delay {
+          tailf:info "Set delay for appropriate phase in order to debug timing issues with NSO and the NED";
+          leaf show {
+            tailf:info "Milliseconds to delay show() method in the NED. Used with compare-config and sync-from";
+            type uint32;
+            default 0;
+          }
+          leaf apply {
+            tailf:info "Milliseconds to delay applyConfig() method in the NED";
+            type uint32;
+            default 0;
+          }
+        }
+
+        // cisco-asa developer simulate-command *
+        list simulate-command {
+          tailf:info "Used for debugging to simulate a device response to a command";
+          tailf:cli-suppress-mode;
+          tailf:cli-delete-when-empty;
+          key cmd;
+          leaf cmd {
+            type string {
+              tailf:info "WORD;;Full command, e.g. 'show version'";
+            }
+          }
+          leaf file {
+            tailf:info "Command output file";
+            type string {
+              tailf:info "WORD;;Path to file containing output of command";
+            }
+          }
+        }
+      }
+
+      // cisco-asa deprecated
+      // container deprecated { tailf:info "Deprecated ned-settings"; }
+    }
+  }
+
+
+  /// =========================================================================
+  /// MODEL
+  /// =========================================================================
+
+
+  /// =========================================================================
+  /// ned-settings cisco-asa
+  /// =========================================================================
+
+  augment "/ncs:devices/ncs:global-settings/ncs:ned-settings" {
+    uses cisco-asa-ned-settings-grouping;
+  }
+
+  augment "/ncs:devices/ncs:profiles/ncs:profile/ncs:ned-settings" {
+    uses cisco-asa-ned-settings-grouping;
+  }
+
+  augment "/ncs:devices/ncs:device/ncs:ned-settings" {
+    // Different 'when' expressions used when building for NSOs with and without CDM support.
+    // The NED build system will automatically 'uncomment' the right one.
+    //
+    // CDM style syntax
+    //when "derived-from(../ncs:device-type/ncs:cli/ncs:ned-id,'family:cisco-asa-cli')";
+    //
+    // Old style syntax:
+    //when "../ncs:device-type/ncs:cli/ncs:ned-id = 'asa-id:cisco-asa'";
+    uses cisco-asa-ned-settings-grouping;
+  }
+
+}

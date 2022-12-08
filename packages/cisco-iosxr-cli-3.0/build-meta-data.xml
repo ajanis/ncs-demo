@@ -1,0 +1,18 @@
+<ncs-pkg-build xmlns='http://tail-f.com/ns/ncs-pkg-build'>
+    <date>2022-01-26 09:47:34</date>
+    <file>cisco-iosxr-cli-3.0-source-3.0.4.1.tar.gz</file>
+    <type>example</type>
+    <arch>.darwin.x86_64</arch>
+    <java>[64-bit architecture=11016] [64-bit architecture=1136] [64-bit architecture=5469298] [architecture=6516589] []</java>
+    <package>
+        <name>cisco-iosxr-cli-3.0</name>
+        <version>3.0.4.1</version>
+        <ref>3.0.4.1</ref>
+        <sha1>This_Is_An_Example_NED</sha1>
+    </package>
+    <ncs>
+        <version>5.7.1_HEAD</version>
+        <sha1>This_NED_should_not_be_used</sha1>
+    </ncs>
+    <dev-support/>
+</ncs-pkg-build>

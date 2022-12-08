@@ -1,0 +1,12 @@
+module tailf-ned-cisco-nx-id {
+  namespace 'http://tail-f.com/ned/cisco-nx-id';
+  prefix cisco-nx-id;
+
+  import tailf-ncs-ned {
+    prefix ned;
+  }
+
+  identity cisco-nx {
+    base ned:cli-ned-id;
+  }
+}

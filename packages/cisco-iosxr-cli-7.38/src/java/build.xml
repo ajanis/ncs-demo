@@ -1,0 +1,108 @@
+<!--
+    NOTE: Original of this file resides in nedcom, don't edit local copy in ned.
+-->
+<project name="package" basedir="." default="all">
+  <!-- Retrieving compilation compability parameters from NCS
+       Remove the following row if this is not desired  -->
+  <property environment="env"/>
+  <!-- To override the src/target java version one can have that defined in ../metadata/java.properties
+       Like:
+         ncs_java_source_ver=10
+         ncs_java_target_ver=10
+  -->
+  <condition property="java_prop_file" value="../metadata/java.properties" else="${env.NCS_DIR}/etc/ncs/java.properties">
+    <resourceexists>
+      <file file="../metadata/java.properties"/>
+    </resourceexists>
+  </condition>
+  <property file="${java_prop_file}" />
+  <!-- NOTE: In NSO <= 5.2 java source/target version is set to 1.6, hence we force it to 1.8 here -->
+  <!-- In newer NSO versions the supported java version is raised to 1.8 (or later) -->
+  <condition property="ned_java_source_ver" value="1.8" else="${ncs_java_source_ver}">
+    <or>
+      <equals arg1="${ncs_java_source_ver}" arg2="1.6"/>
+      <not>
+	<isset property="ncs_java_source_ver"/>
+      </not>
+    </or>
+  </condition>
+  <condition property="ned_java_target_ver" value="1.8" else="${ncs_java_target_ver}">
+    <or>
+      <equals arg1="${ncs_java_target_ver}" arg2="1.6"/>
+      <not>
+	<isset property="ncs_java_target_ver"/>
+      </not>
+    </or>
+  </condition>
+  <property name="build.dir" value="build"/>
+  <property name="classes.dir" value="${build.dir}/classes"/>
+  <property name="src.dir" value="src"/>
+  <property name="rsc.dir" value="src/resources"/>
+  <property name="sharedjar.dir" value="../../shared-jar"/>
+  <property name="privatejar.dir" value="../../private-jar"/>
+  <property name="doc.dir" value="${build.dir}/javadoc"/>
+  <property name="ncs.dir" value="${env.NCS_DIR}/java/jar"/>
+  <property name="ncs.topdir" value="${env.NCS_DIR}"/>
+
+  <path id="core-libs">
+    <fileset dir="${ncs.dir}">
+      <include name="*.jar"/>
+    </fileset>
+  </path>
+
+  <path id="shared-libs">
+    <fileset dir="${sharedjar.dir}">
+      <include name="*.jar"/>
+    </fileset>
+  </path>
+
+  <target name="all" depends="package" />
+
+  <target name="package" depends="compile">
+    <jar destfile="${sharedjar.dir}/${package.name}-ns.jar"
+         basedir="${classes.dir}"
+         includes="**/namespaces/*.class"/>
+    <jar destfile="${privatejar.dir}/${package.name}.jar"
+         basedir="${classes.dir}"
+         excludes="**/namespaces/*.class"
+         includes="**/*.class">
+      <zipfileset dir="../metadata" includes="**/*.*" prefix="${package.dir}" erroronmissingdir="false"/>
+      <zipfileset dir="../artefacts" includes="**/*.*" prefix="${package.dir}"/>
+      <zipfileset dir="../rpl" includes="**/*.rpl" prefix="${package.dir}" erroronmissingdir="false"/>
+      <zipfileset dir="../utah" includes="**/*.utah" prefix="${package.dir}" erroronmissingdir="false"/>
+      <zipfileset dir="../gili" includes="**/*.gili" prefix="${package.dir}" erroronmissingdir="false"/>
+      <zipfileset dir="../xsl" includes="**/*.xsl" prefix="${package.dir}" erroronmissingdir="false"/>
+      <zipfileset dir="../textfsm" includes="**/*.textfsm" prefix="${package.dir}" erroronmissingdir="false"/>
+    </jar>
+    <jar update="true" destfile="${privatejar.dir}/${package.name}.jar" basedir="../.." includes="package-meta-data.xml"/>
+  </target>
+
+  <target name="clean">
+    <delete dir="${build.dir}"/>
+    <delete file="${sharedjar.dir}/${package.name}-ns.jar"/>
+    <delete file="${privatejar.dir}/${package.name}.jar"/>
+  </target>
+
+  <target name="compile">
+    <mkdir dir="${classes.dir}"/>
+    <javac srcdir="${src.dir}"
+           destdir="${classes.dir}"
+           source="${ned_java_source_ver}"
+           target="${ned_java_target_ver}"
+           debug="on"
+           includeantruntime="false"
+           debuglevel="lines,vars,source">
+      <compilerarg value="-Xlint:unchecked"/>
+      <compilerarg value="-Xlint:deprecation"/>
+      <classpath refid="core-libs" />
+      <classpath refid="shared-libs"/>
+      <classpath>
+	<fileset dir="${privatejar.dir}">
+	  <include name="*.jar"/>
+	</fileset>
+      </classpath>
+    </javac>
+
+  </target>
+
+</project>

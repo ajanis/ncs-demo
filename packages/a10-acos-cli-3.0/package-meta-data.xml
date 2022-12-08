@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<!-- This file has been generated. Do NOT edit it.
+     For changes edit the original instead.
+-->
+<ncs-package xmlns="http://tail-f.com/ns/ncs-packages">
+  <name>a10-acos-cli-3.0</name>
+  <package-version>3.0.2.4</package-version>
+  <description>Package for the NED A10 ACOS</description>
+  <ncs-min-version>3.0.1</ncs-min-version>
+  <ncs-min-version>3.1</ncs-min-version>
+  <ncs-min-version>3.2</ncs-min-version>
+  <ncs-min-version>3.3</ncs-min-version>
+  <ncs-min-version>3.4</ncs-min-version>
+  <component>
+    <name>a10-acos</name>
+    <ned>
+      <cli>
+        <ned-id xmlns:id="http://tail-f.com/ns/ned-id/a10-acos-cli-3.0">id:a10-acos-cli-3.0</ned-id>
+        <java-class-name>com.tailf.packages.ned.a10.A10NedCli</java-class-name>
+      </cli>
+      <device>
+        <vendor>a10</vendor>
+      </device>
+      <option>
+        <name>show-tag</name>
+        <value>interface</value>
+      </option>
+    </ned>
+  </component>
+</ncs-package>

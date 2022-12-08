@@ -1,0 +1,8 @@
+! asa-stats:ssl
+
+<root>
+ <container :: ./>
+  <leaf :: post-decrypt-octets :: alSslStatsPostDecryptOctets (\d+)/>
+  <leaf :: post-encrypt-octets :: alSslStatsPostEncryptOctets (\d+)/>
+ </container>
+</root>

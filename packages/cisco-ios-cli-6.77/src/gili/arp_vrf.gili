@@ -1,0 +1,9 @@
+! ios-stats:arp/vrf{}
+
+<root>
+ <buf-start :: Interfaces :: clear/>
+ <list :: . :: \n[ ]*(\S+)[ ]+?\S+ :: trim/>
+  <key :: (\S+) :: name/>
+  <template :: address/>
+ </list>
+</root>

@@ -1,0 +1,18 @@
+module cisco-nx-cli {
+  yang-version 1.1;
+  namespace "http://tail-f.com/ns/ned-id/cisco-nx-cli";
+  prefix cisco-nx-cli;
+
+  import tailf-common {
+    prefix tailf;
+  }
+
+  import tailf-ncs-ned {
+    prefix ned;
+  }
+
+  identity cisco-nx-cli {
+    tailf:abstract;
+    base ned:cli-ned-id;
+  }
+}

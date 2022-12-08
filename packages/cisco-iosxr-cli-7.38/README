@@ -1,0 +1,1087 @@
+1. Introduction
+---------------
+
+   This document describes the NED for Cisco IOS XR devices.
+
+   The NED connects to the device CLI using either SSH or Telnet.
+   Configuration is done by sending native CLI commands to the
+   device through the communication channel.
+
+
+2. Getting started
+------------------
+
+   Set up the environment in $DIR, change DIR to something suitable
+
+     > tar xvzf ned-cisco-iosxr.tgz
+     > mv ned-cisco-iosxr $NCS_DIR/packages/neds/
+
+     > export DIR=/tmp/ncs-cisco-iosxr
+     > ncs-setup --ned-package $NCS_DIR/packages/neds/cisco-iosxr --dest $DIR
+     > cd $DIR
+
+   Start ncs:
+     > ncs
+
+   Start NCS CLI:
+     > ncs_cli -C -u admin
+
+
+3. Configure device in NCS
+--------------------------
+
+   In the NCS CLI configure the device. Enter configuration mode:
+     # configure
+
+   Set the required configurables, address, remote user data including
+   remote secondary password, if needed:
+     # devices device xrdev address <device address>
+     # devices device xrdev device-type cli ned-id cisco-ios-xr
+     # devices device xrdev state admin-state unlocked
+
+   Set port and protocol:
+     # devices device xrdev port <typically 22 or 23>
+     # devices device xrdev device-type cli protocol <telnet or ssh>
+
+   Set authgroup:
+     # devices authgroups group auth-groupname umap admin remote-name <login username>
+     # devices authgroups group auth-groupname umap admin remote-password <login password>
+     # devices device xrdev authgroup auth-groupname
+     # commit
+
+   Optional connection parameters (number of retries and time between each):
+     # devices device xrdev ned-settings cisco-iosxr connection number-of-retries 2
+     # devices device xrdev ned-settings cisco-iosxr connection time-between-retry 3
+
+   Optional admin connection credentials:
+     # devices device xrdev ned-settings cisco-iosxr connection admin name <admin name>
+     # devices device xrdev ned-settings cisco-iosxr connection admin password <admin pw>
+
+   Optional disable use of custom connection and switch to NEDCOM connector:
+     # devices device xrdev ned-settings cisco-iosxr connection use-custom false
+
+   Optional debug logging and raw trace:
+
+     Make the NED dump all CLI messages sent to/from the XR device
+     # devices global-settings trace raw
+     # commit
+
+     Make the NED print debug log messages
+     # java-vm java-logging logger com.tailf.packages.ned.iosxr level level-debug
+     # commit
+
+   Exit configure mode:
+     # exit
+
+   Try to connect to the device:
+     # devices device xrdev connect
+
+   Read the configuration from the device:
+     # devices device xrdev sync-from
+
+   Look at the configuration:
+     # show running-config devices device xrdev
+
+
+4. Sample Device Configuration
+------------------------------
+
+   For instance, create a second Loopback interface that is down:
+
+   admin@ncs(config)# devices device xrdev config
+   admin@ncs(config-config)# interface Loopback 1
+   admin@ncs(config-if)# ip address 128.0.0.1 255.0.0.0
+   admin@ncs(config-if)# shutdown
+
+   See what you are about to commit:
+
+   admin@ncs(config-if)# commit dry-run outformat native
+   device xrdev
+     interface Loopback1
+      ip address 128.0.0.1 255.0.0.0
+      shutdown
+     exit
+
+   Commit new configuration in a transaction:
+
+   admin@ncs(config-if)# commit
+   Commit complete.
+
+   Verify that NCS is in-sync with the device:
+
+    admin@ncs(config-if)# devices device xrdev check-sync
+    result in-sync
+
+   Compare configuration between device and NCS:
+
+    admin@ncs(config-if)# devices device xrdev compare-config
+    admin@ncs(config-if)#
+
+   Note: if no diff is shown, supported config is the same in
+         NCS as on the device.
+
+
+5. Configure the NED using ned-settings
+---------------------------------------
+
+  The NED behaviour can be configured using ned-settings, located in
+  the cisco-iosxr container in three different places:
+
+  global
+    /ncs:devices/global-settings/ned-settings/cisco-iosxr/
+  profile
+    /ncs:devices/ncs:profiles/profile:cisco-iosxr/ned-settings/cisco-iosxr/
+  device
+    /ncs:/device/devices/device:<name>/ned-settings/cisco-iosxr/
+
+  Profiles setting overrides global-settings and device settings
+  override profile settings, hence the narrowest scope of the setting
+  is used by the device.
+
+  If you change a ned-setting you must reconnect to the device, i.e.
+  disconnect and connect in order for the new setting to take effect.
+
+  See the following sections for information about various ned-settings.
+
+
+6. ned-settings cisco-iosxr
+------------------------------------
+
+  The following top level ned-settings can be modified:
+
+  - log-verbose true|false(default)
+
+    This setting can be used to enable additional debug output in the
+    NED trace. This is extremely usable for the NED support team when
+    trying to find possible bugs, or understand a device better.
+
+
+  - extended-parser turbo-mode|turbo-xml-mode|robust-mode|auto (default)
+
+    This setting can be used with NSO-4.4.1 or newer to optimize
+    sync-from and compare-config. Set to auto|turbo-[xml-]mode to enable.
+    robust-mode filters unmodeled config before passing to NSO.
+    Default: auto.
+
+
+6.1. ned-settings cisco-iosxr connection
+----------------------------------------
+
+  This section lists the connection ned-settings used when connecting
+  to the device:
+
+  - connection connector <name>.json
+
+    Change the default connector used for this device, profile or
+    global setup. The new connector must be located in the
+    src/metadata folder in the NED package, where also the README
+    file is located for more information on configuring connectors.
+
+
+  - connection number-of-retries <retries>
+
+    Configured the maximum number of extra retries the NED will try to
+    connect to the device before giving up. Range 0-255. Default 1.
+
+
+  - connection time-between-retry <seconds>
+
+    Configure the time in seconds the NED will wait between each
+    connect retry. Range 1-255. Default 1 second.
+
+
+  - connection send-login-newline true|false
+
+    This ned-setting is used to send an initial newline in the login
+    phase, in order to wake the device. This can be usable, for
+    example, if the banner config on the device causes the login code
+    to miss a prompt. Default false.
+
+
+  - connection prompt-timeout <millisec>
+
+    This ned-setting can be used to configure a timeout in the
+    connection process which can be used to wake the device if the
+    device requires additional newlines to be sent before proceeding.
+    Range 0|1000-1000000. Default 0 (turned off).
+
+
+  - connection prefer-platform-serial-number false|true (default)
+
+    Set to false if the NED should not report the serial-number from
+    devices device platform, i.e. always call show inventory|diag when
+    NED connects to the device.
+
+
+  - connection platform-model-regex <regex string>
+
+    Change the regex used to extract the device model name at connect.
+    The default regex is "\ncisco (.+?) (?:Series |\\().*"
+
+
+  - connection serial-number-method <enum>
+
+    If prefer-platform-serial-number is set to false or the serial-number
+    is not set in 'devices device platform yet', this option controls how
+    it is retrieved from device. Five config options are available:
+
+    disabled
+       Do not attempt to retrieve serial number from device
+    diag
+       Only use 'show diag'
+    inventory
+       Only use 'show inventory'
+    prefer-diag
+       First try 'show diag' then 'show inventory'
+    prefer-inventory
+       First try 'show inventory' then 'show diag'
+
+
+  - connection admin name <name>
+  - connection admin password <password>
+
+    Admin username and password, used to list and modify admin mode config
+
+
+  - connection ssh client <default|sshj|ganymed>
+
+     Configure which SSH client to use. Default is ganymed unless NSO 5.6
+     where default was changed to sshj.
+
+
+6.2. ned-settings cisco-iosxr read
+----------------------------------
+
+  This section lists the read ned-settings used with sync-from and
+  check-sync:
+
+
+  - read transaction-id-method <method>
+
+    The method used for calculating transaction ID, two methods:
+
+    commit-list
+      Use the configuration commit list time of the latest commit for
+      calculation. (default)
+    config-hash
+      Calculate MD5 on a snapshot of the entire running config for
+      calculation.
+
+
+  - read transaction-id-provisional false|true (default)
+
+    Set to false to disable use of new NSO feature to set provisional
+    transaction-id in show() to save a call to getTransId() with sync-from.
+
+
+  - read strip-comments false|true (default)
+
+    This setting is used to disable the default behaviour of stripping
+    comments (starting with !) from the device. Set to false to
+    disable. Hence if left at its default (true), comments are stripped.
+
+
+  - read admin-show-running-config false|true (default)
+
+    Call 'admin show running-config' in compare and sync-from.
+    Default is true, set to false to disable.
+
+
+  - read partial-show-method filter-mode|walk-mode (default)
+
+    This ned-setting is used to decide how config is fetched from the device
+    when the NSO feature "partial show" is used (i.e. with 'commit no-overwrite'
+    or 'devices partial-sync-from ...').
+
+    By default (walk-mode) the config is fetched "chunk by chunk" with explicit
+    show commands for each part NSO requests (i.e. one round-trip per
+    chunk). The 'filter-mode' on the other hand fetches the full configuration
+    and filters out the requested parts before sending it to NSO (reducing
+    overhead in NSO handling the full configuration).
+
+
+  - read method
+  - read file
+
+    These setting controls how the NED shall fetch the running config from the
+    device. This is typically done upon NSO operations like 'sync-from',
+    'compare-config' and sometimes also when generating a transaction id.
+
+    The NED does by default dump the running configuration through the CLI
+    session by using the command 'show running-config'. This method
+    may be slow for large configurations, hence the introduction of
+    the SFTP transfer mode.
+
+    To enable get device config by SFTP, method must be set to
+    "sftp-transfer" and 'read file' set to path
+    and name where the running-config can be temporarily copied on
+    the device, before download. For example:
+
+    devices device asr9k-1 ned-settings cisco-iosxr read
+      method sftp-transfer
+    devices device asr9k-1 ned-settings cisco-iosxr read
+      file "disk0a:/usr/running-config.tmp"
+
+
+  - read replace-config <id> <regexp> [replacement]
+
+    The replace-config list ned-setting can be used to replace or
+    filter out config line(s) upon reading from device.
+
+    Apart from the list id, the setting takes one mandatory leaf
+    (regex) and one optional (replacement):
+
+    regexp
+       The regular expression (DOTALL) to which the config is to be
+       matched.
+    replacement
+       The string which would replace all found matches. May use
+       groups from regexp. Leave unset for filtering.
+
+    Here is an example of filtering out a single interface when
+    reading:
+
+    devices device asr9k-2 ned-settings cisco-iosxr read replace-config X
+       regexp "\ninterface TenGigE0/1/2/0\r\n.+?\n!"
+
+    The NED trace (in raw mode) will show the ned-setting in use when
+    doing a compare-config or sync-from:
+
+    -- transformed <= replaced "\ninterface TenGigE0/0/0/21\r\n shutdown\r\n!\r" with ""
+
+    Finally, a word of warning, if you replace or filter out config
+    from the show running-config, you most likely will have
+    difficulties modifying this config.
+
+
+6.3. ned-settings cisco-iosxr write
+-----------------------------------
+
+  This section lists the write ned-settings used with commit:
+
+  - write commit-method ned-setting
+
+    The method used to control commit/rollback behaviour, two methods:
+
+    confirmed
+      Use 'commit confirmed' along with a confirming 'commit' when
+      transaction is done, utilizing the implict rollback on revert by
+      calling 'abort'. (default)
+    direct
+      When using this method the NED follows the NCS flow by doing
+      'commit' when NCS commits the transaction. If transaction is
+      reverted, the NED uses 'rollback configuration last' to
+      rollback the commit(s).
+
+
+  - write commit-options <options string>
+
+    Option(s) to commit [confirmed] command. Default 'show-error'
+
+
+  - write commit-confirmed-timeout <seconds>
+
+    Number of seconds used with commit confirmed command. Default 30
+
+
+  - write revert-method
+
+      Set in order to change the method used to rollback config in the
+      REVERT phase. Default is to use native XR rollback command. This
+      can now be changed to instead apply the reverse diff calculated
+      by NSO, and apply in a new internal commit. This can be used to
+      avoid a failing rollback due to CSCtk60033 bug where policy-map
+      can't be deleted in same commit (the rollback).
+
+
+  - write config-method
+
+    The method used to enter configure mode, two methods:
+
+    exclusive
+      Configure exclusively, e.g. 'configure exclusive'. (default)
+    terminal
+      Configure from the terminal, e.g. 'configure terminal'.
+
+
+  - write number-of-lines-to-send-in-chunk
+
+    Number of config commands (lines) in a chunk sent by the NED. A
+    higher number normally result in better performance but will also
+    have negative impact on the error handling. The default is 100.
+
+
+  - write sftp-threshold|file
+
+    This setting controls how the NED shall transfer configuration to the
+    device. This is typically done by connecting to the device using
+    SSH or TELNET, entering all the config lines and then calling
+    commit. Committing large configuration files like this may not be
+    optimal for speed.
+
+    An alternate method can then be used, SFTP transfer. With this
+    method the NED uses SFTP to transfer the config file to the device
+    and then load it into the candidate config.
+
+    To enable this method, sftp-threshold must be set to the minimum
+    number of lines for this method to kick in, i.e. set to 0 for
+    using SFTP always. The path and file name of the temporary config
+    file may also be changed from its default. Example config:
+
+    devices device <devname> ned-settings cisco-iosxr write
+      sftp-threshold 100
+    devices device <devname> ned-settings cisco-iosxr write
+      file "disk0a:/usr/commit-config.tmp"
+
+
+   - write oob-exclusive-retries <num retries>
+
+     Maximum number of retries (one per second) when trying to enter config mode
+     or commit when an out-of-band session is blocking with a pending trial
+     commit or in exclusive configuration mode. Default 0.
+
+
+   - write inject-command
+
+     This ned-setting list can be used to inject commands (e.g. config
+     lines) when writing to the device (i.e. upon commit). This can be
+     used, for example, to undo undesired dynamic config automatically
+     set by the device. The inject-command ned-setting is configured with:
+      config
+       The config line(s) where command should be injected (DOTALL regexp)
+      command
+       The command to inject after|before config-line.
+      <where>, four values are supported:
+        before-each
+         insert command before each matching config-line
+        before-first
+         insert command before first matching config-line
+        after-each
+         insert command after each matching config-line
+        after-last
+         insert command after last matching config-line
+
+   An example to solve a XR bug:
+
+      devices device asr9k-1 ned-settings cisco-iosxr write inject-command
+      CSCuz19873 config "snmp-server traps bgp cbgp2" command "commit\nsnmp-server" traps" after-last
+
+   Note: You can use \n to inject multiple lines.
+   Note2: It is also possible to use $1-$9 to insert catch groups from
+          the config regexp.
+
+
+6.3.1. ned-settings cisco-iosxr write config-warning
+----------------------------------------------------
+
+   After having sent a config command to the device the NED will treat
+   the following text replies an an error and abort the transaction:
+
+            error
+            aborted
+            exceeded
+            invalid
+            incomplete
+            duplicate name
+            may not be configured
+            should be in range
+            is used by
+            being used
+            cannot be deleted
+            bad mask
+            failed
+
+   Sometimes a warning may contain any of the words above and will be
+   treated as an error. This can be avoided by adding an exception to
+   the above rule in the 'cisco-iosxr write config-warning' ned-setting.
+
+   The list key is a regular expression with a warning that should be
+   ignored.
+
+   For example, to add a new warning exception:
+
+     admin@ncs(config)# devices global-settings ned-settings
+         cisco-iosxr write config-warning "XHM .* is using a bad mask"
+     admin@ncs(config)# commit
+     Commit complete.
+     admin@ncs(config)# devices disconnect
+     admin@ncs(config)# devices connect
+     result true
+
+   Note that in order for the warning exception to take effect, you
+   must disconnect and connect again, to re-read ned-settings.
+
+
+6.4. ned-settings cisco-iosxr auto
+----------------------------------
+
+  This section lists the auto ned-settings:
+
+  - auto vrf-forwarding-restore
+
+     This setting controls whether ipv4 and ipv6 addresses are
+     restored on an interface after a vrf change. The native device
+     behaviour is to delete all ip addresses if the vrf is changed. If
+     this setting is set to true (default) then NSO will restore the
+     ip addresses by re-sending them to the device in the same
+     transaction (unless changed or deleted).
+
+     If this behaviour is not desired, set this setting to
+     'false'. Please note that there will be a compare-config diff
+     after a commit where the interface vrf is changed, unless the ip
+     addresses are also deleted in NSO.
+
+
+  - auto CSCtk60033-patch false|true (default)
+
+     Enable the XR CSCtk60033 patch which insert a commit in the middle
+     of a transaction in order to solve a bug where policy-map can't be
+     deleted due to references to it (even though those references are
+     also deleted in the same transaction).
+
+
+  - auto CSCtk60033-patch2 true|false (default)
+
+    Extended CSCtk60033-patch; also delete all policy-maps last in
+    separate commit. Default false.
+
+
+  - auto acl-delete-patch true|false (default)
+
+    Delete referenced ipv4|ipv6 access-list last in separate commit
+    due to XR OS bug. Default false.
+
+
+  - auto aaa-tacacs-patch false|true (default)
+
+    Inject extra commit when deleting aaa group server tacacs+ with
+    aaa authentication config.
+
+
+  - auto snmp-server-community-patch true|false (default)
+
+    Auto strip snmp-server-community 'IPv4' to support single API for
+    various XR API's.
+
+
+  - auto router-static-patch true|false (default)
+
+    Inject extra commit when editing static routes, where entries are
+    first removed, then added in new commit.
+
+
+
+6.5. ned-settings cisco-iosxr api
+---------------------------------
+
+  This section lists the api ned-settings:
+
+  - api edit-route-policy true|false (default)
+
+    This ned-setting is used to switch to the alternate route-policy
+    API which orders route-policy value(s) on the line number instead
+    of using a single string. See tailf-ned-cisco-ios-xr.yang for syntax.
+
+
+  - api service-policy-list true|false (default)
+
+    Enable support for multiple service-policy list entries in:
+     interface * / service-policy
+     interface * / pvc * / service-policy
+     interface * / l2transport / service-policy
+     interface ATM* / pvc * / service-policy
+     dynamic-template / type ipsubscriber * / service-policy
+
+
+  - api class-map-match-access-group-list true|false (default)
+
+    Enable support for multiple class-map * / match access-group
+    list entries supported by e.g. NCS5xx devices.
+
+
+  - api group-modeled true|false (default)
+
+    Enable support for minimalistic modeled group config. Unfortunately
+    not all config can be in the group due to CONFD limitation with hard-
+    coded model depth of 20.
+    Default is to handle group config as a single string with \r\n for each
+    newline, which allows any group config to be modeled. Use this
+    default model if any group config is needed.
+    NOTICE: EXPERIMENTAL
+
+
+  - api strict-interface-name true|false (default)
+
+    Enable strict interface name checking to avoid config diff when
+    device auto-corrects.
+
+
+  - api snmp-server-enable-all-traps <uint32>
+
+    Enable the all-traps API. Set to > 0 for minimum traps, < 0 for
+    max missing traps and 0 to disable (default)";
+
+
+6.6. ned-settings cisco-iosxr live-status
+-----------------------------------------
+
+  This section lists the live-status ned-settings:
+
+  - live-status time-to-live <seconds>
+
+    This ned-setting is used to configure the time to live value in
+<    seconds for data fetched through the live-status hooks.
+    The default value is 50 seconds.
+
+
+  - live-status exec-strict-prompt <regex>
+
+    This ned-setting can be used to enable to enable stricter prompt
+    matching for 'live-status exec any' commands. Setting it to include
+    %p will make the NED send an initial newline to determine the device
+    prompt, there after use that exact prompt in the following command(s).
+    Default false.
+
+
+  - live-status auto-prompts <id> <question> <answer>
+
+    See section 7 for information on this ned-setting.
+
+
+7. Execute native device command
+--------------------------------
+
+
+   The NED has support for all exec commands in config mode. They can
+   be accessed using the 'exec' prefix. For example:
+
+    admin@ncs(config)# devices device asr9k-2 config exec "default int TenGigE0/0/0/9"
+    result
+    RP/0/RSP0/CPU0:asr9k-2(config)#
+    admin@ncs(config)#
+
+   The NED also has support for all operational Cisco IOS XR commands
+   by use of the 'devices device live-status exec any' action. Or,
+   if you do not want to log|trace the command, use the any-hidden.
+
+   For example:
+
+   admin@ncs# devices device asr9k-2 live-status exec any "show run int TenGigE0/0/0/9"
+   result
+   Thu Sep  6 09:13:34.638 UTC
+   interface TenGigE0/0/0/9
+    shutdown
+   !
+   RP/0/RSP0/CPU0:asr9k-2#
+   admin@ncs#
+
+   To execute multiple commands, separate them with " ; "
+   NOTE: Must be a white space on either side of the comma.
+   For example:
+
+   admin@ncs# devices device asr9k-2 live-status exec any "show run int TenGigE0/0/0/8 ; show run int TenGigE0/0/0/9"
+   result
+   > show run int TenGigE0/0/0/8
+   Thu Sep  6 09:20:16.919 UTC
+   interface TenGigE0/0/0/8
+    shutdown
+   !
+
+   RP/0/RSP0/CPU0:asr9k-2#
+   > show run int TenGigE0/0/0/9
+   Thu Sep  6 09:20:17.311 UTC
+   interface TenGigE0/0/0/9
+    shutdown
+   !
+
+   RP/0/RSP0/CPU0:asr9k-2#
+   admin@ncs#
+
+   NOTE: To Send CTRL-C send "CTRL-C" or "CTRL-C async" to avoid
+         waiting for device output. Also note that you most likely
+         will have to extend timeouts to avoid closing the current
+         connection and send CTRL-C to a new connection, i.e. CTRL-C
+         being ignored
+
+   Generally the command output parsing halts when the NED detects
+   an operational or config prompt, however sometimes the command
+   requests additional input, 'answer(s)' to questions.
+
+   To respond to device question(s) there are 3 different methods,
+   checked in the listed order below:
+
+   [1] the action auto-prompts list, passed in the action
+   [2] the ned-settings cisco-iosxr live-status auto-prompts list
+   [3] the command line args "| prompts" option
+
+   IMPORTANT: [3] can be used to override an answer in auto-prompts.
+
+   Read on for details on each method:
+
+   [1] action auto-prompts list
+
+   The auto-prompts list is used to pass answers to questions, to
+   exit parsing, reset timeout or ignore output which triggered the
+   the built-in question handling. Each list entry contains a question
+   (regex format) and an optional answer (text or built-in keyword).
+
+   The following built-in answers are supported:
+
+   <exit>     Halt parsing and return output
+   <prompt>   Retrieve the answer from "| prompts" argument(s)
+   <timeout>  Reset the read timeout, useful for slow commands
+   <ignore>   (or IGNORE) Ignore the output and continue parsing
+   <enter>    (or ENTER) Send a newline and continue parsing
+
+   Any other answer value is sent to the device followed by a newline,
+   unless the answer is a single letter answer in case which only the
+   single character is sent.
+
+   Note: not configuring an answer is the same as setting it to <ignore>
+
+   Here is an example of a command which needs to ignore some output
+   which would normally be interpreted as a question due to the colon:
+
+   exec auto-prompts { question "Certificate Request follows[:]" answer
+         "<ignore>" } "crypto pki enroll LENNART-TP | prompts yes no"
+
+   Also note the use of method 3, answering yes and no to the remaining
+   device questions.
+
+
+   [2] ned-settings cisco-iosxr live-status auto-prompts list
+
+   The auto-prompts list works exactly as [1] except that it is
+   configured and used for all device commands, i.e. not only for
+   this specific action.
+
+   Here are some examples of auto-prompts ned-settings:
+
+   devices global-settings ned-settings cisco-iosxr live-status auto-prompts Q1 question "System configuration has been modified" answer "no"
+   devices global-settings ned-settings cisco-iosxr live-status auto-prompts Q2 question "Do you really want to remove these keys" answer "yes"
+   devices global-settings ned-settings cisco-iosxr live-status auto-prompts Q3 question "Press RETURN to continue" answer ENTER
+
+   NOTE: Due to backwards compatibility, ned-setting auto-prompts
+   questions get ".*" appended to their regex unless ending with
+   "$". However, for option [1] the auto-prompt list passed in the
+   action, you must add ".*" yourself if this matching behaviour is
+   desired.
+
+
+   [3] "| prompts"
+
+   "| prompts" is passed in the command args string and is used to
+   submit answer(s) to the device without a matching question pattern.
+   IMPORTANT: It can also be used to override answer(s) configured in
+   auto-prompts list, unless the auto-prompts contains <exit> or
+   <timeout>, which are always handled first.
+
+   One or more answers can be submitted following this syntax:
+
+       | prompts <answer 1> .. [answer N]
+
+   For example:
+
+   devices device asr9k-2 live-status exec any "reload | prompts no yes"
+
+   The following output of the device triggers the NED to look for the
+   answer in | prompts arguments:
+
+       ":\\s*$"
+       "\\][\\?]?\\s*$"
+
+   In other words, the above two patterns (questions) have a built-in
+   <prompt> for an answer.
+
+   Additional patterns triggering | prompts may be configured by use
+   of auto-lists and setting the answer to <prompt>. This will force
+   the user to specify the answer in | prompts.
+
+   The <ignore> or IGNORE keywords can be used to ignore device output
+   matching the above and continue parsing. If all output should be
+   ignored, i.e. for a show command, '| noprompts' should be used.
+
+   Some final notes on the 'answer' leaf:
+
+   - "ENTER" or <enter> means a carriage return + line feed is sent.
+
+   - "IGNORE", "<ignore>" or unset means the prompt was not a
+      question, the device output is ignored and parsing continues.
+
+   - A single letter answer is sent without carriage return + line,
+     i.e. "N" will be sent as N only, with no return. If you want a
+     return, set "NO" as the answer instead.
+
+
+8. When connecting through a proxy using SSH or TELNET
+------------------------------------------------------
+
+   Do as follows to setup to connect to a IOS XR device that resides
+   behind a proxy or terminal server:
+
+   +-----+  A   +-------+   B  +-----+
+   | NCS | <--> | proxy | <--> | IOS |
+   +-----+      +-------+      +-----+
+
+   Setup connection (A):
+
+   # devices device cisco0 address <proxy address>
+   # devices device cisco0 port <proxy port>
+   # devices device cisco0 device-type cli protocol <proxy proto - telnet or ssh>
+   # devices authgroups group ciscogroup umap admin remote-name <proxy username>
+   # devices authgroups group ciscogroup umap admin remote-password <proxy password>
+   # devices device cisco0 authgroup ciscogroup
+
+   Setup connection (B):
+
+   Define the type of connection to the device:
+
+   # devices device cisco0 ned-settings cisco-iosxr proxy remote-connection <ssh|telnet>
+
+   Define login credentials for the device:
+
+   # devices device cisco0 ned-settings cisco-iosxr proxy remote-name <user name on the XR device>
+   # devices device cisco0 ned-settings cisco-iosxr proxy remote-password <password on the XR device>
+
+   Define prompt on proxy server:
+
+   # devices device cisco0 ned-settings cisco-iosxr proxy proxy-prompt <prompt pattern on proxy>
+
+   Define address and port of XR device:
+
+   # devices device cisco0 ned-settings cisco-iosxr proxy remote-address <address to the XR device>
+   # devices device cisco0 ned-settings cisco-iosxr proxy remote-port <port used on the XR device>
+   # commit
+
+   Complete example config:
+
+   devices authgroups group jump-server default-map remote-name MYUSERNAME remote-password MYPASSWORD
+   devices device asr9006 address 1.2.3.4 port 22
+   devices device asr9006 authgroup jump-server device-type cli ned-id cisco-ios-xr protocol ssh
+   devices device asr9006 connect-timeout 60 read-timeout 120 write-timeout 120
+   devices device asr9006 state admin-state unlocked
+   devices device asr9006 ned-settings cisco-iosxr proxy remote-connection telnet
+   devices device asr9006 ned-settings cisco-iosxr proxy proxy-prompt ".*#"
+   devices device asr9006 ned-settings cisco-iosxr proxy remote-address 5.6.7.8
+   devices device asr9006 ned-settings cisco-iosxr proxy remote-port 23
+   devices device asr9006 ned-settings cisco-iosxr proxy remote-name cisco
+   devices device asr9006 ned-settings cisco-iosxr proxy remote-password cisco
+
+
+9. Example of how to configure an 'EXEC PROXY'
+-----------------------------------------------
+
+   Here is an example of how to configure a device which is accessed
+   through a local terminal server on port 2023:
+
+   devices authgroups group cisco default-map remote-name cisco remote-password cisco
+   devices device terminal address localhost port 2023
+   devices device terminal authgroup cisco device-type cli ned-id cisco-ios-xr protocol telnet
+   devices device terminal connect-timeout 60 read-timeout 120 write-timeout 120
+   devices device terminal state admin-state unlocked
+
+   Here is the actual connect to the device, using 'connect' command:
+
+   devices device terminal ned-settings cisco-iosxr proxy remote-connection exec
+   devices device terminal ned-settings cisco-iosxr proxy remote-command "connect 192.168.0.225"
+   devices device terminal ned-settings cisco-iosxr proxy remote-prompt "Open"
+   devices device terminal ned-settings cisco-iosxr proxy remote-name cisco
+   devices device terminal ned-settings cisco-iosxr proxy remote-password cisco
+
+
+10. Configure route-policy in NSO
+---------------------------------
+
+   There has been a number of questions/tickets on route-policy in
+   cisco-iosxr NED, hence the the need of this section in README.
+
+   route-policy configuration in NSO looks different from how it is
+   configured on the device. NSO uses a single string 'value' for all
+   the route-policy lines. The reason for this is that there may be
+   multiple identical lines in the route-policy and this was not
+   possible to model in YANG.
+
+   The best way to learn how to configure a route-policy in NSO is to
+   first configure it on the device, then perform a sync-from in NSO
+   and watch how it looks. For example:
+
+   Step 1: Configure route-policy on device
+
+   RP/0/RSP0/CPU0:asr9k-1(config)#route-policy no-redes-tiws-ipv6
+   RP/0/RSP0/CPU0:asr9k-1(config-rpl)# # description Redes asignables
+   RP/0/RSP0/CPU0:asr9k-1(config-rpl)# if destination in sti-redes-asignables-ipv6 then
+   RP/0/RSP0/CPU0:asr9k-1(config-rpl-if)# pass
+   RP/0/RSP0/CPU0:asr9k-1(config-rpl-if)# # description Redes de tiws
+   RP/0/RSP0/CPU0:asr9k-1(config-rpl-if)# elseif destination in sti-redes-tiws-ipv6 then
+   RP/0/RSP0/CPU0:asr9k-1(config-rpl-elseif)# drop
+   RP/0/RSP0/CPU0:asr9k-1(config-rpl-elseif)# endif
+   RP/0/RSP0/CPU0:asr9k-1(config-rpl)#end-policy
+   RP/0/RSP0/CPU0:asr9k-1(config)#commit
+
+   Step 2: Sync-from to NSO and show how it looks:
+
+   admin@ncs# devices device asr9k-1 sync-from
+   result true
+
+   admin@ncs# show running-config devices device asr9k-1 config route-policy no-redes-tiws-ipv6
+   devices device asr9k-1
+    config
+     route-policy no-redes-tiws-ipv6
+       "  # description Redes asignables\r\n  if destination in sti-redes-asignables-ipv6 then\r\n    pass\r\n    # description Redes de tiws\r\n  elseif destination in sti-redes-tiws-ipv6 then\r\n    drop\r\n  endif\r\n"
+      end-policy
+     !
+    !
+   !
+
+   Step 3: Copy the route-policy to your template|config file:
+
+   Copy the route-policy to your template|config file, taking extra care
+   to not modify the white spacing (space, \r and \n in CLI) because if
+   you do modify it, you will get a compare-config diff vs the device later.
+   The reason for this is because the device dynamically modifies the white
+   spacing after the commit. And if NSO does not set it exactly the same way,
+   there will be a diff.
+
+   Note, if you are using XML templates, you can see how it should look
+   exactly by showing it in XML outformat
+
+   admin@ncs# show running-config devices device asr9k-3 config route-policy | display xml
+
+   <config xmlns="http://tail-f.com/ns/config/1.0">
+    <devices xmlns="http://tail-f.com/ns/ncs">
+    <device>
+      <name>asr9k-3</name>
+        <config>
+        <route-policy xmlns="http://tail-f.com/ned/cisco-ios-xr">
+          <name>no-redes-tiws-ipv6</name>
+          <value> # description Redes asignables&#13;
+    if destination in sti-redes-asignables-ipv6 then&#13;
+      pass&#13;
+      # description Redes de tiws&#13;
+    elseif destination in sti-redes-tiws-ipv6 then&#13;
+      drop&#13;
+    endif&#13;
+   </value>
+        </route-policy>
+        </config>
+    </device>
+    </devices>
+   </config>
+
+   Note: &#13; is the XML code for "\r" and it must be included or diff!
+
+   Step 4: Test your NSO config by deleting the route-policy on the device:
+
+   RP/0/RSP0/CPU0:asr9k-1(config)#no route-policy no-redes-tiws-ipv6
+   RP/0/RSP0/CPU0:asr9k-1(config)#commit
+
+   Step 5: Test the NSO config by sync-to device, restoring route-policy:
+
+   admin@ncs# config
+   Entering configuration mode terminal
+   admin@ncs(config)# devices device asr9k-1 sync-to dry-run
+   data
+      route-policy no-redes-tiws-ipv6
+        # description Redes asignables
+        if destination in sti-redes-asignables-ipv6 then
+          pass
+          # description Redes de tiws
+        elseif destination in sti-redes-tiws-ipv6 then
+          drop
+        endif
+       end-policy
+
+   Note how NSO unpacks the single string to multiple lines, with the
+   exact same whitespacing as the device had it. Now let's commit:
+
+   admin@ncs(config)# devices device asr9k-1 sync-to
+   result true
+   admin@ncs(config)# devices device asr9k-1 compare-config
+   admin@ncs(config)#
+
+   CAUTION: The number one issue with this config is if white spacing
+   inside the single route-policy string does not EXACTLY match that
+   of the device. Hence please take careful note of how it looks and
+   mimic it exactly. Again, best way to do this is to sync-from device
+   and look how NSO formats it.
+
+
+11. Compilation options
+---------------------------------
+
+   To improve performance due to slow handling of large leaf-lists in
+   interface/encapsultaion/dot1q a make variable has been introduced
+   to change nodes vlan-id and second-dot1q from leaf-list to leaf.
+
+   To change node-type to leaf from leaf-list (i.e. to handle these
+   ranges explicitly as a string) re-compile the NED package from the
+   src directory in the package using the below command line:
+
+   <build host>$ make ENCAP_DOT1Q_AS_LEAF=True clean all
+
+
+12. Reporting Feature Request or Problem (technical info only)
+------------------------------------------------------------------
+
+    For all tickets, regardless whether it is a problem report or
+    feature request, a raw trace from a real device is MANDATORY.
+
+    (1) To enable raw trace globally, set and commit:
+
+         admin@ncs(config)# devices global-settings trace raw
+         admin@ncs(config)# commit
+
+    (2) Next, clear the trace in order to minimize the information.
+
+         admin@ncs(config)# devices clear-trace
+
+    Once those two steps are done, the steps differ depending on the issue:
+
+
+    --- For Feature Requests do:
+
+    (3f) Set the config you want implemented on a real XR device,
+         including all existing dependent config.
+
+    (4f) admin@ncs(config)# devices device <devname> sync-from [verbose]
+
+    (5f) Attach the raw trace to the ticket.
+
+    (6f) List the config you want implemented in the same syntax as
+         shown on the device, i.e. in XR CLI format.
+
+
+    --- For Problems Reports do:
+
+    (3p) Write a general summary of the issue and the minimum steps
+         required to reproduce it.
+
+    (4p) Start with a compare-config to populate the trace with
+         initial device config:
+
+         admin@ncs(config)# devices device <devname> compare-config
+
+    (5p) Run the service or manually configure minimum amount of
+         config to reproduce the issue. Show the change in CLI format
+         before commit:
+
+         admin@ncs(config)# commit dry-run outformat native
+
+    (6p) Commit the change causing a problem:
+
+         admin@ncs(config)# commit
+
+    (7p) Login to the real device using SSH|TELNET and show how the
+         commit should have looked manually. This is essential so we
+         can see how a successful commit should have looked.
+
+    (8p) If the commit succeeds but the problem is a compare-config or
+         out of sync issue, then end with a 2nd compare-config:
+
+         admin@ncs(config)# devices device <devname> compare-config
+
+    (9p) Attach the raw trace to the ticket.
+
+
+13. END OF README FILE
+-----------------------

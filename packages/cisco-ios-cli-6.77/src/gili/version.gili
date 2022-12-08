@@ -1,0 +1,13 @@
+! ios-stats:version
+
+<root>
+ <container :: . :: ttl=-1/>
+  <leaf :: name :: ios :: ttl=-1/>
+  <leaf :: version :: (?:Cisco)?.*IOS.*Software.*Version ([1-9]+[A-Za-z0-9\.():-]+[0-9a-zA-Z)]+) :: ttl=-1/>
+  <leaf :: xe-version :: Version(?:[:])? (03\S+) :: ttl=-1/>
+  <leaf :: model :: [Cc]isco (\S+) .*(?:processor |revision ) :: ttl=-1/>
+  <leaf :: serial-number :: Processor board ID (\S+) :: ttl=-1/>
+  <leaf :: license/level :: License Level: (\S+) :: ttl=-1/>
+  <leaf :: license/type :: License.+Type: (\S+) :: ttl=-1/>
+ </container>
+</root>

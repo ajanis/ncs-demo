@@ -1,0 +1,151 @@
+<clispec xmlns="http://tail-f.com/ns/clispec/1.0" style="c">
+  <operationalMode>
+
+    <cmd name="version" mount="show">
+      <info>System hardware and software status</info>
+      <help>System hardware and software status</help>
+      <callback>
+        <exec>
+          <osCommand>./show_version.sh</osCommand>
+          <options>
+            <noInput/>
+            <pty>false</pty>
+          </options>
+        </exec>
+      </callback>
+    </cmd>
+
+    <cmd name="anyconnect" mount="show vpn-sessiondb">
+      <info></info>
+      <help></help>
+      <callback>
+        <exec>
+          <osCommand>./show_anyconnect.sh</osCommand>
+          <options>
+            <noInput/>
+          </options>
+        </exec>
+      </callback>
+    </cmd>
+
+    <cmd name="detail" mount="show interface outside">
+      <info></info>
+      <help></help>
+      <callback>
+        <exec>
+          <osCommand>./show_outside.sh</osCommand>
+          <options>
+            <noInput/>
+          </options>
+        </exec>
+      </callback>
+    </cmd>
+
+    <cmd name="mib" mount="show ssl">
+      <info></info>
+      <help></help>
+      <callback>
+        <exec>
+          <osCommand>./show_ssl.sh</osCommand>
+          <options>
+            <noInput/>
+          </options>
+        </exec>
+      </callback>
+    </cmd>
+
+    <cmd name="length" mount="terminal">
+      <info>Set number of lines on a screen</info>
+      <help>Set number of lines on a screen</help>
+      <callback>
+        <exec>
+          <osCommand>maapi</osCommand>
+          <args>--cliset screen-length</args>
+          <options>
+            <noInput/>
+          </options>
+        </exec>
+      </callback>
+      <params>
+        <param>
+          <type>
+            <simpleType namespace="http://tail-f.com/ns/cli-builtin/1.0"
+                        name="screen-length" />
+          </type>
+        </param>
+      </params>
+    </cmd>
+
+    <cmd name="width" mount="terminal">
+      <info>Set width of the display terminal</info>
+      <help>Set width of the display terminal</help>
+      <callback>
+        <exec>
+          <osCommand>maapi</osCommand>
+          <args>--cliset screen-width</args>
+          <options>
+            <noInput/>
+          </options>
+        </exec>
+      </callback>
+      <params>
+        <param>
+          <type>
+            <simpleType namespace="http://tail-f.com/ns/cli-builtin/1.0"
+                        name="screen-width" />
+          </type>
+        </param>
+      </params>
+    </cmd>
+
+    <cmd name="deregister" mount="license smart">
+      <info></info>
+      <help></help>
+      <callback>
+        <exec>
+          <osCommand>echo</osCommand>
+          <args>executed</args>
+          <options>
+            <noInput/>
+          </options>
+        </exec>
+      </callback>
+    </cmd>
+
+    <cmd name="system" mount="changeto">
+      <info></info>
+      <help></help>
+      <callback>
+        <exec>
+          <osCommand>echo</osCommand>
+          <args>executed</args>
+          <options>
+            <noInput/>
+          </options>
+        </exec>
+      </callback>
+    </cmd>
+
+  <cmd name="interface" mount="show">
+    <info>Interface status and configuration (snapshot for debug)</info>
+    <help>Interface status and configuration (snapshot for debug)</help>
+    <params>
+      <any>
+        <info>show interfaces</info>
+        <help>show interfaces</help>
+      </any>
+    </params>
+    <callback>
+      <exec>
+        <osCommand>./show_interface.sh</osCommand>
+        <options>
+          <noInput/>
+          <pty>false</pty>
+        </options>
+      </exec>
+    </callback>
+  </cmd>
+
+  </operationalMode>
+
+</clispec>

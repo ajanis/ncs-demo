@@ -1,0 +1,9 @@
+! ios-stats:lisp/eid-table-vrf{}
+
+<root>
+ <buf-start :: Interfaces/>
+ <list :: . :: \n[ ]*(\S+)[ ]+?\S+ :: trim/>
+  <key :: (\S+) :: vrf/>
+  <template :: dynamic-eid/>
+ </list>
+</root>

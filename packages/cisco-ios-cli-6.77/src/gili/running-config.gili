@@ -1,0 +1,8 @@
+! ios-stats:running-config
+
+<root>
+  <container :: . :: ttl=-1/>
+   <leaf :: license/udi/pid :: udi pid (\S+)/>
+   <leaf :: license/udi/sn :: sn (\S+)/>
+  </container>
+</root>

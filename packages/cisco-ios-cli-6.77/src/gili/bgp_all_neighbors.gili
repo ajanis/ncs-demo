@@ -1,0 +1,9 @@
+! ios-stats:bgp/vpnv4/unicast/all/neighbors{}
+
+<root>
+ <buf-replace-all :: BGP neighbor is (\S+),[ ]+remote AS  :: BGP neighbor is $1,  vrf -,  remote AS />
+ <list :: . :: \nBGP neighbor is (\S+),.+remote AS />
+  <key :: BGP neighbor is (\S+),[ ]+vrf (\S+), :: id :: vrf/>
+  <include :: bgp_neighbors_include.gili/>
+ </list>
+</root>

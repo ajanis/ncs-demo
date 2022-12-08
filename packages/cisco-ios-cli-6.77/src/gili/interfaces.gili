@@ -1,0 +1,10 @@
+! ios-stats:interfaces
+
+<root>
+ <list :: . :: (\S+) is(?: administratively)? (?:down|up|deleted).* line protocol is/>
+  <key :: ([a-zA-Z]+)([0-9]\S*) is(?: administratively)? (?:down|up) :: type :: name/>
+  <leaf :: mac-address :: Hardware .* address is (\S+)/>
+  <leaf :: ip-address :: Internet address is (\S+)/>
+  <leaf :: admin-status :: \S+ is(?: administratively)? (down|up).* line protocol is (\S+) :: type=enumeration/>
+ </list>
+</root>

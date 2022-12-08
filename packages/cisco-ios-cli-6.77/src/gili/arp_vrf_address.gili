@@ -1,0 +1,13 @@
+! ios-stats:arp/vrf{}/address{}
+
+<root>
+ <macro :: internet :: Internet/>
+ <list :: . :: \nInternet\s+(\S+) :: delete-parent-when-empty/>
+  <key :: Internet\s+(\S+) :: ip/>
+  <leaf :: protocol :: {internet} :: type=constant/>
+  <leaf :: age-mins :: Internet\s+\S+\s+(\S+) :: type=integer/>
+  <leaf :: hardware-addr :: Internet\s+\S+\s+\S+\s+(\S+)/>
+  <leaf :: type :: Internet\s+\S+\s+\S+\s+\S+\s+(\S+)/>
+  <leaf :: interface :: Internet\s+\S+\s+\S+\s+\S+\s+\S+\s+(\S+)/>
+ </list>
+</root>

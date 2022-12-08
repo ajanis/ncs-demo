@@ -1,0 +1,18 @@
+! ios-stats:bgp/ipv4/unicast/neighbors{}
+! ios-stats:bgp/vpnv4/unicast/neighbors{}
+! ios-stats:bgp/vpnv4/unicast/all/neighbors{}
+! ios-stats:bgp/vpnv4/unicast/vrf{}/neighbors{}
+
+  <buf-end :: Graceful\-Restart/>
+  <leaf :: remote-as :: remote AS (\S+),/>
+  <leaf :: link :: BGP neighbor .+ (internal|external) link/>
+  <leaf :: peer-group :: Member of peer-group (\S+)/>
+  <leaf :: admin-state ::  Administratively ([a-z ]+) :: default=enabled/>
+  <leaf :: bgp-state :: BGP state = ([a-zA-Z]+)/>
+  <leaf :: bgp-state-uptime :: BGP state .+ up for (\S+) :: default=never/>
+  <leaf :: last-reset :: Last reset ([0-9a-z:]+)/>
+  <list :: address-family :: For address family: ([0-9A-zA-Z ]+)/>
+   <key :: For address family: ([0-9A-zA-Z -]+) :: name/>
+   <leaf :: prefixes-current-sent :: Prefixes Current:[ ]+(\d+)/>
+   <leaf :: prefixes-current-rcvd :: Prefixes Current:[ ]+\d+[ ]+(\d+)/>
+  </list>

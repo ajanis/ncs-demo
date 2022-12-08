@@ -1,0 +1,57 @@
+{
+    "pattern" : {
+        "promptDevice" :   "\\A\\S.*>",
+        "promptProxy" :    "$(proxy/proxy-prompt)",
+        "promptPriv" :     "\\A[^\\# ]+#[ ]?$",
+        "promptLogin" :    "^.*([Ll]ogin|[Uu]ser|[Uu]sername):[ ]?$",
+        "promptPassword" : "^.*[Pp]assword:[ ]?$",
+        "promptIgnore" :   "([Pp]assword OK)|([Ll]ast [Ll]ogin)|(User Access Verification)",
+        "errorProxyLogin" : "(telnet: )|(ssh: )",
+        "errorEnable" :    "(Unknown command)|(Access denied)",
+        "errorLogin" :     "([Aa]uthentication [Ff]ail)|([Bb]ad [Pp]assword)|([Ll]ogin [Ii]nvalid)|([Aa]ccess [Dd]enied)|([Pp]ermission [Dd]enied)|([Rr]equest [Dd]enied)"
+    },
+    "command" : {
+        "sshCmd" : "ssh -p $(proxy/remote-port) $(proxy/remote-name)@$(proxy/remote-address) $(proxy/remote-ssh-args)",
+        "telnetCmd" : "telnet $(proxy/remote-address) $(proxy/remote-port)"
+    },
+    "state": {
+        "new" : [
+            {"expect": null,               "action": "connect()",          "nextState": "proxylogin"}
+        ],
+        "proxylogin" : [
+            {"expect": "$promptIgnore",    "action": null,                 "nextState": "proxylogin"},
+            {"expect": "$promptLogin",     "action": "sendUsername()",     "nextState": "proxylogin"},
+            {"expect": "$promptPassword",  "action": "sendPassword()",     "nextState": "proxylogin"},
+            {"expect": "$promptProxy",     "action": null,                 "nextState": "proxyjump"},
+            {"expect": "$promptDevice",    "action": "enable",             "nextState": "proxyenable"},
+            {"expect": "$promptPriv",      "action": null,                 "nextState": "proxyjump"},
+            {"expect": "$errorLogin",      "action": "reportError()",      "nextState": "invalid"}
+        ],
+        "proxyenable" : [
+            {"expect": "$promptPriv",      "action": null,                       "nextState": "proxyjump"},
+            {"expect": "$promptPassword",  "action": "sendSecondaryPassword()",  "nextState": "proxyenable"},
+            {"expect": "$errorEnable",     "action": "reportError()",            "nextState": "invalid"}
+        ],
+        "proxyjump" : [
+            {"expect": null,               "action": "$$(proxy/remote-connection)Cmd", "nextState": "proxy2"}
+        ],
+        "proxy2" : [
+            {"expect": "$(proxy/proxy-prompt2)",  "action": null,                "nextState": "login"},
+            {"expect": "$errorLogin",      "action": "reportError()",            "nextState": "invalid"}
+        ],
+        "login" : [
+            {"expect": "$promptIgnore",    "action": null,                       "nextState": "login"},
+            {"expect": "$promptLogin",     "action": "$(proxy/remote-name)",     "nextState": "login"},
+            {"expect": "$promptPassword",  "action": "password($(proxy/remote-password))", "nextState": "login"},
+            {"expect": "$errorProxyLogin", "action": "reportError()",                       "nextState": "invalid"},
+            {"expect": "$errorLogin",      "action": "reportError()",            "nextState": "invalid"},
+            {"expect": "$promptDevice",    "action": "enable",                   "nextState": "enable"},
+            {"expect": "$promptPriv",      "action": null,                       "nextState": "end"}
+        ],
+        "enable" : [
+            {"expect": "$promptPriv",      "action": null,                       "nextState": "end"},
+            {"expect": "$promptPassword",  "action": "password($(proxy/remote-secondary-password))", "nextState": "enable"},
+            {"expect": "$errorEnable",     "action": "reportError()",            "nextState": "invalid"}
+        ]
+    }
+}

@@ -1,0 +1,12 @@
+Value interface (\S+)
+Value peerIp (\S+)
+Value state ([Dd]own|[Uu]p)
+Value learntype (\S+)
+Value uptime ([0-9:]+)
+Value routerMac ([a-zA-Z0-9.]+)
+
+Start
+  ^-+ -> Interfaces
+
+Interfaces
+  ^${interface}\s+${peerIp}\s+${state}\s+${learntype}\s+${uptime}\s+${routerMac} -> Record

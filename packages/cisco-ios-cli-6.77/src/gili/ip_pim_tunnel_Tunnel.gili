@@ -1,0 +1,13 @@
+! ios-stats:ip/pim/tunnel/Tunnel{}
+
+<root>
+ <list :: . :: \nTunnel(\d+)/>
+  <key :: Tunnel(\d+) :: id/>
+  <leaf :: type :: \s+Type\s+:\s(\S+)/>
+  <leaf :: rp :: \s+RP\s+:\s(\S+)/>
+  <leaf :: source :: \s+Sourc\s+:\s(\S+)/>
+  <leaf :: state :: \s+State\s+:\s(\S+)/>
+  <leaf :: last-event :: \s+Last event\s+:\s(\S+)/>
+  <leaf :: vrf :: \s+VRF\s+:\s(\S+)/>
+ </list>
+</root>

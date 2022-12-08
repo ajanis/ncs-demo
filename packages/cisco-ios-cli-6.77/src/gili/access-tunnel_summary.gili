@@ -1,0 +1,14 @@
+! ios-stats:access-tunnel/summary{}
+
+<root>
+ <buf-start :: .*DstPort\s+VrfId />
+ <buf-end :: .*Name\s+IfId/>
+ <list :: . :: \n([^-|Name]\S+) />
+  <key :: \s+(\S+) :: name/>
+  <leaf :: source-ip :: $2/>
+  <leaf :: source-port :: $3 />
+  <leaf :: destination-ip :: $4/>
+  <leaf :: destination-port :: $5 :: type=integer/>
+  <leaf :: vrf-id :: $6 :: type=integer/>
+ </list>
+</root>

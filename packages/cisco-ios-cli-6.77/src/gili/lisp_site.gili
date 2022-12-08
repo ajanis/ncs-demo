@@ -1,0 +1,15 @@
+! ios-stats:lisp/site
+
+<root>
+ <buf-start :: Registered[ ]+ID :: clear/>
+ <list :: . :: \n(\S+)/>
+  <key :: (\S+) :: name/>
+  <buf-start :: \S+/>
+  <list :: registrations :: \n.* (\d+)\s+(\S+)/>
+   <key :: .* (\d+)\s+(\S+) :: instance :: EID-prefix/>
+   <leaf :: last-register :: $1/>
+   <leaf :: up :: $2/>
+   <leaf :: last-registered-by :: $3/>
+  </list>
+ </list>
+</root>

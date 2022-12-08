@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<!-- This file has been generated. Do NOT edit it.
+     For changes edit the original instead.
+-->
+<ncs-package xmlns="http://tail-f.com/ns/ncs-packages">
+  <name>cisco-nso-nc-5.6</name>
+  <package-version>5.6</package-version>
+  <description>Generated netconf package</description>
+  <ncs-min-version>5.7</ncs-min-version>
+  <component>
+    <name>cisco-nso</name>
+    <ned>
+      <netconf>
+        <ned-id xmlns:id="http://tail-f.com/ns/ned-id/cisco-nso-nc-5.6">id:cisco-nso-nc-5.6</ned-id>
+      </netconf>
+      <device>
+        <vendor>Cisco</vendor>
+      </device>
+    </ned>
+  </component>
+</ncs-package>

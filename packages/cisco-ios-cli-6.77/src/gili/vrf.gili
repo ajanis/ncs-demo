@@ -1,0 +1,8 @@
+! ios-stats:vrf{}
+
+<root>
+ <buf-start :: Interfaces/>
+ <list :: . :: \n[ ]*(\S+)[ ]+?\S+/>
+  <key :: (\S+) :: name/>
+ </list>
+</root>

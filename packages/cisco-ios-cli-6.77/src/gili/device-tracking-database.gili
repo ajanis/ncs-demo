@@ -1,0 +1,17 @@
+! ios-stats:device-tracking-database
+
+<root>
+ <buf-start :: (Time left|Time source).*?\r/>
+ <list :: . :: \n\S+\s+(\S+)/>
+  <key :: \S+\s+(\S+) :: network-layer-address/>
+  <leaf :: code :: $1/>
+  <leaf :: link-layer-address :: $3/>
+  <leaf :: interface :: $4/>
+  <leaf :: vlan :: $5/>
+  <leaf :: prlvl :: $6/>
+  <leaf :: age :: $7/>
+  <leaf :: state :: $8/>
+  <leaf :: time-left-secs :: $9/>
+  <leaf :: try :: try (\d+)/>
+ </list>
+</root>

@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<ncs-package xmlns="http://tail-f.com/ns/ncs-packages">
+  <name>cisco-iosxr</name>
+  <package-version>7.38.3</package-version>
+  <description>NED package for the Cisco IOS XR</description>
+  <ncs-min-version>4.4.2</ncs-min-version>
+  <component>
+    <name>cisco-ios-xr</name>
+    <ned>
+      <cli>
+        <ned-id xmlns:cisco-ios-xr-id="http://tail-f.com/ned/cisco-ios-xr-id">cisco-ios-xr-id:cisco-ios-xr</ned-id>
+        <java-class-name>com.tailf.packages.ned.iosxr.IosxrNedCli</java-class-name>
+      </cli>
+      <device>
+        <vendor>Cisco</vendor>
+      </device>
+      <option>
+        <name>entitlement-tag</name>
+        <value>regid.2015-10.com.cisco.cisco-iosxr-NED,1.0_9956fc34-cbed-4d13-a1ea-6a36f4e40a99</value>
+      </option>
+      <!--<option>
+        <name>requires-transaction-states</name>
+      </option>-->
+      <option>
+        <name>show-tag</name>
+        <value>interface</value>
+      </option>
+      <option>
+        <name>show-partial</name>
+      </option>
+    </ned>
+  </component>
+  <component>
+    <name>upgrade-ned-settings</name>
+    <upgrade>
+      <java-class-name>com.tailf.packages.ned.iosxr.UpgradeNedSettings</java-class-name>
+    </upgrade>
+  </component>
+</ncs-package>

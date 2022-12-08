@@ -1,0 +1,145 @@
+
+module tailf-ned-loginscripts {
+  namespace 'http://tail-f.com/ned/ned-loginscripts';
+  prefix loginscripts;
+
+  import tailf-common {
+    prefix tailf;
+  }
+  import tailf-ncs {
+    prefix ncs;
+  }
+
+  grouping ned-loginscripts {
+
+    container loginscripts {
+      tailf:info "NED login scripts";
+
+      // loginscripts script *
+      list script {
+        tailf:info "The list of login scripts";
+        key name;
+        leaf name {
+          tailf:cli-suppress-range;
+          type string {
+            tailf:info "WORD;;script name";
+          }
+        }
+
+        // loginscripts script * alias *
+        list alias {
+          tailf:info "List of aliases used in expect|send. Use <name/> to insert";
+          tailf:cli-suppress-mode;
+          tailf:cli-compact-syntax;
+          key name;
+          leaf name {
+            tailf:cli-suppress-range;
+            type string {
+              tailf:info "WORD;;alias name";
+            }
+          }
+          leaf value {
+            tailf:cli-drop-node-name;
+            mandatory true;
+            type string {
+              tailf:info "WORD;;alias value";
+            }
+          }
+        }
+
+        // loginscripts script * id *
+        list id {
+          tailf:info "Script id";
+          tailf:cli-suppress-mode;
+          tailf:cli-compact-syntax;
+          key id;
+          leaf id {
+            tailf:cli-suppress-range;
+            type uint32 {
+              tailf:info "<num>;;Script id";
+            }
+          }
+
+          // loginscripts script * id * state
+          leaf state {
+            tailf:info "This state";
+            mandatory true;
+            type uint32 {
+              tailf:info "<num>;;This state";
+            }
+          }
+
+          // loginscripts script * id * expect
+          leaf expect {
+            tailf:info "Wait for regular expression";
+            type string {
+              tailf:info "<regex>;;Expect regular expression";
+            }
+          }
+
+          // loginscripts script * id * <action>
+          choice action-choice {
+
+            // loginscripts script * id * connect
+            leaf connect {
+              tailf:info "Connect to device";
+              type empty;
+            }
+
+            // loginscripts script * id * send-nowait
+            leaf send {
+              tailf:info "Send command to device and wait for echo";
+              type string {
+                tailf:info "WORD;;send string. Include \\\n for newline";
+              }
+            }
+
+            // loginscripts script * id * send-noecho
+            leaf send-noecho {
+              tailf:info "Send command which does not echo, i.e. don't wait for it";
+              type string {
+                tailf:info "WORD;;send string. Include \\\n for newline";
+              }
+            }
+
+            // loginscripts script * id * end
+            leaf end {
+              tailf:info "End of script";
+              type empty;
+            }
+
+            // loginscripts script * id * fail
+            leaf fail {
+              tailf:info "Connect failure";
+              type string {
+                tailf:info "WORD;;Fail message";
+              }
+            }
+          }
+
+          // loginscripts script  * id * next-state
+          leaf next-state {
+            tailf:info "Next state. If not set, state is repeated";
+            type uint32 {
+              tailf:info "<num>;;Next state";
+            }
+          }
+        }
+      }
+    }
+  }
+
+  augment "/ncs:devices/ncs:global-settings/ncs:ned-settings" {
+    uses ned-loginscripts;
+  }
+
+  augment "/ncs:devices/ncs:profiles/ncs:profile/ncs:ned-settings" {
+    uses ned-loginscripts;
+  }
+
+  augment "/ncs:devices/ncs:device/ncs:ned-settings" {
+    when "../ncs:device-type/ncs:cli/ncs:ned-id = 'cisco-ios-xr-id:cisco-ios-xr'";
+    uses ned-loginscripts;
+  }
+
+}

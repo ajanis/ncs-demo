@@ -1,0 +1,24 @@
+<ncs-pkg-build xmlns='http://tail-f.com/ns/ncs-pkg-build'>
+    <date>2022-01-22 00:52:37</date>
+    <file>ncs-5.7-cisco-ios-6.77.10.tar.gz</file>
+    <type>release</type>
+    <arch>linux.x86_64</arch>
+    <java>compiled Java class data, version 52.0 (Java 1.8)</java>
+    <python></python>
+    <erlang>22.3.4.17</erlang>
+    <package>
+        <name>cisco-ios-cli-6.77</name>
+        <version>6.77.10</version>
+        <ref>6.77.10</ref>
+        <sha1>313fae02e</sha1>
+    </package>
+    <ncs>
+        <version>5.7</version>
+        <sha1></sha1>
+    </ncs>
+    <dev-support>
+        <version>1.0</version>
+        <branch>7f9f8dd</branch>
+        <sha1>7f9f8dd</sha1>
+    </dev-support>
+</ncs-pkg-build>

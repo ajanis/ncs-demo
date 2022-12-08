@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<!-- This file has been generated. Do NOT edit it.
+     For changes edit the original instead.
+-->
+<ncs-package xmlns="http://tail-f.com/ns/ncs-packages">
+  <name>cisco-nx-cli-3.0</name>
+  <package-version>3.0.0.3</package-version>
+  <description>NED package for the Cisco NX</description>
+  <ncs-min-version>3.0.1</ncs-min-version>
+  <component>
+    <name>cisco-nx</name>
+    <ned>
+      <cli>
+        <ned-id xmlns:id="http://tail-f.com/ns/ned-id/cisco-nx-cli-3.0">id:cisco-nx-cli-3.0</ned-id>
+        <java-class-name>com.tailf.packages.ned.nexus.NexusNedCli</java-class-name>
+      </cli>
+      <device>
+        <vendor>Cisco</vendor>
+      </device>
+      <option>
+        <name>show-tag</name>
+        <value>interface</value>
+      </option>
+    </ned>
+  </component>
+</ncs-package>

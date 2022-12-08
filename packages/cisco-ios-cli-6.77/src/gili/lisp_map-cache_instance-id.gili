@@ -1,0 +1,7 @@
+! ios-stats:lisp/map-cache/instance-id{}
+
+<root>
+ <list :: . :: \n instance-id (\d+)/>
+  <key ::  instance-id (\d+) :: id/>
+ </list>
+</root>

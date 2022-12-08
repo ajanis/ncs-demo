@@ -1,0 +1,9 @@
+! ios-stats:inventory
+
+<root>
+ <list :: . :: NAME: (.+), DESCR/>
+  <key :: NAME: (.+), DESCR: :: name/>
+  <leaf :: descr :: NAME: .* DESCR: (.*)/>
+  <leaf :: sn :: PID: .* SN: (\S+)/>
+ </list>
+</root>

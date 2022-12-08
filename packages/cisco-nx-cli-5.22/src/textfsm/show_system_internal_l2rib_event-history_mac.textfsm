@@ -1,0 +1,5 @@
+Value timestamp (\S+\s+\S+\s+\S+\s+\S+)
+Value event (.*)
+
+Start
+  ^\[${timestamp}.*\]\s+${event} -> Record

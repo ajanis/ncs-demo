@@ -1,0 +1,104 @@
+// =========================================================================
+//                          cisco-ios NED
+// =========================================================================
+module tailf-ned-cisco-ios-oper {
+  namespace 'http://tail-f.com/ned/cisco-ios/oper';
+  prefix ios-op;
+
+  import tailf-common {
+    prefix tailf;
+  }
+
+  import tailf-ncs {
+    prefix ncs;
+  }
+
+  import ietf-inet-types {
+    prefix inet;
+  }
+
+  // This import is required when building for CDM style NSOs.
+  // Is automatically removed by the NED build system when
+  // building for old style NSOs.
+  import cisco-ios-cli {
+    prefix family;
+  }
+
+
+  // =========================================================================
+  // REVISION
+  // =========================================================================
+
+  revision 2022-01-21 {
+    description "version 6.77.10, see CHANGES";
+  }
+
+
+  // =========================================================================
+  // Description
+  // =========================================================================
+  // This file contains the cdb-oper part of the CISCO IOS YANG model.
+
+
+  /// ========================================================================
+  /// cisco-ios-oper
+  /// ========================================================================
+
+  augment "/ncs:devices/ncs:device/ncs:ned-settings" {
+    // Different 'when' expressions used when building for NSOs with and without CDM support.
+    // The NED build system will automatically 'uncomment' the right one.
+    //
+    // CDM style syntax
+    //when "derived-from(../ncs:device-type/ncs:cli/ncs:ned-id,'family:cisco-ios-cli')";
+    //
+    // Old style syntax:
+    //when "../ncs:device-type/ncs:cli/ncs:ned-id = 'ios-id:cisco-ios'";
+
+    container cisco-ios-oper {
+      tailf:info "Cisco IOS internal oper data";
+      config false;
+      tailf:cdb-oper {
+        tailf:persistent true;
+      }
+
+      // cisco-ios-oper defaults *
+      list defaults {
+        tailf:cli-suppress-mode;
+        tailf:cli-delete-when-empty;
+        key id;
+        leaf id {
+          type string;
+        }
+        leaf action {
+          type string;
+        }
+      }
+
+      // cisco-ios-oper locks *
+      list locks {
+        tailf:cli-suppress-mode;
+        tailf:cli-delete-when-empty;
+        ordered-by user;
+        key id;
+        leaf id {
+          type string;
+        }
+        leaf path {
+          type string;
+        }
+        leaf trigger {
+          type string;
+        }
+        leaf unlock {
+          type string;
+        }
+      }
+
+      // cisco-ios-oper snmp-server-enable-num-traps
+      leaf snmp-server-enable-num-traps {
+        tailf:info "Number of traps enabled with 'snmp-server enable traps' on device";
+        type string;
+      }
+    }
+  }
+}

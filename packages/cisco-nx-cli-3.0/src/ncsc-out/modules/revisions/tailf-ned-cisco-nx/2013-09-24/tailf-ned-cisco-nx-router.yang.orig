@@ -1,0 +1,13 @@
+submodule tailf-ned-cisco-nx-router {
+
+  belongs-to tailf-ned-cisco-nx {
+    prefix nx;
+  }
+  import tailf-common {
+    prefix tailf;
+  }
+
+  container router {
+    tailf:info "Enable a routing process";
+  }
+}

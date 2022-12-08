@@ -1,0 +1,13 @@
+module cisco-asa-cli-6.6 {
+  yang-version 1.1;
+  namespace "http://tail-f.com/ns/ned-id/cisco-asa-cli-6.6";
+  prefix cisco-asa-cli-6.6;
+
+  import cisco-asa-cli {
+    prefix family;
+  }
+
+  identity cisco-asa-cli-6.6 {
+    base family:cisco-asa-cli;
+  }
+}

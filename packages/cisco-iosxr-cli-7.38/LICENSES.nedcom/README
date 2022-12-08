@@ -1,0 +1,15 @@
+This software package contains code subject to the below license(s)
+
+The nedcom feature 'nedcom-cli-core' depends on the following 3rd party module(s):
+		nanojson-1.2.jar
+
+	These modules are subject to the following license(s)
+		APACHE_V2_LICENSE
+
+The nedcom feature 'livestats-common' depends on the following 3rd party module(s):
+		cisco-serializer.2.7.2b.jar
+		cisco-xalan.2.7.2b.jar
+
+	These modules are subject to the following license(s)
+		APACHE_V2_LICENSE
+		CUP_LICENSE

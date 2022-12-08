@@ -1,0 +1,20 @@
+Value Module ([0-9]+)
+Value Status (Enabled|Disabled)
+Value Cpuhog (Enabled|Disabled)
+Value Environmental_history (Enabled|Disabled)
+Value Error_stats (Enabled|Disabled)
+Value Interrupt_stats (Enabled|Disabled)
+Value Obfl_log (Enabled|Disabled)
+Value Memory_info (Enabled|Disabled)
+
+Start
+  ^\s+Module:\s+${Module} OBFL Log:\s+${Status} -> Module
+
+Module
+  ^\s+(cpuhog|cpu-hog)\s+${Cpuhog}
+  ^\s+environmental-history\s+${Environmental_history}
+  ^\s+error-stats\s+${Error_stats}
+  ^\s+interrupt-stats\s+${Interrupt_stats}
+  ^\s+obfl-log\s+.*${Obfl_log}
+  ^\s+memory-info\s+${Memory_info}
+  ^\s*$ -> Record Start

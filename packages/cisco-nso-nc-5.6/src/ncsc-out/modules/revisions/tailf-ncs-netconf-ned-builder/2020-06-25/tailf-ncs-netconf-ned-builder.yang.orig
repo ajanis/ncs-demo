@@ -1,0 +1,608 @@
+module tailf-ncs-netconf-ned-builder {
+  yang-version 1.1;
+  namespace "http://tail-f.com/ns/ncs/netconf-ned-builder";
+  prefix tnnb;
+
+  import tailf-ncs {
+    prefix ncs;
+  }
+  import ietf-yang-types {
+    prefix yang;
+  }
+  import ietf-inet-types {
+    prefix inet;
+  }
+  import ietf-yang-library {
+    prefix yanglib;
+  }
+  import tailf-common {
+    prefix tailf;
+  }
+
+  organization "Tail-f Systems";
+
+  description
+    "This module defines the Cisco NSO NETCONF NED builder data model.
+
+     Copyright 2019 Cisco Systems, Inc.
+     All rights reserved.
+     Permission is hereby granted to redistribute this file without
+     modification.";
+
+  revision 2020-06-25 {
+    description
+      "Released as part of NCS-5.4.
+
+       Restricted the type of major-version key leaf of
+       /netconf-ned-builder/project list to the type ncs:package-version
+       required by tailf-ncs-packages data model.";
+  }
+
+  revision 2019-06-27 {
+    description "Released as part of NCS-5.2.";
+  }
+
+  typedef module-status-t {
+    type bits {
+      bit deselected {
+        tailf:code-name bit_deselected;
+      }
+      bit selected {
+        tailf:code-name bit_selected;
+      }
+      bit no-dependencies {
+        tailf:code-name bit_no_deps;
+      }
+      bit pending {
+        tailf:code-name bit_pending;
+      }
+      bit downloaded {
+        tailf:code-name bit_downloaded;
+      }
+      bit download-error {
+        tailf:code-name bit_dl_error;
+      }
+    }
+  }
+
+  typedef submodule-status-t {
+    type module-status-t {
+      bit pending;
+      bit downloaded;
+      bit download-error;
+    }
+  }
+
+  typedef build-status-t {
+    type enumeration {
+      enum success;
+      enum error;
+    }
+  }
+
+  typedef dir-path-t {
+    description "Path to a directory in the filesystem.";
+    type string;
+  }
+
+  container netconf-ned-builder {
+    tailf:hidden "tailf-devtools";
+    description
+      "Top container for the NETCONF NED builder data model. The container is
+       invisible in the CLI, unless 'devtools' session parameter is set
+       to 'true'.";
+    grouping common-leafs {
+      description
+        "Common parameters for YANG modules and submodules.";
+
+      leaf name {
+        type yang:yang-identifier;
+        description
+          "The YANG module or submodule name.";
+      }
+      leaf revision {
+        type union {
+          type yanglib:revision-identifier;
+          type string { length 0; }
+        }
+        description
+          "The YANG module or submodule revision date.
+           A zero-length string is used if no revision statement
+           is present in the YANG module or submodule.";
+      }
+    }
+
+    list project {
+      key "family-name major-version";
+      description
+        "An instance of NED project. One project is associated with one device
+         which is used as a reference device for the kind of devices the NED
+         needs to be built. The key of the project is family-name and
+         major-version that are used in the NED name.";
+      leaf family-name {
+        type string;
+        description "NED family name";
+      }
+      leaf major-version {
+        type ncs:package-version;
+        description "NED major version";
+      }
+      leaf device {
+        mandatory true;
+        description
+          "Reference device for the kind of devices the NED is built for.";
+        type leafref {
+          path "/ncs:devices/ncs:device/ncs:name";
+        }
+      }
+      leaf local-user {
+        mandatory true;
+        type string;
+        description
+          "The NETCONF NED builder will authenticate to device with the
+           credentials configured for this NSO user. It is adviced to not
+           configure the 'same-pass' option for this user to communicate
+           with the device, otherwise the NETCONF NED builder will not be
+           able to communicate with the device when the configured user is
+           not logged into NSO.";
+      }
+      leaf vendor {
+        mandatory true;
+        type string;
+        description
+          "Vendor field is a mandatory meta-data for the NED package, stored
+           in the package-meta-data.xml.";
+      }
+      leaf max-download-threads {
+        default 3;
+        type uint8;
+        description
+          "The NETCONF NED builder will download YANG models in multiple
+           threads, and multiple NETCONF session will be open simultaneously
+           towards the device corresponding to the number of threads. This
+           value indicates the maximum number of download threads launched by
+           this NETCONF NED builder project.";
+      }
+      leaf download-cache-path {
+        config false;
+        tailf:cdb-oper {
+          tailf:persistent true;
+        }
+        type string;
+        description
+          "Leaf indicating the location of the cache path, populated by system.
+           The modules in the cache MUST NOT be modified, but modules that are
+           not possible to download may be copied into the cache directory.";
+      }
+      leaf ned-directory-path {
+        config false;
+        tailf:cdb-oper {
+          tailf:persistent true;
+        }
+        type string;
+        description
+          "Leaf indicating the location of the current working NED,
+           populated by system";
+      }
+      leaf build-status {
+        config false;
+        tailf:cdb-oper {
+          tailf:persistent true;
+        }
+        type build-status-t;
+        description
+          "This leaf indicates whether the latest NED build has been
+           successful.";
+      }
+      leaf build-error-info {
+        config false;
+        when "../build-status = 'error'";
+        tailf:cdb-oper {
+          tailf:persistent true;
+        }
+        type string;
+        description
+          "If a NED build resulted in an error, this leaf will contain
+           additional information.";
+      }
+      leaf compiler-output {
+        config false;
+        tailf:hidden debug;
+        tailf:cli-preformatted;
+        tailf:cdb-oper {
+          tailf:persistent true;
+        }
+        type string;
+        description
+          "This hidden leaf contains the full output of the compiler collected
+           during the last build attempt.";
+      }
+      action fetch-module-list {
+        description
+          "This action initiates connection to the device and collects
+           information about the supported data models from capabilities and
+           ietf-yang-library data model, as well as schemas available through
+           ietf-netconf-monitoring data model. The result of this action is
+           stored in the 'module' list.";
+        tailf:actionpoint ncsinternal {
+          tailf:internal;
+        }
+        input {
+          must "deref(../../device)/device-type/ned-id = 'ned:netconf'" {
+            tailf:dependency "../../device";
+          }
+          leaf overwrite {
+            type empty;
+            description
+              "This leaf indiates that the list of modules should be re-fetched,
+               leading to the current selection status being reset and current
+               download cache being cleared.";
+          }
+        }
+      }
+      action build-ned {
+        description
+          "This action creates a minimal NED structure and runs the compiler
+           to build the models for NSO. This NED does not have a netsim
+           directory nor Makefile. It is adviced to avoid modifying such NED
+           by manual intervention, but only by modifying the module selection in
+           NSO and running this action again.
+
+           In case of success the compiled NED is stored in NSO state and may
+           be exported with the 'export-ned' action. In case of failure the NSO
+           only keeps the compiler output in CDB (see 'build-warning' and
+           'build-error' leafs on modules and submodules and 'compiler-output'
+           hidden leaf), but the actual copy of the failed NED is deleted.
+
+           In cases the NED might require more advanced intervention such as
+           modification of YANG files or making a netsim device, it is adviced
+           to make a development NED using 'make-development-ned' action.";
+        tailf:actionpoint ncsinternal {
+          tailf:internal;
+        }
+        input {
+          leaf overwrite {
+            type empty;
+            description
+              "By default we will not overwrite an existing NED. This option
+               tells NSO to delete the existing copy of the NED and try again.";
+          }
+        }
+      }
+      action make-development-ned {
+        description
+          "This action creates a development NED package in the specified
+           parent directory, but does not build it. The package needs to be
+           built separately by running 'make' in its src/ subdirectory. The
+           development NED package supports netsim and the user has the freedom
+           of making modifications to the YANG files or build process.";
+        tailf:actionpoint ncsinternal {
+          tailf:internal;
+        }
+        input {
+          leaf in-directory {
+            mandatory true;
+            type dir-path-t;
+            tailf:cli-completion-actionpoint dir-path-comp;
+            description
+              "The NED directory will be created as subdirectory to the
+               specified one. The user must have write access to the specified
+               directory.";
+          }
+          leaf overwrite {
+            type empty;
+            description
+              "If the file with the generated name already exists in the
+               specified directory, then replace it with the new one.
+
+               If the file exists in the directory and this option is not
+               specified, then the action will fail.";
+          }
+        }
+        output {
+          leaf ned-path {
+            mandatory true;
+            type string;
+            description "Absolute path to the generated NED directory.";
+          }
+        }
+      }
+      action export-ned {
+        description
+          "This action will export the NED previously built with 'build-ned'
+           action in form of tarball. The action takes as input the target
+           directory to write the tar-file into, and the actual file name is
+           generated internally according to the naming convention
+           'ncs-<version>-<ned family>-<ned version>.tar.gz'.";
+        tailf:actionpoint ncsinternal {
+          tailf:internal;
+        }
+        input {
+          leaf to-directory {
+            mandatory true;
+            type dir-path-t;
+            tailf:cli-completion-actionpoint dir-path-comp;
+            description
+              "The tar file containing the NED will be created in the specified
+              directory. The user must have write access to the specified
+              directory.";
+          }
+          leaf overwrite {
+            type empty;
+            description
+              "If the file with the generated name already exists in the
+               specified directory, then replace it with the new one.
+
+               If the file exists in the directory and this option is not
+               specified, then the action will fail.";
+          }
+        }
+        output {
+          leaf tar-file {
+            mandatory true;
+            type string;
+            description "Absolute path to the generated tar file.";
+          }
+        }
+      }
+      action save-selection {
+        description
+          "Saves current selection with specified name under
+           /netconf-ned-builder/profile list. The selection may be
+           modified, exported into XML file and loaded on another system
+           or reused to make similar NED.";
+        tailf:actionpoint ncsinternal {
+          tailf:internal;
+        }
+        input {
+          leaf profile {
+            mandatory true;
+            must "not(/netconf-ned-builder/profile[name=current()])";
+            type string;
+            description
+              "Name of the profile to save. The profile must not exist.";
+          }
+          leaf no-revisions {
+            type empty;
+            description
+              "Save only module names as a profile, without revision data.";
+          }
+        }
+      }
+
+      grouping import-list {
+        list import {
+          key "name";
+          uses common-leafs;
+          description
+            "List of import dependencies for this module or submodule
+             containing imported module and possibly revision if this
+             information is available.";
+        }
+      }
+      grouping location-leaf-list {
+        leaf-list location {
+          type union {
+            type enumeration {
+              enum "NETCONF";
+            }
+            type inet:uri;
+          }
+          description
+            "One or more locations from which the module or submodule can be
+             retrieved.
+
+             The special value 'NETCONF' means that the module or submodule is
+             obtainable using NETCONF get-schema RPC.";
+        }
+      }
+      grouping additional-info {
+        leaf select-info {
+          type string;
+          description
+            "This leaf provides additional information in case of errors
+             selecting or downloading module.";
+        }
+        leaf build-warning {
+          type string;
+          tailf:cli-preformatted;
+          description
+            "This leaf contains compiler warnings related to this module,
+             as printed by the compiler when building the NED.";
+        }
+        leaf build-error {
+          type string;
+          tailf:cli-preformatted;
+          description
+            "This leaf contains compiler errors related to this module,
+             as printed by the compiler when building the NED.";
+        }
+      }
+
+      list module {
+        config false;
+        tailf:cdb-oper {
+          tailf:persistent true;
+        }
+        tailf:cli-allow-wildcard;
+        key "name revision";
+        description
+          "This list contains modules supported by the device as identified
+           by fetch-module-list action.";
+        uses common-leafs {
+          refine name {
+            tailf:cli-allow-range;
+          }
+          refine revision {
+            tailf:cli-allow-range;
+          }
+        }
+        leaf namespace {
+          type inet:uri;
+          mandatory true;
+          description
+            "The XML namespace identifier for this module.";
+        }
+        leaf-list feature {
+          type yang:yang-identifier;
+          description
+            "List of YANG feature names from this module that are
+             supported by the server, regardless of whether they are
+             defined in the module or any included submodule.";
+        }
+        list deviation {
+          key "name";
+          uses common-leafs;
+          description
+            "List of deviation dependencies for this module containing
+             deviation module and possibly revision if this information
+             is available.";
+        }
+        uses import-list;
+        uses location-leaf-list;
+        list submodule {
+          key "name revision";
+          description
+            "This list contains submodules belonging to the module as
+             identified by fetch-module-list action.";
+          uses common-leafs;
+          uses import-list;
+          uses location-leaf-list;
+          leaf status {
+            type submodule-status-t;
+            description "Download status of the submodule";
+          }
+          uses additional-info;
+        }
+        leaf status {
+          type module-status-t;
+          description "Selection and download status of the module";
+        }
+        uses additional-info;
+        action select {
+          description
+            "Select module for including in the NED. Selecting the module
+             automatically starts download of the module and all of its
+             submodules in background. Certain other dependencies are also
+             selected by default, see option 'no-dependencies' below.";
+          tailf:actionpoint ncsinternal {
+            tailf:internal;
+          }
+          input {
+            leaf no-dependencies {
+              type empty;
+              description
+                "Do not select module's dependencies automatically. By default
+                 known deviations and impored modules are automatically
+                 selected. This option is useful for scripting.
+
+                 Submodules are always selected if there are any, regardless
+                 of this option being set.";
+            }
+          }
+        }
+        action deselect {
+          description
+            "Deselecting the module removes the selection mark, but does not
+             remove the YANG file if it has already been downloaded.
+             A deselected module is not included in the NED.
+
+             Unlike action 'select', this action does not check the
+             dependencies between the modules. It only deselects this module
+             and its submodules, but not any modules depending on it.";
+          tailf:actionpoint ncsinternal {
+            tailf:internal;
+          }
+        }
+      }
+    }
+    list profile {
+      key name;
+      description
+        "This list contains profiles, which are reusable selections of
+        modules. The module name is mandatory, while the revision is
+        optional which makes it possible to reuse between different device
+        versions, e.g. to generate a new version of the NED for
+        the upgraded device.";
+      leaf name {
+        type string;
+        description "The name of the profile.";
+      }
+      list module {
+        key name;
+        uses common-leafs {
+          refine revision {
+            description
+              "The revision is optional in the profile. If unset, then
+               applying the profile will select the module with the
+               matching name and any revision.";
+          }
+        }
+      }
+      action apply {
+        description
+          "Select the set of modules defined by this profile in the project
+           indicated by the input parameters.";
+        tailf:actionpoint ncsinternal {
+          tailf:internal;
+        }
+        input {
+          leaf family-name {
+            mandatory true;
+            type leafref {
+              path "/netconf-ned-builder/project/family-name";
+            }
+            description "Reference to the target project's family-name.";
+          }
+          leaf major-version {
+            mandatory true;
+            type leafref {
+              path "/netconf-ned-builder/project" +
+                "[family-name=current()/../family-name]/major-version";
+            }
+            description "Reference to the target project's major-version.";
+          }
+          leaf best-effort {
+            type empty;
+            description "Skip modules that do not exist in the project.";
+          }
+          leaf with-dependencies {
+            type empty;
+            description
+              "By default the list of modules configured in a profile is
+               assumed to be exhaustive so the dependencies for the selected
+               modules are not selected. This option allows to select modules
+               specified by the profile and automatically select their
+               dependencies.";
+          }
+        }
+        output {
+          leaf result {
+            type enumeration {
+              enum applied;
+              enum not-applied;
+            }
+            description "The result of the profile application.";
+          }
+          leaf-list selected {
+            type string;
+            description
+              "The list of names of the successfully selected modules.";
+          }
+          leaf-list not-found {
+            type string;
+            description
+              "The list of names of the modules that were not found in the
+               target project.";
+          }
+          leaf-list ambiguous {
+            type string;
+            description
+              "The list of names of the modules that were found in more than
+               one instance in the target project.";
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,52 @@
+! if:interfaces-state/interface{}
+! RFC7223 - A YANG Data Model for Interface Management
+! RFC7277 - YANG IP Management
+
+<root>
+ <list :: . :: Interface (\S+)/>
+  <key :: Interface (\S+) :: name/>
+  <leaf :: type/>
+  <leaf :: admin-status :: \S+ is(?: administratively)? (down|up).* line protocol is :: type=enumeration/>
+  <leaf :: oper-status :: line protocol is (\S+)/>
+  <leaf :: last-change/>
+  <leaf :: if-index/>
+  <leaf :: phys-address :: MAC address (\S+), :: type=phys-address/>
+  <leaf :: higher-layer-if/>
+  <leaf :: lower-layer-if/>
+  <leaf :: speed :: , BW (.+) :: type=integer/>
+  <leaf :: statistics/discontinuity-time/>
+  <leaf :: statistics/in-octets :: packets input,\s*(\d+) bytes/>
+  <leaf :: statistics/out-octets :: packets output,\s*(\d+) bytes/>
+
+  <buf-start :: \d+ packets input :: include/>
+  <buf-end :: \d+ packets output/>
+  <leaf :: statistics/in-unicast-pkts :: \s*(\d+) packets input/>
+  <leaf :: statistics/in-broadcast-pkts :: Received \s*(\d+) broadcast/>
+  <leaf :: statistics/in-multicast-pkts ::  \s*(\d+) multicast/>
+  <leaf :: statistics/in-discards :: \s*(\d+) total input drops/>
+  <leaf :: statistics/in-errors :: \s*(\d+) input errors,/>
+  <leaf :: statistics/in-unknown-protos :: \s*(\d+) unknown protocol drops/>
+
+  <buf-reset/>
+  <buf-start :: \d+ packets output :: include/>
+  <leaf :: statistics/out-unicast-pkts :: \s*(\d+) packets output/>
+  <leaf :: statistics/out-broadcast-pkts :: Output \s*(\d+) broadcast packets/>
+  <leaf :: statistics/out-multicast-pkts :: \s*(\d+) multicast packets/>
+  <leaf :: statistics/out-discards :: \s*(\d+) total output drops/>
+  <leaf :: statistics/out-errors :: \s*(\d+) output errors,/>
+
+  <buf-reset/>
+  <container :: ip:ipv4/>
+   <leaf :: forwarding :: true :: type=constant/>
+   <leaf :: mtu :: MTU (\d+)/>
+   <list :: neighbor/>
+  </container>
+
+  <container :: ip:ipv6/>
+   <leaf :: forwarding :: true :: type=constant/>
+   <leaf :: mtu :: MTU (\d+)/>
+   <list :: neighbor/>
+  </container>
+
+ </list>
+</root>

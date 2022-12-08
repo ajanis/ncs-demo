@@ -1,0 +1,774 @@
+1. Introduction
+---------------
+
+   This document describes the NED for the Cisco Nexus device.
+
+   The NED supports two communication methods towards the device:
+
+   - CLI
+     The NED connects to the device CLI using either SSH or Telnet.
+     Configuration is done by sending native CLI commands to the
+     device through the communication channel.
+
+   - NXAPI
+     The NED connects the device using the Cisco Nexus NXAPI, which
+     is a REST/XML interface. Configuration is done by sending a full
+     sequence of CLI commands using NXAPI messages.
+
+
+2. Getting started
+------------------
+
+   Set up the environment in $DIR, change DIR to something suitable
+
+     > tar xvzf ned-cisco-nx.tgz
+     > mv ned-cisco-nx $NCS_DIR/packages/neds/
+
+     > export DIR=/tmp/ncs-cisco-nx
+     > ncs-setup --ned-package $NCS_DIR/packages/neds/cisco-nx --dest $DIR
+     > cd $DIR
+
+   Start ncs:
+     > ncs
+
+   Start NCS CLI:
+     > ncs_cli -C -u admin
+
+   In the NCS CLI configure the device. Enter configuration mode:
+     # configure
+
+   Set the required configurables, address, remote user data including
+   remote secondary password, if needed:
+     # devices device nxdev address <device address>
+     # devices device nxdev device-type cli ned-id cisco-nx
+     # devices device nxdev state admin-state unlocked
+
+     # devices authgroups group nexus umap admin remote-name <login username>
+     # devices authgroups group nexus umap admin remote-password <login password>
+     # devices authgroups group nexus umap admin remote-secondary-password <the 'enable' password>
+     # devices device nxdev authgroup nexus
+     # commit
+
+   For a CLI connection configure method, port and protocol:
+     # devices device nxdev ned-settings cisco-nx connection method cli
+     # devices device nxdev port <typically 22 or 23>
+     # devices device nxdev device-type cli protocol <telnet or ssh>
+     # commit
+
+   For a NXAPI connection configure method and port params:
+     # devices device nxdev ned-settings cisco-nx connection method nxapi
+     # devices device nxdev port <typically 80 or 443>
+
+   For a NXAPI connection over HTTPS it is also necessary to configure SSL:
+
+   SSL alternative 1:
+
+     Accept any SSL certificate presented by the device. This is unsafe
+     and should only be used for testing.
+
+     In the NCS CLI:
+     # devices device nxdev ned-settings cisco-nx connection ssl accept-any
+
+   SSL alternative 2:
+
+     Configure a specific SSL certificate for a device. The certificate
+     shall be entered in DER Base64 format, which is the same as the
+     PEM format but without the banners \"----- BEGIN CERTIFICATE-----\" etc.
+
+     Use the Unix tool 'openssl' to fetch the PEM certificate from a device:
+
+     In a Unix shell:
+     > openssl s_client -connect <device address>:<port>
+
+     In the NCS CLI:
+     # devices device nxdev ned-settings cisco-nx connection ssl certificate <Base64 binary>
+
+
+   Optional debug and trace configurables:
+
+     Make the NED dump all NXAPI or CLI messages sent to/from the Cisco Nexus device
+     # devices global-settings trace raw
+     # commit
+
+     Make the NED print debug log messages
+     # java-vm java-logging logger com.tailf.packages.ned.nexus level level-debug
+     # commit
+
+   Exit configure mode:
+     # exit
+
+   Try to connect to the device:
+     # devices device nxdev connect
+
+   Read the configuration from the device:
+     # devices device nxdev sync-from
+
+   Look at the configuration:
+     # show running-config devices device nxdev
+
+
+3. Other NED specific settings
+------------------------------
+
+   To be able to select the behaviour of the NED for configuration that varies
+   between models/versions there are ned-settings which can be set globally or
+   per ned instance. Specifically the NED has settings which can be forced to be
+   enabled/disabled, or dynamically set depending on NX-OS version. These
+   settings are found in the container cisco-nx behaviours under ned-settings.
+
+   Format for setting secondary addresses on vlan interfaces:
+   --
+   The setting 'iface-vlan-ipv6-secondary' selects the type of address settings
+   to use for ipv6 addresses on vlan interfaces. When this setting is enabled a
+   primary address must be set first, followed by secondary addresses which are
+   marked with a 'secondary' tag appended to the address line. When disabled
+   this tag is absent and the addresses are just added as a list. Currently this
+   setting is enabled by default if NX-OS version is < 7.0.
+
+   Alternative way to calculate transaction ID
+   --
+   To avoid the overhead of 'show running-config' in each transaction,
+   especially with large device configurations, there is now a new way to
+   calculate transaction IDs. This method by default let's the device calculate
+   an md5-hash of the running-config by running the following commands (run as a
+   one line towards device):
+
+     show running-config | exclude Time: > volatile:///ncstransconf.tmp
+     show file volatile:///ncstransconf.tmp md5sum
+     delete volatile:///ncstransconf.tmp no-prompt
+
+   To enable this behaviour, use the following ned-setting:
+
+     ned-settings cisco-nx transaction trans-id-method device-command
+
+   The command(s) to run on the device to calculate the transaction-id is
+   configurable (e.g. to be able to configure a 'cli alias' to be used together
+   with NXAPI). This can be done with the following ned-setting:
+
+     ned-settings cisco-nx transaction trans-id-cmd mycommand
+
+   (here 'mycommand' could be a cli alias configured on the device)
+
+   The output from the command is hashed by the NED (to make it into a valid
+   transaction-id in NSO), so the only thing to consider is that the output from
+   the given command should be fixed for a given device configuration, being an
+   equivalent of a 'hash' calculated from the 'static' running-config
+   (e.g. excluding timestamp).
+
+   Copy running config to startup config
+   --
+   By default the NED does 'copy running-config startup-config' after each
+   successful transaction (i.e. in the persist-phase). This behaviour can be
+   changed with the ned-setting 'cisco-nx peristence/model'. This setting can
+   take three values:
+
+   'strict' (default):
+   This is the default behaviour, always persisting device running-config to
+   startup-config.
+
+   'never':
+   This setting inhibits the default, i.e. the running-config is never persisted
+   to the startup-config.
+
+   'schedule':
+   This setting is a new new option introduced to improve performance when for
+   example often doing several transactions in a row, where one would only want
+   to persist the config after a delayed time, to remove the time waiting for the
+   actual copy from the transactions (i.e. the device does it in the 'background').
+
+   This works by configuring the device with a scheduler job which does the
+   actual 'copy running-config startup-config'. One also configures a schedule
+   which should run this job. The schedule name is given to NSO with the
+   ned-setting 'cisco-nx peristence/schedule/name'. One can also set the delay
+   (in minutes) between the NSO transaction and the actual schedule on the
+   device (default is 1 minute). The NED then schedules the job using the given
+   schedule after the given delay.
+
+   Example config on device:
+     ...
+     scheduler job name NSO_PERSIST
+       copy running-config startup-config
+     end-job
+
+     scheduler schedule name NSO_PERSIST_SCHED
+       job name NSO_PERSIST
+     !
+
+   Used with the following ned-settings in NSO:
+     ...
+     ned-settings cisco-nx persistence model schedule
+     ned-settings cisco-nx persistence schedule name NSO_PERSIST_SCHED
+     ned-settings cisco-nx persistence schedule time 5
+
+
+   Use device provided configuration 'diff' to save on bandwidth
+   --
+   The setting 'use-show-diff' enables the new behaviour of using device config
+   'diff' instead of a full running-config on for example sync-from or
+   compare-config. This setting is by default disabled. When enabled the NED
+   only fetches the full running config once per 'instance', i.e. when the NED
+   instance is created/connected. After that point, the local (NCS) config is
+   updated by fetching 'diffs' from the device like this:
+
+     show running-connfig | diff
+
+   Note: this setting is no longer enabled by default, since inconsistencies has
+   been found on some NX-OS versions causing out-of-sync issues.
+
+   Always fetch interface values for shutdown/switchport regardless of default
+   --
+   The setting 'show-interface-all' can be used to enable the NED to always
+   fetch values for switchport settings as well as shutdown leaf for all
+   interface instances (i.e. in spite of these values normally being
+   trimmed). This setting is useful for example to mitigate the somewhat
+   intricate 'dynamic' defaults behaviour NX-OS has for handling the the value
+   of switchport/shutdown (due to hard-coded behaviour and/or the global setting
+   'system default switchport').
+
+   By default, the command sent to the device to fetch the defaults are:
+
+   For CLI:
+       show running-config interface all | include \"interface|shutdown|switchport\" | exclude Time: | exclude vlan | exclude mode
+
+   For NXAPI:
+       show running-config interface all
+
+   The command to run on the device to fetch the needed defaults can be set
+   using the new ned-setting 'show-interface-all-cmd', for example to narrow
+   what is being sent from device for specific use-case (especially for NXAPI
+   where the default doesn't do any device-side filtering, due to limitations
+   depending on how NXAPI is used.
+
+   When this ned-setting is active, by default, flowcontrol and mtu values will
+   also be fetched from the device to fix problems with dynamic defaults of
+   these (to exclude flowcontrol and mtu, disable ned-setting
+   'show-interface-extras'. The command used (in CLI mode) is:
+
+      show running-config interface all | sec Ethernet | include \"interface Ethernet|flowcontrol|mtu\"
+
+   NOTE: As of version 4.4.4 of cisco-nx, show-interface-all works with NXAPI
+   too.
+
+   Always fetch true MTU value using 'show interface'
+   --
+   The ned-setting 'behaviours true-mtu-values' can be used to mitigate
+   incorrect device behaviour, which can give wrong MTU value for ethernet ports.
+
+   Seemingly, when for example using a system qos policy with a default MTU, the
+   device doesn't show correct MTU for ethernet ports when using the 'show
+   running-config interface all' command (when the default should be displayed).
+
+   The command which will be run to fetch MTU values is:
+
+     show interface | inc \"Ethernet[0-9]|MTU\"
+
+   NOTE: This ned-setting can be used either stand-alone, to correct for this
+   behaviour, but it can also be used together with either 'behaviours
+   show-interface-all', or 'system-interface-defaults handling'
+
+   Syntax of 'port-channel load-balance' command
+   --
+   The setting 'port-channel-load-balance-ethernet' is used to select which
+   syntax to use for this command. By default the syntax 'port-channel
+   load-balance ethernet ...' is used in NX-OS version <= 5.2.
+
+   Default value used for 'mac address-table notification mac-move'
+   --
+   The setting 'default-notification-mac-move' is used to set what default value
+   the 'mac-move' leaf has. This affects how this value is trimmed from the
+   config (i.e. the default is not shown). By default the ned assumes that in
+   NX-OS version > 6.0 the default is enabled (i.e. mac-move is only shown when it
+   is not set as 'no mac address-table notification mac-move').
+
+   Default value used for 'lacp suspend-individual' under interface port-channel
+   --
+   The setting 'default-lacp-suspend-individual' is used to set what default
+   value the 'suspend-individual' leaf has. This affects how this value is
+   trimmed from the config (i.e. the default is not shown). By default the ned
+   assumes that in NX-OS version > 5.1 the default is enabled
+   (i.e. suspend-individual is only shown when it is not set as
+   'no lacp suspend-individual').
+
+   Re-deploy L3-config after vrf member change on ethernet and vlan interfaces
+   --
+
+   The setting 'vrf-member-l3-redeploy' is used to force NSO to redeploy some
+   layer3-config to Ethernet, Vlan , Bdi, and Tunnel interfaces when vrf
+   membership is set/reset. This is useful since same value can't normally be
+   re-set by NSO in same transaction because NSO does not know about the
+   "reset-L3-config" behaviour. The config that is currently redeployed is
+   marked in the yang-model with the annotation nx:data-category "layer3" (acts
+   recursively).
+
+   NOTE: All other config potentially flused by device, must still be removed in
+         NSO within same transaction to avoid out-of-sync (i.e. all other
+         config set in NSO, but removed by device when vrf membership changes)
+
+   Re-deploy MTU value on ethernet interface when toggled to switchport
+   --
+   The setting 'switchport-mtu-redeploy' can be enabled to re-deploy mtu set in
+   NSO on ethernet interface when toggled to switchport (i.e. to avoid mtu being
+   reset to default).
+
+   Default value used for 'service unsupported-transceiver'
+   --
+   The setting 'default-unsupported-transceiver' is used to set what default
+   value the 'service unsupported-transceiver' leaf has. This affects how this
+   value is trimmed from the config (i.e. the default is not shown). By default
+   the ned assumes that in NX-OS version > 6.1 the default is enabled (i.e. it
+   only shows on the device when negated: 'no service unsupported-transceiver').
+
+   Default 'copp profile' to strict when hidden in running-config
+   --
+   The setting 'default-copp-profile-strict' is used to avoid sending 'no copp
+   profile ...' for nx-os versions where the 'hidden' default profile is
+   'strict' and NSO rolls back a transaction where the profile was changed to
+   something else.
+
+   Speed up sync-from and compare-config operations
+   --
+   The setting 'cisco-nx extended-parser' can be used to enable a faster way to
+   handle sync-from and compare-config. This is by default enabled (when NSO
+   supports it, i.e. version >= 4.4.1).
+
+   Support for VTP config
+   --
+   The setting 'vtp-support' can be used to fully support configuring
+   VTP. Normally some of the VTP configuration is not visible in a normal 'show
+   running-config' hence this needs to be handled differently. To fully support
+   configuring VTP, also regardless of configured mode, this ned-setting needs
+   to be enabled. When used, the extra VTP config is fetched from the device by
+   sending "show vtp status ; show vtp password" and then processing the output
+   to populate configuration not shown in running-config. The VTP operational
+   status can also be viewed with 'live-status vtp' as operational data.
+
+
+4. Sample Device Configuration
+------------------------------
+
+   For instance, create a VLAN interface:
+     # configure
+     # devices device nxdev config
+     # vlan 10
+     # name TEST-VLAN
+     # interface Vlan10
+     # no shutdown
+     # ip address 1.2.3.4/24
+     # commit
+
+   Verify that NCS is in-sync with the device
+
+   Alternative 1
+     # check-sync
+
+   Alternative 2
+     # compare-config
+
+
+5. Show Device Statistics
+-------------------------
+
+  The NED has support for the Cisco Nexus native show command.
+  For instance, to display some BGP summary:
+
+     # devices device nxdev live-status exec show bgp l2vpn evpn sum
+     result BGP summary information for VRF default, address family L2VPN EVPN
+     BGP router identifier 9.1.1.1, local AS number 65000
+     BGP table version is 91, L2VPN EVPN config peers 1, capable peers 1
+     0 network entries and 0 paths using 0 bytes of memory
+     BGP attribute entries [0/0], BGP AS path entries [0/0]
+     BGP community entries [0/0], BGP clusterlist entries [0/0]
+
+     Neighbor        V    AS MsgRcvd MsgSent   TblVer  InQ OutQ Up/Down  State/PfxRcd
+     10.1.1.1        4 65000    1123    1123       91    0    0 18:18:22 0
+
+
+6. Run arbitrary commands on device
+-----------------------------------
+
+   The NED has the ability to run arbitrary commands from either exec or config
+   mode. By convention, in exec-mode (i.e. live-status exec) command-lines are
+   prepended with 'any'. For example:
+
+    admin@ncs# devices device nx7k live-status exec any event manager run my_app
+
+   To run a command in config mode, the 'exec' keyword is prepended to the
+   command-line to run, like:
+
+    admin@ncs(config)# devices device nx7k config exec default interface e3/1
+
+   When commands run on device requests info from user, the NED defaults to just
+   sending RETURN to choose a default value (if possible). Sometimes one needs
+   to actually add specific answers (e.g. a password) to these prompts, this can
+   be done by adding them as a list of comma-separated strings enclosed in
+   square-brackets, for example:
+
+    admin@ncs# devices device nx7k live-status exec any any ping [management, 1.2.3.4, 3, 100]
+
+   This will send the strings enclosed in square-brackets as answers to the
+   first four prompts from the device (i.e. management, 1.2.3.4 et.c.).
+
+   NOTE: You can also add standard question/answers to use with the ned-setting
+   auto-prompts described below.
+
+   You can send multiple commands by separating them with ';' (i.e. just like on
+   device). For example, when running a 'config exec', to enter sub-modes, this
+   needs to be done with separate commands delimited with ';' like this:
+
+     admin@ncs(config-config)# exec "interface port-channel 17 ; description Foo Bar ; switchport ; shutdown ; switchport mode trunk"
+
+   To force each command to be sent separately to device (i.e. just like typing
+   each command and entering it into console), use the ned-setting
+   '/cisco-nx/connection/split-exec-any' (see below).
+
+   The timeout while waiting for response from device is the 'write-timeout' set
+   for the NED instance.
+
+   There is a special keyword '_NOWAIT_' (i.e. the string NOWAIT 'enclosed' in
+   underscores) which can be used as the last string in the answers array. This
+   will cause the NED to not wait for a device response after the last answer
+   has been sent (e.g. 'y' when doing reload). Also, the NED will ignore an
+   end-of-file error from device if this keyword is used (e.g. if device 'hangs
+   up' directly when a previous answer in the array was sent).
+
+   Also, when '_NOWAIT_' is used, if device 'hangs' or is doing a long-running
+   operation, and the NED timeouts while waiting for a response, it is not
+   considered an error.
+
+   NOTE: When '_NOWAIT_' is used, the session is closed before returning call,
+   hence the NED instance will be disconnected afterwards to avoid the 'stale'
+   instance being re-used.
+
+    admin@ncs# devices device nx7k live-status exec any reload vdc [y, y, _NOWAIT_]
+
+
+7. When connecting through a proxy using SSH or TELNET
+------------------------------------------------------
+
+   Do as follows to setup to connect to a NX device that resides
+   behind a proxy or terminal server:
+
+   +-----+  A   +-------+   B  +----+
+   | NCS | <--> | proxy | <--> | NX |
+   +-----+      +-------+      +----+
+
+   Setup connection (A):
+
+   # devices device cisco0 address <proxy address>
+   # devices device cisco0 port <proxy port>
+   # devices device cisco0 device-type cli protocol <proxy proto - telnet or ssh>
+   # devices authgroups group ciscogroup umap admin remote-name <proxy username>
+   # devices authgroups group ciscogroup umap admin remote-password <proxy password>
+   # devices device cisco0 authgroup ciscogroup
+
+   Optionaly, if the proxy device is a cisco (e.g. ios) device, you might also need
+   to set the remote-secondary-password if needed to enable privileged mode.
+
+   Setup connection (B):
+
+   Define the type of connection to the device:
+
+   # devices device cisco0 ned-settings cisco-nx proxy remote-connection <ssh|telnet>
+
+   Define login credentials for the device:
+
+   # devices device cisco0 ned-settings cisco-nx proxy remote-name <user name on the NX device>
+   # devices device cisco0 ned-settings cisco-nx proxy remote-password <password on the NX device>
+
+   Define prompt on proxy server (not needed if the device is a cisco device, e.g. ios):
+
+   # devices device cisco0 ned-settings cisco-nx proxy proxy-prompt <prompt pattern on proxy>
+
+   Define address and port of NX device (i.e. behind the proxy):
+
+   # devices device cisco0 ned-settings cisco-nx proxy remote-address <address to the NX device>
+   # devices device cisco0 ned-settings cisco-nx proxy remote-port <port used on the NX device>
+   # commit
+
+   By default, the command-line that will be run on the proxy to connect to
+   device (i.e. connection B) is either of the below (depending on selected
+   protocol), where the $(...) will be replaced by the respective ned-setting:
+
+   ssh -p $(proxy/remote-port) $(proxy/remote-name)@$(proxy/remote-address) $(proxy/remote-ssh-args)
+
+   telnet $(proxy/remote-address) $(proxy/remote-port)
+
+   Optionally, you can define a custom command-line to run on proxy:
+
+   # devices device cisco0 ned-settings cisco-nx proxy remote-command <command-line>
+   # commit
+
+   Here the <command-line> can contain $address, $port, and $name which will be
+   replaced by the corresponding ned-setting (i.e. proxy/remote-address et.c.)
+
+
+8. When connecting to a terminal server
+---------------------------------------
+
+Use cisco-nx proxy remote-connection serial when you are connecting to
+a terminal server. NOTE: The protocol set as the "ned protocol" (i.e. 'telnet'
+in the below example) is what is used to connect to the terminal server.
+
+You may also need to specify remote-name and remote-password if the
+device has a separate set of login credentials.
+
+Example terminal server config:
+
+devices authgroups group term-sj-nx3k default-map remote-name 1st-username remote-password 1st-password remote-secondary-password cisco
+devices device term-sj-nx3k address 1.2.3.4 port 1234
+devices device term-sj-nx3k authgroup term-sj-nx3k device-type cli ned-id cisco-nx protocol telnet
+devices device term-sj-nx3k connect-timeout 30 read-timeout 600 write-timeout 600
+devices device term-sj-nx3k state admin-state unlocked
+devices device term-sj-nx3k ned-settings cisco-nx proxy remote-connection serial
+devices device term-sj-nx3k ned-settings cisco-nx proxy remote-name 2nd-username
+devices device term-sj-nx3k ned-settings cisco-nx proxy remote-password 2nd-password
+
+
+9. Connection related ned-settings (under container cisco-nx connection)
+------------------------------------------------------------------------
+
+To control the behaviour of the NED when it encounters a "transient"
+error reported by device, there are two ned-settings, described
+below. Currently the errors considered transient are hard-coded into
+the NED. Replies from the device which contains (case-insensitive) any
+of the following lines (without the quotes) as part of the
+error-message are considered transient errors:
+
+  "wait for it to complete"
+  "re-try this command at a later time"
+  "please try creating later"
+  "is being removed, retry later"
+  "wait for the system"
+
+EXAMPLE: if the device replies with the message:
+"Configuration update aborted: services in transient state,
+wait for the system to stabilize"
+
+This will be considered a transient failure since the string "wait for
+the system" is part of the message.
+
+By default the NED will retry 60 times, with a one second delay
+(before cisco-nx version v4.3.6 this was hard-coded, and was only done
+in CLI mode). The below ned-settings are now available to control the
+count/delay.
+
+NOTE: Both CLI and NXAPI modes use the same retry-behaviour/settings
+as of cisco-nx v4.3.6. In NXAPI the field 'clierror' is used for
+determining if a reply is to be interpreted as a transient error.
+
+cisco-nx/connection/device-retry-count
+--
+This setting controls the number of times to retry (set zero to fail
+instantly, without retry).
+
+cisco-nx/connection/device-retry-delay
+--
+This setting controls the delay (in milli-seconds) between retry
+attempts, the default if not set is 1000 milli-seconds.
+
+cisco-nx/connection/split-exec-any
+--
+This setting is used to force sending commands on one line each when using
+'live-status exec' or 'config exec'. This can be useful for example if the
+command-line is too long to be sent to device.
+
+NOTE: When this setting is used together with an answer-array, the length of the
+answer-array needs to match the number of commands (i.e. number of commands
+separated with ' ; ', if a command needs no answer, just enter an string):
+
+
+10. Adding automatic responses to device interactions during 'exec' commands
+----------------------------------------------------------------------------
+
+When using 'live-status exec any' or 'config exec' one can pass a sequence of
+responses to the device when 'standard' questions/prompts are received in the
+NED (i.e. with the square-bracket syntax described above). An alternative way to
+pass answer to prompts is using ned-settings 'auto-prompts', which is a way to
+register standard answers to standard questions. These are given as a list of
+question/answer pairs. The 'question' in this respect is given as a regexp.
+
+For example, to always answer the question about overwriting files when doing
+file copy one can add the following ned-setting:
+
+devices device nx3k ned-settings cisco-nx auto-prompts 1 question "Do you want to overwrite \(y/n\)\?\[n\] " answer y
+
+This will catch the question from the device, and answer 'y'. Note that this can
+be used together with the square-bracket responses, for example to give a
+password to a file-copy command.
+
+
+11. Handling of varying device defaults for switchport and shutdown
+-------------------------------------------------------------------
+
+The ned-settings found under 'system-interface-defaults' can be used to improve
+handling of default values for switchport/shutdown of interfaces.
+
+The problem (from an NSO perspective) with Ethernet and port-channel ports on
+Nexus is that the default state can be set dynamically with the global settings
+'system default switchport' and 'system default switchport shutdown. To that,
+these global settings also have varying default setting on different devices
+which further adds to the confusion how to handle these.
+
+The ned-setting 'show-interface-all' is a bit of an ineffective way to discover
+'hidden' default values for swichport/shutdown of ports. Also, the default
+shutdown state of sub-interfaces will not be reflected correctly even when this
+setting is used.
+
+The new settings under 'system-interface-defaults' can be used to resolve this
+problem by injecting the 'hidden' defaults before NSO sees the config, hence NSO
+is made aware of these settings (this is necessary both for dynamic defaults,
+and also config modeled as an empty leaf, which NSO can't handle).
+
+The setting 'system-interface-defaults/handling is used to enable the use of
+this feature. By default it is disabled.
+
+The setting 'system-interface-defaults/handling' value 'auto' can be used with
+CLI mode connect to device (i.e. currently not supported with NXAPI). This will
+make the NED inspect the global settings on the device at connect, then use this
+'knowledge' to pretend these defaults are not hidden by injecting them.
+
+Some devices have a different default value for L3 physical ports (i.e. not same
+as the system port default). This has been observed for switches which have the
+system default set to L2 ports which are shutdown by default. In this case the
+ned-setting 'system-interface-defaults/default-l3-port-shutdown' can be used to
+set the default to false, i.e. 'no shutdown' will be default for L3 ports in
+that case.
+
+If the auto handling fails for some reason, or you are using NXAPI, you need to
+use the value 'explicit' for the 'system-interface-defaults/handling'
+setting. Then you must explicitly set the corresponding system default under the
+node 'system-interface-defaults/explicit'. The leaf 'switchport' corresponds to
+the value of 'system default switchport' on the device (i.e. if this leaf is
+present on device, this setting should be set to 'true'). The leaf 'shutdown'
+corresponds in the same way to the value of 'system default switchport shutdown'
+on the device.
+
+NOTE: when inspecting these values on your device, you might need to do:
+
+      'show running-config all | inc 'system default switchport'
+
+To actually see them, since the default value of these settings are hidden,
+also, on some switches the 'system default switchport' is not there at all,
+implying it has layer 2, switchport, as default.
+
+In addition to the dynamic defaults dependent on 'system default switchport' The
+default value of the shutdown leaf will be correctly handled for Vlan/Bdi/Tunnel
+interfaces as well as sub-interfaces of port-channel and Ethernet ports.
+
+For details on where this is used, see yang-model, look for the custom extension
+cli:context-value-inject, with when-expression containing reference to virtual
+node '/tailfned/inject-switchport-defaults'.
+
+
+12. Handling of keys and passwords which are transformed by device
+------------------------------------------------------------------
+
+Setting keys and passwords in cleartext (e.g. 'ntp authentication-key 1 md5
+foobar 0') results in the device showing the encrypted value along with the
+algorithm/type of the key in the running-config resulting in a diff between what
+NSO stored and what is shown on device. To mitigate this, i.e. to be able to
+provision cleartext keys and passwords from NSO, there is a ned-setting to
+enable the NED to take care of this situation (i.e. storing the cleartext in
+NSO).
+
+To enable this feature enable the ned-setting cleartext-provisioning, like this:
+
+   'devices device nx-1 ned-settings cisco-nx behaviours cleartext-provisioning enable'
+
+When type-6 keys are enabled/disabled, the ned can handled 'encryption
+re-encrypt obfuscated' and 'encryption decrypt type6' commands if run through
+the 'exec any' feature. I.e. keys that have been set in cleartext before
+encryption/decryption to/from type-6 will still be in-sync after operation
+(NOTE: only when run through 'exec any' in ned, not if run directly on device).
+
+By default all keys/passwords are stored in cleartext in CDB. To avoid this, the
+ned-setting 'behaviours cleartext-stored-encrypted' can be enabled. When this
+setting is enabled, all passwords/keys provisioned must be set encrypted using
+the type 'tailf:aes-cfb-128-encrypted-string'. Note that the type in the
+yang-model in the NED for these fields has not changed, it is NOT the encryped
+type. Instead, this means that the value put INTO these fields must be encrypted
+(e.g. by using a value from a leaf in a template where the yang type is
+tailf:aes-cfb-128-encrypted-string).
+
+Another feature to avoid storing cleartext passwords in CDB (i.e. keys and
+passwords in the device model) is to recompile the NED and setting an alternate
+yang-type to all nodes handled as "secret". This is done by recompiling, and
+setting the compile variable NEDCOM_SECRET_TYPE to the desired type, like this:
+
+  make NEDCOM_SECRET_TYPE="tailf:aes-cfb-128-encrypted-string" clean all
+
+This will change the yang type of all leaf nodes containing keys/passwords
+(check yang-model for type NEDCOM_SECRET_TYP for all nodes that are
+handled). When NED is recompiled like this, the values of these nodes can be set
+with cleartext (i.e. as opposed to using the feature
+'cleartext-stored-encrypted' described above).
+
+NOTE: When cleartext-provisioning is enabled for an exisiting device
+(i.e. already containing keys/passwords), the cleartext keys/passwords are NOT
+available to the NED/NSO. If one wants to handle exising keys/passwords they
+need to be re-commited to the device. Set all keys and passwords to same value
+as it already has on device, but in cleartext, and commit to device. This will
+not change anything on the device, but will capture the cleartext/encrypted
+'mappings' in the NED so it can handle these values as cleartext values.
+
+NOTE2: When cleartext-stored-encrypted is enabled the output of "dry-run native"
+doesn't show decrypted values, it shows the "verbatim" encrypted values,
+however, the decrypted values will be sent to device.
+
+
+13. Detecting and/or ignoring warnings/errors from device during transactions
+-----------------------------------------------------------------------------
+
+When the NED applies config to the device during a transaction it will
+automatically abort the transaction if it detects an error according to a
+hard-coded list of known "fatal" error-messages. However, sometimes there might
+be warnings that indicate that the config being applied is not valid, leading to
+the device ignoring it. This will lead to an inconsistent state, where NSO and
+the device is not in sync. In other situations, the device might indicate an
+error, but for a specific scenario it can safely be ignored.
+
+In sitations like these it is useful to be able to define messages that the
+device reports back as either to be ignored, or to be treated as fatal
+errors. This can be done with the ned-settings 'transaction
+config-abort-warning' and 'transaction config-ignore-error'. With these, one can
+set regular expressions which are matched against the message sent back from
+device in response to config being applied (i.e. the message is searched for a
+match against each expression in the lists). Each ned-setting is a list, where
+the key is the regular-expression. When an expression matches, it either ignores
+the error message, or abort the transaction depending on in which ned-setting
+list it is found.
+
+Example to ignore the error message "Cannot remove primary address" (which is
+normally considered fatal, aborting transaction), one can set this:
+
+  devices device nx-1 ned-settings cisco-nx transaction config-ignore-error "^.*annot remove primary address.*$"
+
+NOTE: the regular expression is a standard multi-line regular expression, using
+^ and $ for start/end-of-line.
+
+
+14. Handling special config that can be considered 'dayzero'
+------------------------------------------------------------
+
+Some configuration is not easily handled in NSO, often this config can be
+considered 'dayzero' in the sense that it's some global parameter deciding the
+profile of the device (e.g. 'system admin-vdc'), set at initial device
+setup. Some times it can be convenient to be able to read that config from
+within NSO. For such cases the ned-setting behaviours/dayzero-included can be
+enabled. This will include some more config in the model (search yang-model for
+annotation 'nx:dayzero-config'). Enabling this ned-setting will consider the
+extra config to be read-only, hence if one tries to change it the transaction
+will be aborted.
+
+To be able to write this kind of config (even though it means doing a sync-from
+after transaction to get in sync with the device). One must also enable the
+ned-setting behaviours/dayzero-permit-write.
+
+The below config is currently marked as 'dayzero' and will not be visible in NSO
+by default:
+
+   /system/admin-vdc
+   /system/default/switchport
+   /system/default/switchport-config/switchport/shutdown
+   /system/default/switchport-config/switchport/fabricpath
+   /slot/port

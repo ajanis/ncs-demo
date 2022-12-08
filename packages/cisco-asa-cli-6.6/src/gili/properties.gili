@@ -1,0 +1,1 @@
+show-error-regex=(syntax error:)|(Invalid input detected)|(ERROR: )

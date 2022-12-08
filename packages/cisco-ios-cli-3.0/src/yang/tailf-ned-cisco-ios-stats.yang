@@ -1,0 +1,111 @@
+module tailf-ned-cisco-ios-stats {
+  namespace "urn:ios-stats";
+  prefix ios-stats;
+
+  import tailf-common {
+    prefix tailf;
+  }
+
+  // IPv4 prefix (address and mask length) in A.B.C.D/P format
+  typedef ipv4-prefix {
+    type string {
+      pattern
+      '(([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])\.){3}'
+      +  '([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])'
+      + '/(([0-9])|([1-2][0-9])|(3[0-2]))';
+    }
+  }
+
+  // IPv6 prefix in standard format
+  typedef ipv6-prefix {
+    type string {
+      pattern '((:|[0-9a-fA-F]{0,4}):)([0-9a-fA-F]{0,4}:){0,5}'
+      + '((([0-9a-fA-F]{0,4}:)?(:|[0-9a-fA-F]{0,4}))|'
+      + '(((25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])\.){3}'
+      + '(25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])))'
+      + '(/(([0-9])|([0-9]{2})|(1[0-1][0-9])|(12[0-8])))';
+      pattern '(([^:]+:){6}(([^:]+:[^:]+)|(.*\..*)))|'
+      + '((([^:]+:)*[^:]+)?::(([^:]+:)*[^:]+)?)'
+      + '(/.+)';
+    }
+  }
+
+  container commands {
+    tailf:action idle-timeout {
+      tailf:actionpoint ncsinternal {
+        tailf:internal;
+      }
+      input {
+        leaf time {
+          type int32;
+        }
+      }
+      output {
+        leaf result {
+          type string;
+        }
+      }
+    }
+
+    tailf:action version {
+      tailf:actionpoint ncsinternal {
+        tailf:internal;
+      }
+      input {
+      }
+      output {
+        leaf result {
+          type string;
+        }
+      }
+    }
+  }
+
+  // Or alternatively if we want
+  // the commands defined as RPCs
+  rpc idle-timeout {
+    tailf:actionpoint ncsinternal {
+      tailf:internal;
+    }
+    input {
+      leaf time {
+        type int32;
+      }
+    }
+    output {
+      leaf result {
+        type string;
+      }
+    }
+  }
+
+
+  // M3_BEGIN nedstats.interfaces.part
+
+  list interfaces {
+    config false;
+    key "type name";
+
+    leaf name {
+      type string;
+    }
+
+    leaf "type" {
+      type string;
+    }
+
+    leaf ip-address {
+      type union {
+        type ipv4-prefix;
+        type ipv6-prefix;
+      }
+    }
+
+    leaf mac-address {
+      type string;
+    }
+
+  }
+
+// M3_END nedstats.interfaces.part
+}

@@ -1,0 +1,12 @@
+! ios-stats:lisp/eid-table-vrf{}/dynamic-eid{}
+
+<root>
+ <list :: . :: \nDynamic-EID name:\s+(\S+) :: delete-parent-when-empty/>
+  <key :: Dynamic-EID name:\s+(\S+) :: name/>
+  <leaf :: eid-prefix :: EID-prefix: (\S+),/>
+  <leaf :: locator-set :: locator-set (\S+)/>
+  <leaf :: map-servers :: Map-Server\(s\): (.+)/>
+  <leaf :: map-notify-group :: Map-Notify group: (.+)/>
+  <leaf :: roam-dyneid-discovered :: roaming dynamic-EIDs discovered: (\d+)/>
+ </list>
+</root>

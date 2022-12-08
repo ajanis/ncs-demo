@@ -1,0 +1,28 @@
+module tailf-ncs-monitoring-ann {
+  namespace "urn:dummy";
+  prefix dummy;
+
+  import tailf-common {
+    prefix tailf;
+  }
+  import tailf-ncs-monitoring {
+    prefix tfnm;
+  }
+
+  description
+    "Copyright 2019 Cisco Systems, Inc.
+     All rights reserved.
+     Permission is hereby granted to redistribute this file without
+     modification.";
+
+  /* Lines containing the word FIXME are stripped out in release version */
+  /* FIXME: Add tailf:info for better UI ?? */
+
+  tailf:annotate "/tfnm:ncs-state" {
+    tailf:callpoint "confd" {
+      tailf:internal;
+    }
+
+    tailf:info "NCS status information";
+  }
+}

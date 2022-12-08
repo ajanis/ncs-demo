@@ -1,0 +1,11 @@
+! ios-stats:lisp/session
+
+<root>
+ <list :: . :: \n(\d\S+) />
+  <key :: (\S+) :: peer/>
+  <leaf :: state :: $2/>
+  <leaf :: up-down :: $3/>
+  <leaf :: in-out :: $4/>
+  <leaf :: users :: $5/>
+ </list>
+</root>

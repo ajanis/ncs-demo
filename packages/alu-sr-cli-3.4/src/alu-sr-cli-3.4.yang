@@ -1,0 +1,13 @@
+module alu-sr-cli-3.4 {
+  yang-version 1.1;
+  namespace "http://tail-f.com/ns/ned-id/alu-sr-cli-3.4";
+  prefix alu-sr-cli-3.4;
+
+  import alu-sr-cli {
+    prefix family;
+  }
+
+  identity alu-sr-cli-3.4 {
+    base family:alu-sr-cli;
+  }
+}

@@ -1,0 +1,17 @@
+! ios-stats:lisp/map-cache/instance-id{}/host{}
+
+<root>
+ <buf-start :: \d+ entries/>
+ <list :: . :: (\S+), uptime :: delete-parent-when-empty/>
+  <key :: (\S+), uptime :: ip/>
+  <leaf :: host-uptime :: uptime: (\S+),/>
+  <leaf :: expires :: expires: (\S+),/>
+  <leaf :: via :: via (.+)/>
+  <leaf :: action :: action: (\S+)/>
+  <leaf :: locator :: L3$1/>
+  <leaf :: locator-uptime :: L3$2/>
+  <leaf :: state :: L3$3/>
+  <leaf :: pri-wgt :: L3$4/>
+  <leaf :: encap-iid :: L3$5/>
+ </list>
+</root>

@@ -1,0 +1,14 @@
+! cisco-ios-xr-stats:lldp/neighbors{}
+
+<root>
+ <list :: . :: \nLocal Interface: (\S+)/>
+  <key :: Local Interface:\s+(\S+) :: local-interface/>
+  <leaf :: parent-interface :: Parent Interface:\s+(\S+)/>
+  <leaf :: device-id :: System Name:\s+(\S+)/>
+  <leaf :: time-remaining :: Time remaining:\s+(\S+)/>
+  <leaf :: hold-time :: Hold Time:\s+(\S+)/>
+  <leaf :: capability :: Enabled Capabilities: (.+)/>
+  <leaf :: chassis-id :: Chassis id:\s+(\S+)/>
+  <leaf :: port-id :: Port id:\s+(\S+)/>
+ </list>
+</root>

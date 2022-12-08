@@ -1,0 +1,40 @@
+module tailf-ncs-acm {
+  namespace "http://tail-f.com/yang/ncs-acm";
+  prefix tnacm;
+
+  import ietf-netconf-acm {
+    prefix nacm;
+  }
+
+  organization "Tail-f Systems";
+
+  description
+    "This module augments ietf-netconf-acm with additional
+     access control data specific to NCS.
+
+     Copyright 2019 Cisco Systems, Inc.
+     All rights reserved.
+     Permission is hereby granted to redistribute this file without
+     modification.";
+
+  revision 2019-11-28 {
+    description
+      "Initial revision.
+
+       Released as part of NCS-5.3.";
+  }
+
+  augment /nacm:nacm {
+    leaf enforce-nacm-on-services {
+      type boolean;
+      default false;
+      description
+        "By design NACM rules are ignored for changes done by services -
+         FASTMAP, Reactive FASTMAP, or Nano services.
+
+         This leaf allows NCS administrators to control this behavior:
+         NCS administrators can enforce NACM rules even on changes done by
+         services.";
+    }
+  }
+}

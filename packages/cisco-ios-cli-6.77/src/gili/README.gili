@@ -1,0 +1,130 @@
+README GILI-parser
+==================
+
+  The GILI-parser is used for populating config false data under live-status.
+  GILI parses output of device show command(s) and populates the YANG model.
+
+  The GILI templates have the file prefix .gili and are located in the
+  <ned name>/src/gili/ directory.
+
+  +++ GILI template SYNTAX:
+
+  <root>
+   <log-verbose/>
+   <include :: <template file/>
+   <macro :: <name> :: <replacement>/>
+   <buf-error :: <regex> [:: clear]/>
+   <buf-start :: <regex> [:: include|clear]/>
+   <buf-end :: <regex> [:: include]/>
+   <buf-replace-all :: <regex> :: <replacement>/>
+   <list :: <name> [:: <delim regex>] [:: delete-parent-when-empty]/>
+    <key :: <regex> :: key1 [:: keyN]/>
+    <leaf :: [<nameN>/]<name> [:: <regex>|<constant>] [:: type|tolower|default]/>
+    <buf-reset/>
+    <buf-push/>
+    <buf-pop/>
+    <container :: [<nameN>/]<name>/>
+    </container>
+   </list>
+  </root>
+
+
+  +++ ANNOTATIONS:
+
+  <root>
+   A GILI template starts with <root> and ends with </root>.
+   All lines before start and after end are silently discarded.
+   Any line not starting with '<' is treated as a comment and
+   also silently discarded.
+
+  <log-verbose/>
+   Enable verbose tracing for extended tracing at template development.
+
+  <include :: template.gili>
+   Include another GILI template. The additional template is expanded
+   in the same location. An include template may not include other
+   templates.
+
+  <macro :: <name> :: <replacement>/>
+   Define a macro to be used later on in the template. All instances
+   of {macroname} is replaced with the <replacement> value at loading
+   time of the template.
+
+  <buf-error :: <regex> [:: clear]/>
+    Throw an error if buffer contains <regex>, unless clear options is
+    included then no error will be thrown but the buffer is ceared.
+
+  <buf-start :: <regex> [:: include|clear]/>
+    Trim beginning of buffer. If include option is set then the text
+    matched by <regex> will also be trimmed. If clear option is included
+    then the whole buffer is cleared if <regex> matches.
+
+  <buf-end :: <regex> [:: include]/>
+    Trim end of buffer. If include option is set then the text matched
+    by <regex> will not be trimmed.
+
+  <buf-replace-all :: <regex> :: <replacement>/>
+    Run String.replaceAll on buffer with <regex> and <replacement> args.
+
+  <list :: .|<name> :: <delim regex>|empty [:: delete-parent-when-empty]/>
+   Each <list> must have a <key> immediately after the <list> line.
+   If list <name> is '.' then the last component of current path is used.
+   <name> may also contain container name(s), i.e. xxx/yyy will result in
+   container xxx being created with list yyy in it.
+   The buffer (called 'buf') is split in <list> element by the <delim regex>.
+   Each partial buffer will result in a list entry if key(s) are found.
+   Must end with </list> when all contents are specified.
+
+  <key :: <regex> :: key1 [:: keyN]/>
+   The <regex> is a regular expression which will extract the values for the
+   key(s). The key names are specified after the <regex>. Any number of keys
+   are supported.
+
+  <leaf :: [<nameN>/]<name> [:: <regex>|<constant>] [:: type|tolower|default]/>
+   Populate a leaf in current container/list. If nameN is specified then
+   container(s) are created (any number) and the leaf set inside.
+   To insert a constant in a leaf skip a catching group in the <regex>.
+   If <regex> is not found, default value is used if set.
+   Option type=phys-address|integer|activity|constant can be used to transform
+   the value before set on the leaf.
+   Option tolower can be used to on leaf value to make it all lowercase.
+
+  <buf-reset/>
+   Buffer is reset to it's original value before any buf-start, buf-end have
+   trimmed it.
+
+  <buf-push/>
+  <buf-pop/>
+   These can be used to push the buffer on a stack before modifying it.
+   Later on the previous value can be retrieve from the stack by a buf-pop.
+   <buf-push> and <buf-pop> can be nested.
+
+  <container :: [<nameN>/]<name>/>
+   Specify one or more container paths.
+   Must end with </container> when all contents are specified.
+
+  The best way to learn the syntax of the GILI-parser is to study the
+  existing templates in src/gili and the corresponding YANG in *-stats.yang
+
+  To implement new live-status in the NED all you have to do is:
+
+    1) Update src/yang/tailf-ned-<ned name>-stats.yang with new YANG
+
+    2) Create a matching GILI template file in src/gili directory.
+       The GILI template name must match the path.
+       Replace '/' with '_' and ignore the '<ned>-stats:' prefix unless
+       the live-status DATA is from another YANG file, e.g. ietf-ip with
+       prefix "ip".
+
+    3) Enable raw trace and set log-verbose ned-setting to true.
+
+    4) Debug using ncs_cli and 'show devices device <dev> live-status <name>
+       You can also use ncs_cmd -c to get leaves and ncs_load to get lists.
+       Any issues (command prints nothing), check the trace file for clues.
+
+  Finally, the properties.gili file can be used to change the <regex>
+  specifying when a show command failed. On cisco-ios, the value is:
+
+  show-error-regex=(syntax error:)|(Invalid input detected)
+
+==================

@@ -1,0 +1,377 @@
+<clispec xmlns="http://tail-f.com/ns/clispec/1.0" style="i">
+  <operationalMode>
+
+    <cmd name="version" mount="show">
+      <info>System hardware and software status</info>
+      <help>System hardware and software status</help>
+      <callback>
+        <exec>
+          <osCommand>./show_version.sh</osCommand>
+          <options>
+            <noInput/>
+            <pty>false</pty>
+          </options>
+        </exec>
+      </callback>
+    </cmd>
+
+    <cmd name="system" mount="show">
+      <info>Show system</info>
+      <help>Show system</help>
+      <callback>
+        <exec>
+          <osCommand>./cmd_dispatcher.sh</osCommand>
+          <args>system</args>
+          <options>
+          </options>
+        </exec>
+      </callback>
+      <params>
+          <any>
+            <info>&lt;params&gt;</info>
+            <help>&lt;params&gt;</help>
+          </any>
+      </params>
+    </cmd>
+
+    <cmd name="cdp" mount="show">
+      <info>Show cdp</info>
+      <help>Show cdp</help>
+      <callback>
+        <exec>
+          <osCommand>./cmd_dispatcher.sh</osCommand>
+          <args>lldp</args>
+          <options>
+          </options>
+        </exec>
+      </callback>
+      <params>
+          <any>
+            <info>&lt;params&gt;</info>
+            <help>&lt;params&gt;</help>
+          </any>
+      </params>
+    </cmd>
+
+    <cmd name="inventory" mount="show">
+      <info>Show inventory</info>
+      <help>Show inventory</help>
+      <callback>
+        <exec>
+          <osCommand>./cmd_dispatcher.sh</osCommand>
+          <args>lldp</args>
+          <options>
+          </options>
+        </exec>
+      </callback>
+      <params>
+          <any>
+            <info>&lt;params&gt;</info>
+            <help>&lt;params&gt;</help>
+          </any>
+      </params>
+    </cmd>
+
+    <cmd name="lldp" mount="show">
+      <info>Show lldp</info>
+      <help>Show lldp</help>
+      <callback>
+        <exec>
+          <osCommand>./cmd_dispatcher.sh</osCommand>
+          <args>lldp</args>
+          <options>
+          </options>
+        </exec>
+      </callback>
+      <params>
+          <any>
+            <info>&lt;params&gt;</info>
+            <help>&lt;params&gt;</help>
+          </any>
+      </params>
+    </cmd>
+
+    
+    <cmd name="nve" mount="show">
+      <info>Show nve</info>
+      <help>Show nve</help>
+      <callback>
+        <exec>
+          <osCommand>./cmd_dispatcher.sh</osCommand>
+          <args>nve</args>
+          <options>
+          </options>
+        </exec>
+      </callback>
+      <params>
+          <any>
+            <info>&lt;params&gt;</info>
+            <help>&lt;params&gt;</help>
+          </any>
+      </params>
+    </cmd>
+
+    <cmd name="vlan" mount="show">
+      <info>Show vlan</info>
+      <help>Show vlan</help>
+      <callback>
+        <exec>
+          <osCommand>./cmd_dispatcher.sh</osCommand>
+          <args>vlan</args>
+          <options>
+          </options>
+        </exec>
+      </callback>
+      <params>
+          <any>
+            <info>&lt;params&gt;</info>
+            <help>&lt;params&gt;</help>
+          </any>
+      </params>
+    </cmd>
+
+    <cmd name="vrf" mount="show">
+      <info>Show vrf</info>
+      <help>Show vrf</help>
+      <callback>
+        <exec>
+          <osCommand>./cmd_dispatcher.sh</osCommand>
+          <args>vrf</args>
+          <options>
+          </options>
+        </exec>
+      </callback>
+      <params>
+          <any>
+            <info>&lt;params&gt;</info>
+            <help>&lt;params&gt;</help>
+          </any>
+      </params>
+    </cmd>
+
+    <cmd name="mac" mount="show">
+      <info>Show mac</info>
+      <help>Show mac</help>
+      <callback>
+        <exec>
+          <osCommand>./cmd_dispatcher.sh</osCommand>
+          <args>mac</args>
+          <options>
+          </options>
+        </exec>
+      </callback>
+      <params>
+          <any>
+            <info>&lt;params&gt;</info>
+            <help>&lt;params&gt;</help>
+          </any>
+      </params>
+    </cmd>
+
+    <cmd name="forwarding" mount="show">
+      <info>Show forwarding</info>
+      <help>Show forwarding</help>
+      <callback>
+        <exec>
+          <osCommand>./cmd_dispatcher.sh</osCommand>
+          <args>forwarding</args>
+          <options>
+          </options>
+        </exec>
+      </callback>
+      <params>
+          <any>
+            <info>&lt;params&gt;</info>
+            <help>&lt;params&gt;</help>
+          </any>
+      </params>
+    </cmd>
+
+    <cmd name="ip" mount="show">
+      <info>Show ip</info>
+      <help>Show ip</help>
+      <callback>
+        <exec>
+          <osCommand>./cmd_dispatcher.sh</osCommand>
+          <args>ip</args>
+          <options>
+          </options>
+        </exec>
+      </callback>
+      <params>
+          <any>
+            <info>&lt;params&gt;</info>
+            <help>&lt;params&gt;</help>
+          </any>
+      </params>
+    </cmd>
+
+    <cmd name="bgp" mount="show">
+      <info>Show bgp</info>
+      <help>Show bgp</help>
+      <callback>
+        <exec>
+          <osCommand>./cmd_dispatcher.sh</osCommand>
+          <args>bgp</args>
+          <options>
+          </options>
+        </exec>
+      </callback>
+      <params>
+          <any>
+            <info>&lt;params&gt;</info>
+            <help>&lt;params&gt;</help>
+          </any>
+      </params>
+    </cmd>
+
+    <cmd name="interface" mount="show">
+      <info>Show interface</info>
+      <help>Show interface</help>
+      <callback>
+        <exec>
+          <osCommand>./cmd_dispatcher.sh</osCommand>
+          <args>interface</args>
+          <options>
+          </options>
+        </exec>
+      </callback>
+      <params>
+          <any>
+            <info>&lt;params&gt;</info>
+            <help>&lt;params&gt;</help>
+          </any>
+      </params>
+    </cmd>
+
+    <cmd name="vtp" mount="show">
+      <info>Show vtp</info>
+      <help>Show vtp</help>
+      <callback>
+        <exec>
+          <osCommand>./cmd_dispatcher.sh</osCommand>
+          <args>vtp</args>
+          <options>
+          </options>
+        </exec>
+      </callback>
+      <params>
+          <any>
+            <info>&lt;params&gt;</info>
+            <help>&lt;params&gt;</help>
+          </any>
+      </params>
+    </cmd>
+
+    <cmd name="xml" mount="">
+      <info>&lt;cmd&gt; | xml</info>
+      <help>&lt;cmd&gt; | xml</help>
+      <callback>
+        <exec>
+          <osCommand>./cmd_dispatcher.sh</osCommand>
+          <args>xml</args>
+          <options>
+          </options>
+        </exec>
+      </callback>
+      <params>
+          <any>
+            <info>&lt;params&gt;</info>
+            <help>&lt;params&gt;</help>
+          </any>
+      </params>
+    </cmd>
+
+    <cmd name="length" mount="terminal">
+      <info>Set number of lines on a screen</info>
+      <help>Set number of lines on a screen</help>
+      <callback>
+        <exec>
+          <osCommand>maapi</osCommand>
+          <args>--cliset screen-length</args>
+          <options>
+            <noInput/>
+          </options>
+        </exec>
+      </callback>
+      <params>
+        <param>
+          <type>
+            <simpleType namespace="http://tail-f.com/ns/cli-builtin/1.0"
+                        name="screen-length" />
+          </type>
+        </param>
+      </params>
+    </cmd>
+
+    <cmd name="width" mount="terminal">
+      <info>Set width of the display terminal</info>
+      <help>Set width of the display terminal</help>
+      <callback>
+        <exec>
+          <osCommand>maapi</osCommand>
+          <args>--cliset screen-width</args>
+          <options>
+            <noInput/>
+          </options>
+        </exec>
+      </callback>
+      <params>
+        <param>
+          <type>
+            <simpleType namespace="http://tail-f.com/ns/cli-builtin/1.0"
+                        name="screen-width" />
+          </type>
+        </param>
+      </params>
+    </cmd>
+
+    <cmd name="ping" mount="">
+      <info>Test network reachability</info>
+      <help>Test network reachability</help>
+      <params>
+          <any>
+            <info>ping params</info>
+            <help>ping params</help>
+          </any>
+      </params>
+      <callback>
+        <exec>
+          <osCommand>./do_ping.sh</osCommand>
+          <options>
+            <noInput/>
+            <pty>false</pty>
+          </options>
+        </exec>
+      </callback>
+    </cmd>
+
+    <cmd name="traceroute" mount="">
+      <info>Traceroute to destination</info>
+      <help>Traceroute to destination</help>
+      <params>
+          <any>
+            <info>traceroute params</info>
+            <help>traceroute params</help>
+          </any>
+      </params>
+      <callback>
+        <exec>
+          <osCommand>./do_traceroute.sh</osCommand>
+          <options>
+            <noInput/>
+            <pty>false</pty>
+          </options>
+        </exec>
+      </callback>
+    </cmd>
+
+  </operationalMode>
+
+  <pipeCmds>
+    <modifications>
+      <move src="include" dest="grep"/>
+    </modifications>
+  </pipeCmds>
+
+</clispec>

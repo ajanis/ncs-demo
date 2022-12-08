@@ -1,0 +1,259 @@
+README - NED-CONNECTOR
+----------------------
+
+  This README describes the NEDCOM common connection API - NED-CONNECTOR
+
+  The NED connection steps are configured in JSON connection templates,
+  from now on called connector(s). The connectors work in combination
+  with connection ned-settings (such as those located in 'connection'
+  or 'proxy' containers) to specify the prompts, commands and states
+  required to connect to, and optionally setup, the device. If, for example,
+  proxy ned-settings are not used, or multiple hops are used, connection
+  info can be hard coded in the template(s) directly.
+
+  There are 3 default connectors, located in src/metadata in the NED package:
+
+      ned-connector-default.json - standard SSH/TELNET
+      ned-connector-proxy.json   - single SSH/TELNET jump host (proxy)
+      ned-connector-serial.json  - terminal console
+
+  Additional, modified/extended or device specific connectors can be
+  specified using the 'connection connector' ned-setting. The new NED
+  connector(s) must also reside in the same NED package directory.
+
+  Once a connection is completed, the NED may optionally use
+  ned-interactor-setup.json and/or ned-interactor-platform.json to
+  further setup the device and retrieve devices device platform
+  data. Hence in other words, there may be 1-3 connectors/interactors
+  involved in a successful connect:
+
+      ned-connector-default.json   - Connect
+      ned-interactor-setup.json    - Setup device [optional]
+      ned-interactor-platform.json - Retrieve platform info [optional]
+
+  Note: If the setup and platform interactors do not exist in the NED
+  package, then those steps are hardcoded in the Java code.
+
+  The connection procedure, whether it is the actual connect in the
+  connector or the interactors, use a simple state machine configured
+  by a JSON template with the following syntax:
+
+  {
+    "pattern" : {
+        "patternName" : "Pattern.MULTILINE regular expression"
+    },
+    "command" : {
+        "commandName" : "<command>"
+    },
+    "state": {
+        "new" : [
+            {"expect": "$pattern|<regex>", "action": "$command|<command>", "nextState": "stateName"}
+        ],
+        "stateName" : [
+            {"expect": "$pattern|<regex>", "action": "$command|<command>", "nextState": "end"},
+            {"expect": "$pattern|<regex>", "action": "reportError()",     "nextState": "invalid"}
+        ]
+    }
+  }
+
+  Note:
+  $name refers to "pattern" and/or "command" and is used in "expect"
+  and "action" properties. $(name) refers to a ned-setting or
+  device/authgroup variable, i.e. a setting external to the template.
+
+  There are three top level JSON objects: pattern, command and state:
+
+  pattern:
+    A "name":"value" list of Pattern.MULTILINE regular expressions
+    used in the state objects expect properties. Examples of values
+    are proxy or device prompt(s), login/password prompts and
+    ignore/error expressions, all used to match which action should be
+    taken in a state.
+
+  command:
+    A "name":"value" list of commands to send to the device.
+
+  state:
+    A list of JSON objects each containing expect, action and
+    nextState properties used to determine which device output
+    triggers what action and/or state change.
+
+    A state name should describe which phase the connection procedure
+    is in. There are three built-in states, where only "new" must be
+    defined:
+
+     new     - The first state, mandatory. Must start with a null
+               expect and must contain the connect() method if the
+               connector template
+     invalid - The connection procedure is aborted by throwing an exception
+     end     - The final state, the connection is complete
+
+    A state object contains three properties:
+
+    expect:
+      A pattern property (specified by $name) or a Pattern.MULTILINE
+      regular expression. If null, this object is automatically
+      matched and the state machine executes the action and changes
+      state to nextState. If "", this object is ignored, this can be
+      useful in combinations with ned-settings, to only expect on some
+      input if the ned-setting is set.
+
+    action:
+      A command property (specified by $name) containing the command
+      to send, the command directly, or a predefined action method.
+      If the action is evaluated to "" after ned-setting or "command"
+      injection then the state object is ignored. The following action
+      methods are supported:
+
+      common methods:
+
+      reportError(text)
+        Abort connection with 'text' message or if no text is given;
+        the last received input from device.
+
+      sendExpected()
+        Send last input excluding the expect pattern which matched.
+
+      sendNewline()
+        Send a newline to the device.
+
+      noecho(text)
+        Send 'text' without waiting for echo. Do not log.
+
+      password(text)
+        Send 'text' without waiting for echo. Do not log.
+        Also Maapi decrypt if encrypted.
+
+      ifdef(ned-setting, action [,nextState] [,elseAction])
+        A flexible method used to take different actions or paths in
+        the state machine. If ned-setting is set (not "") then the
+        'action' is taken and state changed to 'nextState' (if
+        defined). If no match, then 'elseAction' is taken and the
+        state is changed to the value defined in the nextState
+        property.
+
+      matches(text, pattern, action [,nextState] [,elseAction])
+        A flexible method used to take different actions or paths in
+        the state machine. If 'text' matches 'pattern' then the
+        'action' is taken and state changed to 'nextState' (if
+        defined). If no match, then 'elseAction' is taken and the
+        state is changed to the value defined in the nextState
+        property.
+
+        'text' may be a ned-setting, a device-setting or $(text) if
+        you want to match with the session text buffer, i.e.
+        ignored device output before last matched pattern.
+
+      connector only methods:
+
+      connect() | connect(width,height)
+        The first mandatory method in connector state new. Connects to
+        device using SSH or TELNET with address, port and protocol
+        taken from devices device. Screen width and height may
+        optionally be passed (must give both) to the SSH/TELNET protocols.
+        Default is width = 200 and height = 24.
+
+      sendUsername()
+        Send devices authgroups group remote-name.
+
+      sendPassword()
+        Send devices authgroups group remote-password. Do not log.
+
+      sendSecondaryPassword()
+        Send devices authgroups group remote-secondary-password
+        without waiting for echo or logging.
+
+      connector proxy methods:
+
+      sendProxyUsername()
+        Send proxy remote-name (from ned-setting or authgroups group)
+
+      sendProxyPassword()
+        Send proxy remote-password (from ned-setting or authgroups group)
+
+      sendProxySecPassword()
+        Send remote-secondary-password (from ned-setting or authgroups group)
+        without waiting for echo or logging.
+
+      platform-interactor only methods:
+
+      setName(regex, text) | setName(name)
+        Apply 'regex' on last received input (excluding the matched
+        expect pattern) and inject $n groups in 'text' which will be
+        used as the devices device platform name value.
+        Note: regex may be a pattern property name, in case which the
+        pattern value is used.
+        If only one argument, then that is used as the name.
+
+      setVersion(regex, text)
+        Apply 'regex' on last received input (excluding the matched
+        expect pattern) and inject $n groups in 'text' which will be
+        used as the devices device platform version value.
+        Note: regex may be a pattern property name, in case which the
+        pattern value is used.
+
+      setModel(regex, text)
+        Apply 'regex' on last received input (excluding the matched
+        expect pattern) and inject $n groups in 'text' which will be
+        used as the devices device platform model value.
+        Note: regex may be a pattern property $name, in case which the
+        pattern value is used.
+
+      setSerial(regex, text)
+        Apply 'regex' on last received input (excluding the matched
+        expect pattern) and inject $n groups in 'text' which will be
+        used as the devices device platform serial value.
+        Note: regex may be a pattern property $name, in case which the
+        pattern value is used.
+
+
+  internal macros:
+     $pattern in "expect" refers to a "pattern" property named 'pattern'
+     $command in "action" refers to a "command" property named 'command'
+     In both cases, the property value is checked for ned-settings
+     both before and after.
+
+  device settings:
+    The following device/authgroup settings may be used anywhere in
+    the JSON template:
+
+     $(port) - devices device port
+     $(proto) - devices device proto
+     $(remote-name) - devices authgroups group remote-name
+     $(remote-password) - devices authgroups group remote-password
+     $(remote-secondary-password) - devices authgroups group remote-secondary-password
+     $(proxy-remote-name) - remote-name for proxy/authgroup
+     $(proxy-remote-password) - remote-password for proxy/authgroup
+     $(proxy-remote-secondary-password) - remote-secondary-password for proxy/authgroup
+
+    Note: if not defined, their value is "", useful with ifdef()
+    method to test on, to take alternative actions and paths in the
+    state machine.
+
+
+  ned-settings:
+    ned-settings can be used anywhere in the JSON template and will be
+    replaced by their value or "" it not defined (in the YANG) or if
+    not set. ned-settings are specified as $(path) where path starts
+    from ned-settings <ned name>, e.g. $(proxy/remote-connection)
+
+    Boolean ned-settings are specified using $B(path) and replaced
+    with "true" if set and "" if not set.
+
+
+  debugging:
+    Enable raw trace and set log-verbose true to enable extensive
+    tracing, usable to debug the connection state machine:
+
+    devices global-settings trace raw
+    devices global-settings ned-settings <nedname> log-verbose true
+    commit
+    devices disconnect
+    devices connect
+
+
+  backwards compatibility:
+    Some NEDs still have the legacy connect code left in the NED, just
+    in case there are bugs/missing features in the NED connector. To
+    enable the legacy connect, set the 'connection legacy-mode'
+    ned-setting to enabled.

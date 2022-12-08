@@ -1,0 +1,209 @@
+module tailf-ncs-progress {
+  namespace "http://tail-f.com/ns/ncs-progress";
+  prefix ncs-progress;
+
+  import ietf-yang-types {
+    prefix yang;
+  }
+
+  import tailf-progress {
+    prefix progress;
+  }
+
+  import tailf-common {
+    prefix tailf;
+  }
+
+  import tailf-ncs {
+    prefix ncs;
+  }
+
+  description
+    "This module contains a collection of YANG definitions for
+     tracing progress in NCS.
+
+     Copyright 2019 Cisco Systems, Inc.
+     All rights reserved.
+     Permission is hereby granted to redistribute this file without
+     modification.";
+
+  revision 2020-06-25 {
+    description
+      "Released as part of NCS-5.4.
+
+       Added /progress/trace/debug.";
+  }
+
+  revision 2019-06-27 {
+    description
+      "Released as part of NCS-5.2.
+
+       Added /progress/trace/event/package.
+
+       Added enum 'show-offline', 'show-stats', 'show-stats-list',
+       'is-alive', 'keep-alive', 'reconnect', and 'cmd' to
+       /progress/trace/event/device-phase.";
+  }
+
+  revision 2018-11-12 {
+    description
+      "Released as part of NCS-4.7.2.
+
+       Made leaf /progress/trace/event/service to not require instance.";
+  }
+
+  revision 2018-06-21 {
+    description
+      "Released as part of NCS-4.7.
+
+       Added display-groups to some nodes.";
+  }
+
+  revision 2018-03-01 {
+    description
+      "Released as part of NCS-4.6.
+
+       Initial revision.";
+  }
+
+  augment "/progress:progress/progress:trace" {
+    leaf-list debug {
+      description
+        "Additional debug tracing. These are consciously left out of the
+         normal debug level due to the high amount of output.
+         Use with care.";
+      type enumeration {
+        enum xpath {
+          description
+            "Detailed output from the XPath evaluator.";
+        }
+        enum kicker {
+          description
+            "Detailed output from data kicker evaluation.";
+        }
+        enum subscriber {
+          description
+            "Detailed output from CDB subscribers.";
+        }
+      }
+    }
+  }
+
+  augment "/progress:progress/progress:trace/progress:filter" {
+    choice object {
+      case service {
+        leaf all-services {
+          type empty;
+          description
+            "Only log events for services.";
+        }
+        leaf service-type {
+          type tailf:node-instance-identifier;
+          tailf:cli-completion-actionpoint "servicepoints";
+          description
+            "Only log events for the specified service type.";
+        }
+      }
+      case device {
+        choice device-choice {
+          leaf all-devices {
+            type empty;
+            description
+              "Only log events for devices.";
+          }
+          leaf device-group {
+            type string;
+            tailf:non-strict-leafref {
+              path "/ncs:devices/ncs:device-group/ncs:name";
+            }
+            description
+              "Only log events for devices in this group.";
+          }
+          leaf-list device {
+            type string;
+            tailf:non-strict-leafref {
+              path "/ncs:devices/ncs:device/ncs:name";
+            }
+            description
+              "Only log events for the specified device(s).";
+          }
+        }
+      }
+    }
+  }
+
+  augment "/progress:progress/progress:trace/progress:event" {
+    leaf service {
+      tailf:display-groups "none details summary";
+      type instance-identifier {
+        require-instance false;
+      }
+      description
+        "The invoked service instance.";
+    }
+    leaf service-phase {
+      tailf:display-groups "none details";
+      type enumeration {
+        enum pre-modification;
+        enum pre-lock-create;
+        enum create;
+        enum post-modification;
+      }
+      description
+        "The callback phase of the invoked service instance.";
+    }
+    leaf commit-queue-id {
+      tailf:display-groups "none details";
+      type uint64;
+      description
+        "The commit queue item id.";
+    }
+    leaf node {
+      tailf:display-groups "none details";
+      type ncs:node-name;
+      tailf:non-strict-leafref {
+        path "/ncs:cluster/ncs:remote-node/ncs:name";
+      }
+    }
+    leaf device {
+      tailf:display-groups "none details summary";
+      type string;
+      tailf:non-strict-leafref {
+        path "/ncs:devices/ncs:device/ncs:name";
+      }
+    }
+    leaf device-phase {
+      tailf:display-groups "none details";
+      type enumeration {
+        enum noconnect;
+        enum connect;
+        enum initialize;
+        enum uninitialize;
+        enum prepare;
+        enum abort;
+        enum commit;
+        enum revert;
+        enum persist;
+        enum close;
+        enum get-trans-id;
+        enum show;
+        enum show-partial;
+        enum scp;
+        enum show-offline;
+        enum show-stats;
+        enum show-stats-list;
+        enum show-stats-path;
+        enum is-alive;
+        enum keep-alive;
+        enum reconnect;
+        enum cmd;
+      }
+      description
+        "The device communication phase.";
+    }
+    leaf package {
+      tailf:display-groups "none details";
+      type string;
+    }
+  }
+}

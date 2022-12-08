@@ -1,0 +1,1116 @@
+submodule tailf-ned-cisco-nx-router-ospf {
+
+  belongs-to tailf-ned-cisco-nx {
+    prefix nx;
+  }
+  import tailf-common {
+    prefix tailf;
+  }
+  import ietf-inet-types {
+    prefix inet;
+  }
+
+  include tailf-ned-cisco-nx-router;
+
+  grouping ospf-redistribute-match-grouping {
+    leaf metric {
+      tailf:info "Metric for redistributed routes";
+      type uint32 {
+        tailf:info "<0-16777214>;;OSPF default metric";
+      }
+    }
+    leaf subnets {
+      tailf:info "Consider subnets for redistribution into OSPF";
+      type empty;
+    }
+    leaf route-map {
+      tailf:info "Route map reference";
+      type string {
+        tailf:info "WORD;;Pointer to route-map entries";
+      }
+    }
+    leaf tag {
+      tailf:info "Set tag for routes redistributed into OSPF";
+      type uint32 {
+        range "0 .. 4294967295";
+        tailf:info "<0-4294967295>;;32-bit tag value";
+      }
+    }
+  }
+
+  grouping queue-depth-grouping {
+    leaf options {
+      tailf:cli-drop-node-name;
+      tailf:cli-full-command;
+      tailf:cli-trim-default;
+      type union {
+        type uint32 {
+          range "1 .. 2147483647";
+          tailf:info "<1-2147483647>;;maximum numer of packets in the queue";
+        }
+        type enumeration {
+          enum "unlimited" {
+            tailf:info "Unlimited queue depth";
+          }
+        }
+      }
+      default "unlimited";
+    }
+  }
+
+
+  typedef redist-ospf-external-type {
+    type enumeration {
+      enum "1" {
+        tailf:info "Redistribute external type 1 routes";
+      }
+      enum "2" {
+        tailf:info "Redistribute external type 2 routes";
+      }
+    }
+  }
+
+  typedef default-access-list-standard-id-type {
+    type union {
+      type uint8 {
+        range "1 .. 99";
+        tailf:info "<1-99>;;IP Standard access list number";
+      }
+      type uint16 {
+        range "1300 .. 1999";
+        tailf:info "<1300-1999>;;IP Standard expanded access list number";
+      }
+    }
+  }
+
+  grouping passive-interface-grouping {
+    container passive-interface {
+
+      choice passive-interface-choice {
+        leaf default {
+          tailf:info "Suppress routing updates on all interfaces";
+          type empty;
+        }
+        leaf interface {
+          tailf:cli-drop-node-name;
+          tailf:cli-multi-value;
+          type string {
+            tailf:info "WORD;;Interface name";
+          }
+        }
+      }
+
+    }
+    // Fix to handle showing "no passive-interface <interface name>"
+    // when passive-interface default is configured
+    // this is filtered out in the NED java code
+    container disable {
+      when "../passive-interface/default";
+      list passive-interface {
+        tailf:cli-suppress-mode;
+        tailf:cli-compact-syntax;
+        key "interface";
+        leaf interface {
+          tailf:cli-drop-node-name;
+          tailf:cli-multi-word-key;
+
+          type string {
+            tailf:info "WORD;;Interface name";
+          }
+        }
+
+      }
+    }
+  }
+
+
+
+  typedef access-list-standard-id-type {
+    type union {
+      type default-access-list-standard-id-type;
+      type string {
+        tailf:info "WORD;;Standard access-list name";
+      }
+    }
+  }
+
+  grouping ospf-redistribute-grouping {
+    container redist-options {
+      tailf:cli-drop-node-name;
+      tailf:cli-compact-syntax;
+      uses ospf-iso-igrp-redistribute-grouping;
+      leaf route-map {
+        tailf:info "Route map reference";
+        type string {
+          tailf:info "WORD;;Pointer to route-map entries";
+        }
+      }
+    }
+  }
+
+  grouping ospf-redistribute-bgp-grouping {
+    leaf as-number {
+      tailf:cli-drop-node-name;
+      type uint32 {
+        range "1 .. 65535";
+        tailf:info "<1-65535>;;Autonomous system number";
+      }
+    }
+    uses ospf-redistribute-grouping;
+  }
+
+  grouping ospf-iso-igrp-redistribute-grouping {
+    leaf metric {
+      tailf:info "Metric for redistributed routes";
+      type uint32 {
+        tailf:info "<0-16777214>;;OSPF default metric";
+      }
+    }
+    leaf metric-type {
+      tailf:info "OSPF/IS-IS exterior metric type "
+      +"for redistributed routes";
+      type enumeration {
+        enum "1" {
+          tailf:info "Set OSPF External Type 1 metrics";
+        }
+        enum "2" {
+          tailf:info "Set OSPF External Type 2 metrics";
+        }
+      }
+    }
+    leaf tag {
+      tailf:info "Set tag for routes redistributed into OSPF";
+      type uint32 {
+        range "0 .. 4294967295";
+        tailf:info "<0-4294967295>;;32-bit tag value";
+      }
+    }
+    leaf subnets {
+      tailf:info "Consider subnets for redistribution into OSPF";
+      type empty;
+    }
+  }
+
+
+  typedef ospf-area-type {
+    type union {
+      type uint32 {
+        range "0 .. 4294967295";
+        tailf:info "<0-4294967295>;;OSPF area ID as a decimal value";
+      }
+      type inet:ipv4-address {
+        tailf:info "A.B.C.D;;OSPF area ID in IP address format";
+      }
+    }
+  }
+  typedef ospf-metric-type {
+    type uint32 {
+      range "1 .. 2";
+      tailf:info "<1-2>;;OSPF Link State type";
+    }
+  }
+
+  typedef limit-dc-non-dc-type {
+    type union {
+      type uint32 {
+        range "1 .. 255";
+        tailf:info "<1-255>;;The maximum number of retransmissions";
+      }
+      type enumeration {
+        enum disable {
+          tailf:info "Disable the feature";
+        }
+      }
+    }
+  }
+
+  grouping ospf-ospfv3-common-address-family-grouping {
+    container default-information {
+      tailf:info "Control distribution of default information";
+      container originate {
+        tailf:info "Distribute a default route";
+        presence "Distribute a default route";
+        leaf always {
+          tailf:info "Always advertise default route";
+          type empty;
+        }
+        leaf metric {
+          tailf:info "OSPF default metric";
+          type uint32 {
+            range "0 .. 16777214";
+            tailf:info "<0-16777214>;;OSPF metric";
+          }
+          tailf:cli-no-value-on-delete;
+        }
+        leaf metric-type {
+          tailf:info "OSPF metric type for default routes";
+          type ospf-metric-type;
+          tailf:cli-no-value-on-delete;
+        }
+        leaf route-map {
+          tailf:info "Route map reference";
+          type string {
+            tailf:info "WORD;;Route map name";
+          }
+          tailf:cli-no-value-on-delete;
+        }
+      }
+    }
+
+    leaf default-metric {
+      tailf:info "Set metric of redistributed routes";
+      tailf:cli-full-command;
+      type uint32 {
+        range "1 .. 16777214";
+        tailf:info "<1-16777214>;;OSPF default metric";
+      }
+    }
+
+    container discard-route {
+      tailf:info "Enable or disable discard-route installation";
+      presence "Enable or disable discard-route installation";
+      tailf:cli-compact-syntax;
+      leaf external {
+        tailf:info "Discard route for redistributed summarised routes";
+        type uint32 {
+          range "1 .. 255";
+          tailf:info "<1-255>;;Administrative distance for "
+          +"redistributed summarised routes";
+        }
+      }
+      leaf internal {
+        tailf:info "Discard route for summarised internal routes";
+        type uint32 {
+          range "1 .. 255";
+          tailf:info "<1-255>;;Administrative distance for "
+          +"summarised internal routes";
+        }
+      }
+    }
+
+    container distance {
+      tailf:cli-compact-syntax;
+      tailf:info "Define an administrative distance";
+      container ospf-distance {
+        tailf:cli-compact-syntax;
+        tailf:cli-drop-node-name;
+        leaf distance {
+          tailf:cli-drop-node-name;
+          type uint32 {
+            range "1 .. 255";
+            tailf:info "<1-255>;;OSPF Administrative distance";
+          }
+        }
+        tailf:cli-sequence-commands;
+        leaf ip {
+          tailf:cli-drop-node-name;
+          tailf:cli-incomplete-command;
+          type inet:ipv4-address {
+            tailf:info "A.B.C.D;;IP source address";
+          }
+        }
+
+        leaf wildcard {
+          tailf:cli-drop-node-name;
+          type inet:ipv4-address {
+            tailf:info "A.B.C.D;;Wildcard bits";
+          }
+        }
+
+        leaf acl-name {
+          tailf:cli-drop-node-name;
+          type access-list-standard-id-type;
+          tailf:cli-no-value-on-delete;
+        }
+      }
+
+      container ospf {
+        tailf:info "OSPF routes Administrative distance";
+        leaf external {
+          tailf:info "External routes";
+          type uint32 {
+            range "1 .. 255";
+            tailf:info "<1-255>;;Distance for external routes";
+          }
+          tailf:cli-suppress-no;
+          tailf:cli-no-value-on-delete;
+          tailf:cli-no-name-on-delete;
+        }
+        leaf inter-area {
+          tailf:info "Inter-area routes";
+          type uint32 {
+            range "1 .. 255";
+            tailf:info "<1-255>;;Distance for inter-area routes";
+          }
+          tailf:cli-suppress-no;
+          tailf:cli-no-name-on-delete;
+          tailf:cli-no-value-on-delete;
+        }
+        leaf intra-area {
+          tailf:info "Intra-area routes";
+          type uint32 {
+            range "1 .. 255";
+            tailf:info "<1-255>;;Distance for intra-area routes";
+          }
+          tailf:cli-suppress-no;
+          tailf:cli-no-name-on-delete;
+          tailf:cli-no-value-on-delete;
+        }
+      }
+    }
+
+
+    leaf maximum-paths {
+      tailf:info "Forward packets over multiple paths";
+      tailf:cli-full-command;
+      type uint32 {
+        range "1 .. 32";
+        tailf:info "<1-32>;;Number of paths";
+      }
+    }
+
+    container redistribute {
+      tailf:info "Redistribute information from another routing protocol";
+      uses ospf-redistribute-grouping;
+      container bgp {
+        tailf:info "Border Gateway Protocol (BGP)";
+        tailf:cli-sequence-commands;
+        uses ospf-redistribute-bgp-grouping;
+      }
+      container connected {
+        tailf:info "Connected";
+        presence "Connected";
+        uses ospf-redistribute-grouping;
+      }
+      container eigrp {
+        tailf:info "Enhanced Interior Gateway Routing Protocol (EIGRP)";
+        tailf:cli-sequence-commands;
+        uses ospf-redistribute-bgp-grouping;
+      }
+
+      container isis {
+        presence "ISO IS-IS";
+        tailf:info "ISO IS-IS";
+        choice isis-level-routes-isis-area-choice {
+          leaf isis-level-routes {
+            tailf:cli-drop-node-name;
+            type enumeration {
+              enum level-1 {
+                tailf:info "IS-IS level-1 routes only";
+              }
+              enum level-2 {
+                tailf:info "IS-IS level-2 routes only";
+              }
+              enum level-1-2 {
+                tailf:info "IS-IS level-1 and level-2 routes";
+              }
+            }
+          }
+          list isis-area {
+            tailf:cli-suppress-mode;
+            tailf:cli-drop-node-name;
+            key "name";
+            leaf name {
+              tailf:cli-disallow-value "level-1|level-2|level-1-2|metric|"
+              +"metric-type|route-map|subnets|tag";
+              type string {
+                tailf:info "WORD;;ISO routing area tag";
+              }
+            }
+            uses ospf-redistribute-grouping;
+          }
+        }
+        uses ospf-redistribute-grouping;
+      }
+
+      container iso-igrp {
+        tailf:info "IGRP for OSI networks";
+        presence "IGRP for OSI networks";
+        tailf:cli-sequence-commands;
+        choice area-tag-route-map-choice {
+          container area-tag-route-map-container {
+            tailf:cli-drop-node-name;
+            tailf:cli-flatten-container;
+            tailf:cli-sequence-commands;
+            leaf area-tag {
+              tailf:cli-drop-node-name;
+              tailf:cli-disallow-value "route-map";
+              type string {
+                tailf:info "WORD;;ISO routing area tag";
+              }
+            }
+            leaf route-map {
+              tailf:info "Route map reference";
+              type string {
+                tailf:info "WORD;;Pointer to route-map entries";
+              }
+            }
+          }
+          leaf route-map {
+            tailf:info "Route map reference";
+            type string {
+              tailf:info "WORD;;Pointer to route-map entries";
+            }
+          }
+        }
+        container iso-igrp-container {
+          tailf:cli-drop-node-name;
+          tailf:cli-compact-syntax;
+          uses ospf-iso-igrp-redistribute-grouping;
+        }
+      }
+
+
+      container maximum-prefix {
+        tailf:info "Maximum number of prefixes redistributed to protocol";
+        tailf:cli-sequence-commands;
+        tailf:cli-compact-syntax;
+        leaf number {
+          tailf:cli-drop-node-name;
+          type uint32 {
+            range "1 .. 4294967295";
+            tailf:info "<1-4294967295>;;Maximum number of IP "
+            +"prefixes redistributed";
+          }
+        }
+        container threshold-warning-only-container {
+          tailf:cli-compact-syntax;
+          tailf:cli-drop-node-name;
+          leaf threshold {
+            tailf:cli-drop-node-name;
+            type uint32 {
+              range "1 .. 100";
+              tailf:info "<1-100>;;Threshold value (%) at which "
+              +"to generate a warning message";
+            }
+          }
+          leaf warning-only {
+            tailf:info "Only give warning message when limit is exceeded";
+            tailf:cli-full-command;
+            type empty;
+          }
+        }
+      }
+      container mobile {
+        tailf:info "Mobile routes";
+        presence "Mobile routes";
+        uses ospf-redistribute-grouping;
+      }
+      container odr {
+        tailf:info "On Demand stub Routes";
+        presence "On Demand stub Routes";
+        uses ospf-redistribute-grouping;
+      }
+
+      list ospf {
+        tailf:info "Open Shortest Path First (OSPF)";
+        tailf:cli-suppress-mode;
+        key "id";
+        leaf id {
+          tailf:cli-suppress-range;
+          type uint32 {
+            range "1 .. 65535";
+            tailf:info "<1-65535>;;Process ID";
+          }
+        }
+        container match {
+          tailf:cli-compact-syntax;
+          tailf:cli-flatten-container;
+          tailf:info "Redistribution of OSPF routes";
+          container internal {
+            presence "Redistribute OSPF internal routes";
+            tailf:info "Redistribute OSPF internal routes";
+            tailf:cli-compact-syntax;
+            tailf:cli-flatten-container;
+            uses ospf-redistribute-match-grouping;
+          }
+          container external {
+            tailf:info "Redistribute OSPF external routes";
+            presence "Redistribute OSPF external routes";
+            tailf:cli-compact-syntax;
+            tailf:cli-flatten-container;
+            leaf external-routes {
+              tailf:cli-drop-node-name;
+              type redist-ospf-external-type;
+            }
+            uses ospf-redistribute-match-grouping;
+          }
+          container nssa-external {
+            tailf:info "Redistribute OSPF NSSA external routes";
+            presence "Redistribute OSPF NSSA external routes";
+            tailf:cli-compact-syntax;
+            tailf:cli-flatten-container;
+            leaf nssa-external-routes {
+              tailf:cli-drop-node-name;
+              type redist-ospf-external-type;
+            }
+            uses ospf-redistribute-match-grouping;
+          }
+        }
+        uses ospf-redistribute-grouping;
+        leaf vrf {
+          tailf:info "VPN Routing/Forwarding Instance";
+          type string {
+            tailf:info "WORD;;VPN Routing/Forwarding Instance (VRF) name";
+          }
+        }
+      }
+
+      container rip {
+        tailf:info "Routing Information Protocol (RIP)";
+        presence "Routing Information Protocol (RIP)";
+        uses ospf-redistribute-grouping;
+      }
+      container static {
+        tailf:info "Static routes";
+        presence "Static routes";
+        uses ospf-redistribute-grouping;
+      }
+    }
+  } // end ospf-ospfv3-common-address-family-grouping
+
+  grouping ospf-ospfv3-common-grouping {
+
+    list area {
+      tailf:info "OSPF area parameters";
+      tailf:cli-suppress-mode;
+      tailf:cli-incomplete-command;
+      key "id";
+      leaf id {
+        tailf:cli-suppress-range;
+        type ospf-area-type;
+      }
+
+      container authentication {
+        tailf:info "Enable authentication";
+        presence "Enable authentication";
+        leaf message-digest {
+          tailf:info "Use message-digest authentication";
+          type empty;
+        }
+      }
+      leaf default-cost {
+        tailf:info "Set the summary default-cost of a NSSA/stub area";
+        tailf:cli-full-command;
+        tailf:cli-no-value-on-delete;
+        type uint32 {
+          range "0 .. 16777215";
+          tailf:info "<0-16777215;;Stub's advertised external route metric";
+        }
+      }
+      list filter-list {
+        tailf:info "Filter networks between OSPF areas";
+        tailf:cli-suppress-mode;
+        tailf:cli-compact-syntax;
+        key "in-out";
+        leaf prefix {
+          tailf:cli-prefix-key;
+          mandatory true;
+          tailf:info "Filter prefixes between OSPF areas";
+          type string {
+            tailf:info "WORD;;Name of an IP prefix-list";
+          }
+        }
+        leaf in-out {
+          type enumeration {
+            enum in {
+              tailf:info "Filter networks sent to this area";
+            }
+            enum out {
+              tailf:info "Filter networks sent from this area";
+            }
+          }
+        }
+      }
+      container nssa {
+        tailf:info "Specify a NSSA area";
+        presence "Specify a NSSA area";
+        container default-information-originate {
+          tailf:cli-flatten-container;
+          tailf:info "Originate Type 7 default into NSSA area";
+          presence "Originate Type 7 default into NSSA area";
+          leaf metric {
+            tailf:info "OSPF default metric";
+            type int32 {
+              range "0 .. 16777214";
+              tailf:info "<0-16777214>;;OSPF metric";
+            }
+            tailf:cli-no-value-on-delete;
+            tailf:cli-no-name-on-delete;
+            tailf:cli-suppress-no;
+          }
+          leaf metric-type {
+            tailf:info "OSPF metric type for default routes";
+            type ospf-metric-type;
+          }
+        }
+        leaf no-ext-capability {
+          tailf:info "Do not send domain specific capabilities into NSSA";
+          type empty;
+        }
+        leaf no-redistribution {
+          tailf:info "No redistribution into this NSSA area";
+          type empty;
+        }
+        leaf no-summary {
+          tailf:info "Do not send summary LSA into NSSA";
+          type empty;
+        }
+        container translate {
+          tailf:info "Translate LSA";
+          container type7 {
+            tailf:info "From Type 7 to Type 5";
+            leaf suppress-fa {
+              tailf:info "Suppress forwarding address in translated LSAs";
+              type empty;
+            }
+          }
+        }
+      }
+      list range {
+        tailf:info "Summarize routes matching address/mask "
+        +"(border routers only)";
+        tailf:cli-suppress-mode;
+        key "ip mask";
+        leaf ip {
+          type inet:ipv4-address {
+            tailf:info "A.B.C.D;;IP address to match";
+          }
+        }
+        leaf mask {
+          type inet:ipv4-address {
+            tailf:info "A.B.C.D;;IP mask for address";
+          }
+        }
+        choice advertise-choice {
+          leaf advertise {
+            tailf:info "Advertise this range (default)";
+            type empty;
+          }
+          leaf not-advertise {
+            tailf:info "DoNotAdvertise this range";
+            type empty;
+          }
+        }
+        leaf cost {
+          tailf:info "User specified metric for this range";
+          tailf:cli-full-command;
+          type uint32 {
+            range "0 .. 16777215";
+            tailf:info "<0-16777215>;;Advertised metric for this range";
+          }
+        }
+      }
+      list sham-link {
+        tailf:info "Define a sham link and its parameters";
+        tailf:cli-suppress-mode;
+        key "source dest";
+        leaf source {
+          type inet:ipv4-address {
+            tailf:info "A.B.C.D;;IP addr associated with sham-link source";
+          }
+        }
+        leaf dest {
+          type inet:ipv4-address {
+            tailf:info "A.B.C.D;;IP addr associated with "
+            +"sham-link destination";
+          }
+        }
+        leaf cost {
+          tailf:info "Associate a cost with the sham-link";
+          type uint16 {
+            range "0 .. 65535";
+            tailf:info "<1-65535>;;Cost of the sham-link";
+          }
+        }
+      }
+      container stub {
+        tailf:info "Specify a stub area";
+        presence "Specify a stub area";
+        leaf no-ext-capability {
+          tailf:info "Do not send domain specific capabilities "
+          +"into stub area";
+          type empty;
+        }
+        leaf no-summary {
+          tailf:info "Do not send summary LSA into stub area";
+          tailf:cli-full-command;
+          type empty;
+        }
+      }
+      list virtual-link {
+        must "not(../nssa)" {
+          error-message "The area is configured as NSSA area already";
+        }
+        must "not(../stub)" {
+          error-message "The area is configured as stub area already";
+        }
+        tailf:cli-suppress-mode;
+        tailf:info "Define a virtual link and its parameters";
+        key "id";
+        leaf id {
+          type inet:ipv4-address {
+            tailf:info "A.B.C.D;;ID (IP addr) associated with "
+            +"virtual link neighbor";
+          }
+        }
+        leaf authentication {
+          tailf:info "Set authentication type";
+          type empty;
+        }
+        container authentication-key {
+          tailf:info "Set authentication key";
+          leaf auth-type {
+            tailf:cli-drop-node-name;
+            type uint8 {
+              range "0 .. 7";
+              tailf:info "<0-7>;;Encryption type (0 for not yet encrypted, "
+              +"7 for proprietary)";
+            }
+          }
+          leaf auth-key {
+            tailf:cli-drop-node-name;
+            tailf:cli-full-command;
+            type string {
+              length "1 .. 8";
+              tailf:info "WORD;;Authentication key (8 chars)";
+            }
+          }
+        }
+        leaf dead-interval {
+          tailf:info "Dead router detection time";
+          tailf:cli-no-value-on-delete;
+          type uint16 {
+            range "1 .. 8192";
+            tailf:info "<1-8192;;Seconds>";
+          }
+        }
+        leaf hello-interval {
+          tailf:info "Hello packet interval";
+          tailf:cli-no-value-on-delete;
+          type int32 {
+            range "1 .. 8192";
+            tailf:info "<1-8192;;Seconds>";
+          }
+        }
+
+        list message-digest-key {
+          tailf:info "Set message digest key";
+          tailf:cli-suppress-mode;
+          tailf:cli-incomplete-command;
+          key "id";
+          leaf id {
+            tailf:cli-suppress-range;
+            type uint8 {
+              range "1 .. 255";
+              tailf:info "<1-255>;;Key ID";
+            }
+          }
+          container md5 {
+            tailf:info "Use MD5 algorithm";
+            tailf:cli-sequence-commands;
+            leaf auth-type {
+              tailf:cli-drop-node-name;
+              tailf:cli-optional-in-sequence;
+              type uint8 {
+                range "0 .. 7";
+                tailf:info "<0-7>;;Encryption type (0 for not "
+                +"yet encrypted, 7 for proprietary)";
+              }
+            }
+            leaf auth-key {
+              tailf:cli-drop-node-name;
+              type string {
+                length "1 .. 16";
+                tailf:info "WORD;;Authentication key (16 chars)";
+              }
+            }
+          }
+        }
+        leaf retransmit-interval {
+          tailf:info "LSA retransmit interval";
+          type uint16 {
+            range "1 .. 8192";
+            tailf:info "<1-8192>;;Seconds";
+          }
+          tailf:cli-no-value-on-delete;
+        }
+        leaf transmit-delay {
+          tailf:info "LSA transmission delay";
+          type uint16 {
+            range "1 .. 8192";
+            tailf:info "<1-8192>;;Seconds";
+          }
+          tailf:cli-no-value-on-delete;
+        }
+      }
+    }
+
+    container auto-cost {
+      tailf:info "Calculate OSPF interface cost according to bandwidth";
+      presence "Calculate OSPF interface cost according to bandwidth";
+      leaf reference-bandwidth {
+        tailf:info "Use reference bandwidth method to assign OSPF cost";
+        type uint32 {
+          tailf:info "<1-4294967>;;The reference bandwidth in terms "
+          +"of Mbits per second";
+          range "1 .. 4294967";
+        }
+      }
+    }
+
+    container bfd {
+      tailf:info "BFD configuration commands";
+      leaf all-interfaces {
+        tailf:info "Enable BFD on all interfaces";
+        type empty;
+      }
+    }
+    container interface-id {
+      tailf:info "Source of the interface ID";
+      leaf snmp-if-index {
+        tailf:info "SNMP MIB ifIndex";
+        type empty;
+      }
+    }
+
+    container log-adjacency-changes {
+      tailf:info "Log changes in adjacency state";
+      presence "Log changes in adjacency state";
+      leaf detail {
+        tailf:info "Log all state changes";
+        type empty;
+      }
+    }
+
+    container max-lsa {
+      tailf:info "maximum number of LSAs OSPF process will receive";
+      tailf:cli-sequence-commands;
+      leaf number {
+        tailf:cli-drop-node-name;
+        type uint32 {
+          range "1 .. 4294967294";
+          tailf:info "<1-4294967294>;;Maximum number of non self-generated "
+          +"LSAs this process can receive";
+        }
+      }
+      container options {
+        tailf:cli-drop-node-name;
+        tailf:cli-compact-syntax;
+        leaf threshold-value {
+          tailf:cli-drop-node-name;
+          type uint32 {
+            range "1 .. 100";
+            tailf:info "<1-100>;;Threshold value (%) at which "
+            +"to generate a warning msg";
+          }
+        }
+        leaf ignore-count {
+          tailf:info "maximum number of times adjacencies "
+          +"can be suppressed";
+          type uint32 {
+            range "1 .. 65534";
+            tailf:info "<1-65534>;;count on how many times "
+            +"adjacencies can be suppressed";
+          }
+        }
+        leaf ignore-time {
+          tailf:info "time during which all adjacencies are suppressed";
+          type uint32 {
+            range "1 .. 17895";
+            tailf:info "<1-17895>;;number of minutes during which "
+            +"all adjacencies are suppressed";
+          }
+        }
+        leaf reset-time {
+          tailf:info "time after which ignore-count is reset to zero";
+          type uint32 {
+            range "2 .. 35791";
+            tailf:info "<2-35791>;;number of minutes after which "
+            +"ignore-count is reset to zero";
+          }
+        }
+        leaf warning-only {
+          tailf:info "Only give warning message when limit is exceeded";
+          tailf:cli-full-command;
+          type empty;
+        }
+      }
+    }
+
+    uses passive-interface-grouping;
+    container queue-depth {
+      tailf:info "OSPF Hello/Router process queue depth";
+      container hello {
+        tailf:info "OSPF Hello process queue depth";
+        uses queue-depth-grouping;
+      }
+      container update {
+        tailf:info "OSPF Router process queue depth";
+        uses queue-depth-grouping;
+      }
+    }
+    container timers {
+      tailf:info "Adjust routing timers";
+      container lsa {
+        tailf:info "OSPF LSA timers";
+        leaf arrival {
+          tailf:info "OSPF LSA arrival timer";
+          type uint32 {
+            range "0 .. 600000";
+            tailf:info "<0-600000>;;The minimum interval in milliseconds "
+            +"between accepting the same LSA";
+          }
+        }
+      }
+      container pacing {
+        tailf:info "OSPF pacing timers";
+        leaf flood {
+          tailf:info "OSPF flood pacing timer";
+          tailf:cli-full-command;
+          type uint32 {
+            range "5 .. 100";
+            tailf:info "<5-100>;;The minimum interval in msec "
+            +"to pace limit flooding on interface";
+          }
+        }
+        leaf lsa-group {
+          tailf:info "OSPF LSA group pacing timer";
+          tailf:cli-full-command;
+          type uint32 {
+            range "10 .. 1800";
+            tailf:info "<10-1800>;;Interval in sec between group "
+            +"of LSA being refreshed or maxaged";
+          }
+        }
+        leaf retransmission {
+          tailf:info "OSPF retransmission pacing timer";
+          tailf:cli-full-command;
+          type uint32 {
+            range "5 .. 200";
+            tailf:info "<5-200>;;The minimum interval in msec "
+            +"between neighbor retransmissions";
+          }
+        }
+      }
+      container throttle {
+        tailf:info "OSPF throttle timers";
+        container lsa {
+          tailf:info "OSPF LSA throttle timers";
+          container all {
+            tailf:info "For all type of OSPF LSAs";
+            tailf:cli-sequence-commands;
+            tailf:cli-compact-syntax;
+            leaf delay {
+              tailf:cli-drop-node-name;
+              tailf:cli-incomplete-command;
+              type uint32 {
+                range "0 .. 600000";
+                tailf:info "<0-600000>;;Delay to generate first occurrence "
+                +"of LSA in milliseconds";
+              }
+            }
+            leaf min-delay {
+              tailf:cli-drop-node-name;
+              tailf:cli-incomplete-command;
+              type uint32 {
+                range "0 .. 600000";
+                tailf:info "<0-600000>;;Minimum delay between originating "
+                +"the same LSA in milliseconds";
+              }
+            }
+            leaf max-delay {
+              tailf:cli-drop-node-name;
+              type uint32 {
+                range "0 .. 600000";
+                tailf:info "<0-600000>;;Maximum delay between originating "
+                +"the same LSA in milliseconds";
+              }
+            }
+          }
+          leaf router {
+            type uint32;
+          }
+          leaf network {
+            type uint32;
+          }
+        }
+        container spf {
+          tailf:info "OSPF SPF throttle timers";
+          tailf:cli-sequence-commands;
+          tailf:cli-compact-syntax;
+          leaf delay {
+            tailf:cli-drop-node-name;
+            tailf:cli-incomplete-command;
+            type uint32 {
+              range "0 .. 600000";
+              tailf:info "<0-600000>;;Delay between receiving a change "
+              +"to SPF calculation in milliseconds";
+            }
+          }
+          leaf min-delay {
+            tailf:cli-drop-node-name;
+            tailf:cli-incomplete-command;
+            type uint32 {
+              range "0 .. 600000";
+              tailf:info "<0-600000>;;Delay between first and second "
+              +"SPF calculation in milliseconds";
+            }
+          }
+          leaf max-delay {
+            tailf:cli-drop-node-name;
+            type uint32 {
+              range "0 .. 600000";
+              tailf:info "<0-600000>;;Maximum wait time in milliseconds "
+              +"for SPF calculations";
+            }
+          }
+        }
+      }
+    }
+
+    leaf router-id {
+      tailf:cli-full-command;
+      tailf:info "Override configured router identifier (peers will "
+      +"reset)";
+      type inet:ipv4-address {
+        tailf:info "A.B.C.D;;Manually configured router identifier";
+      }
+    }
+
+  } // end ospf-ospfv3-common-grouping
+
+  augment /router {
+
+    list ospf {
+      tailf:cli-mode-name "config-router";
+      tailf:info "Open Shortest Path First (OSPF)";
+      key "id";
+      leaf id {
+        tailf:cli-suppress-range;
+        type uint16 {
+          range "1..65535";
+          tailf:info "<1-65535>;;Process ID";
+        }
+      }
+
+      list vrf {
+        tailf:info "VPN Routing/Forwarding Instance";
+        tailf:cli-full-command;
+        key "name";
+        leaf name {
+          type string {
+            tailf:info "WORD;;VPN Routing/Forwarding Instance "
+            +"(VRF) name";
+          }
+        }
+        uses ospf-ospfv3-common-grouping;
+        uses ospf-ospfv3-common-address-family-grouping;
+      }
+
+    }
+
+
+  }
+
+}

@@ -1,0 +1,18 @@
+module cisco-asa-cli {
+  yang-version 1.1;
+  namespace "http://tail-f.com/ns/ned-id/cisco-asa-cli";
+  prefix cisco-asa-cli;
+
+  import tailf-common {
+    prefix tailf;
+  }
+
+  import tailf-ncs-ned {
+    prefix ned;
+  }
+
+  identity cisco-asa-cli {
+    tailf:abstract;
+    base ned:cli-ned-id;
+  }
+}

@@ -1,0 +1,15 @@
+! ios-stats:crypto/session/interface{}
+
+<root>
+ <container :: ./>
+  <leaf :: status :: Session status: (\S+)/>
+  <leaf :: peer/address :: Peer: (\S+) port/>
+  <leaf :: peer/port :: Peer: \S+ port (\d+)/>
+  <leaf :: peer/fvrf :: Peer: .+ fvrf: (\S+)/>
+  <leaf :: peer/ivrf :: Peer: .+ ivrf: (\S+)/>
+  <leaf :: ipsec-flow/active-sa :: Active SAs: (\d+),/>
+  <leaf :: ipsec-flow/origin :: origin: (.+)/>
+  <leaf :: ipsec-flow/inbound-decrp-pkts :: Inbound:[ ]+#pkts dec'ed (\d+)/>
+  <leaf :: ipsec-flow/outbound-encrp-pkts :: Outbound:[ ]+#pkts enc'ed (\d+)/>
+ </container>
+</root>

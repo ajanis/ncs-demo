@@ -1,0 +1,10 @@
+! ios-stats:access-tunnel/detail{}
+
+<root>
+ <buf-start :: .*IfId\s+Uptime />
+ <list :: . :: \n([^-|Name]\S+) />
+  <key :: \s+\S+\s+(\S+) :: ifId/>
+  <leaf :: Name :: \s+(\S+)/>
+  <leaf :: up-time :: \s+\S+\s+\S+(.*) />
+ </list>
+</root>

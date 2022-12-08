@@ -1,0 +1,250 @@
+// =========================================================================
+//                          CISCO-ASA STATS & EXEC
+// =========================================================================
+
+module tailf-ned-cisco-asa-stats {
+  namespace "http://cisco.com/ned/asa-stats";
+  prefix asa-stats;
+
+  import tailf-common {
+    prefix tailf;
+  }
+
+
+  /// ========================================================================
+  /// version
+  /// ========================================================================
+
+  container version {
+    tailf:info "show version";
+    config false;
+    presence true;
+    tailf:meta-data "ned-livestats:parser-info" {
+      tailf:meta-value "{'template':'version.gili','show':'show version | include Software|Hardware|Serial|dummy'}";
+    }
+    leaf name {
+      type string;
+    }
+    leaf version {
+      type string;
+    }
+    leaf model {
+      type string;
+    }
+    leaf serial-number {
+      type string;
+    }
+  }
+
+
+  /// ========================================================================
+  /// vpn-sessiondb
+  /// ========================================================================
+
+  container vpn-sessiondb {
+    tailf:info "show vpn-sessiondb anyconnect";
+    config false;
+    list anyconnect {
+      tailf:info "show vpn-sessiondb anyconnect";
+      tailf:meta-data "ned-livestats:parser-info" {
+        tailf:meta-value "{'template':'vpn-sessiondb_anyconnect.gili','show':'show vpn-sessiondb anyconnect'}";
+      }
+      key "username index";
+      leaf username {
+        type string;
+      }
+      leaf index {
+        type uint32;
+      }
+
+      leaf login-time {
+        type string;
+      }
+      leaf duration {
+        type string;
+      }
+      leaf inactivity {
+        type string;
+      }
+      leaf tx-bytes {
+        type uint64;
+      }
+      leaf rx-bytes {
+        type uint64;
+      }
+      leaf status {
+        type enumeration {
+          enum active;
+          enum inactive;
+        }
+      }
+    }
+  }
+
+
+  /// ========================================================================
+  /// ssl
+  /// ========================================================================
+
+  container ssl {
+    tailf:info "show ssl mib (partial)";
+    tailf:meta-data "ned-livestats:parser-info" {
+      tailf:meta-value "{'template':'ssl.gili','show':'show ssl mib'}";
+    }
+    config false;
+    leaf post-decrypt-octets {
+      type uint64;
+    }
+    leaf post-encrypt-octets {
+      type uint64;
+    }
+  }
+
+
+  /// ========================================================================
+  /// inventory
+  /// ========================================================================
+
+  list inventory {
+    tailf:info "show inventory";
+    config false;
+    tailf:meta-data "ned-livestats:parser-info" {
+      tailf:meta-value "{'template':'inventory.gili','show':'show inventory'}";
+    }
+    key name;
+    leaf name {
+      type string;
+    }
+    leaf descr {
+      type string;
+    }
+    leaf sn {
+      type string;
+    }
+  }
+
+
+  /// ========================================================================
+  /// exec
+  /// ========================================================================
+
+  container exec {
+    tailf:info "Execute commands on device";
+
+    // show [arg 1] .. [arg N]
+    tailf:action show {
+      tailf:info "Execute show commands";
+      tailf:actionpoint ncsinternal {
+        tailf:internal;
+      }
+      input {
+        leaf-list args {
+          tailf:cli-drop-node-name;
+          tailf:cli-flat-list-syntax;
+          type string {
+            tailf:info "show argument(s)";
+          }
+        }
+      }
+      output {
+        leaf result {
+          type string;
+        }
+      }
+    }
+
+    // clear [arg 1] .. [arg N]
+    tailf:action clear {
+      tailf:info "Reset functions";
+      tailf:actionpoint ncsinternal {
+        tailf:internal;
+      }
+      input {
+        leaf-list args {
+          tailf:cli-drop-node-name;
+          tailf:cli-flat-list-syntax;
+          type string {
+            tailf:info "clear argument(s)";
+          }
+        }
+      }
+      output {
+        leaf result {
+          type string;
+        }
+      }
+    }
+
+    // license [arg 1] .. [arg N]
+    tailf:action license {
+      tailf:info "Register/deregister the product instance with the "+
+        "Cisco Licensing Authority";
+      tailf:actionpoint ncsinternal {
+        tailf:internal;
+      }
+      input {
+        leaf-list args {
+          tailf:cli-drop-node-name;
+          tailf:cli-flat-list-syntax;
+          type string {
+            tailf:info "USAGE:;;license smart deregister|register|renew [options]";
+          }
+        }
+      }
+      output {
+        leaf result {
+          type string;
+        }
+      }
+    }
+
+    // any [contex <context name>] [arg 1] .. [arg N]
+    tailf:action any {
+      tailf:info "Execute any command on device";
+      tailf:actionpoint ncsinternal {
+        tailf:internal;
+      }
+      input {
+        leaf context {
+          tailf:info "Specify context to run the command in";
+          type string {
+            tailf:info "WORD;;Context name";
+          }
+        }
+        leaf input-string {
+          tailf:info "Input data to command, e.g. base 64 encoded pkcs12";
+          type string {
+            tailf:info "LINE;;Quoted string. Use \\r\\n for newline.";
+          }
+        }
+        list auto-prompts {
+          tailf:cli-suppress-mode;
+          key question;
+          leaf question {
+            type string;
+          }
+          leaf answer {
+            type string;
+          }
+        }
+        leaf-list args {
+          tailf:cli-drop-node-name;
+          tailf:cli-flat-list-syntax;
+          type string {
+            tailf:info "WORD;;any [context <context>] \"<cmd> [option(s)]\", e.g: any \"show ppp summary\"";
+          }
+        }
+      }
+      output {
+        leaf result {
+          type string;
+        }
+      }
+    }
+  }
+}
+
+
+/// ========================================================================
+//                          EOF
+/// ========================================================================

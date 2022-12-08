@@ -1,0 +1,10 @@
+! if:interfaces-state/interface{}/ip:ipv4/address{}
+! RFC7277 - YANG IP Management
+
+<root>
+ <list :: . :: ipv4 address (\S.*)/>
+  <key :: ipv4 address (\S+) :: ip/>
+  <leaf :: netmask :: ipv4 address \S+ (\S+)/>
+  <leaf :: origin/>
+ </list>
+</root>

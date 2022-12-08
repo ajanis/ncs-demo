@@ -1,0 +1,28 @@
+{
+    "pattern" : {
+        "promptConfig" :   "\\A(\u001B\\[\\?7h)?[a-zA-Z0-9][^\\# ]+\\(config\\S*\\)#[ ]?$",
+        "promptDevice" :   "\\A(\u001B\\[\\?7h)?[a-zA-Z0-9][^\\# ]+#[ ]?$",
+        "promptLogin" :    "^.*([Ll]ogin|[Uu]ser|[Uu]sername):[ ]?$",
+        "promptPassword" : "[Pp]assword:[ ]?$",
+        "errorLogin" :     "(Authentication failed)|(Bad passwords)|(Login invalid)|(Access denied)|(Permission denied)|(Request Denied)"
+    },
+    "command" : {
+    },
+    "state": {
+        "new" : [
+            {"expect": null,              "action": "connect()",       "nextState": "newline"}
+        ],
+        "newline" : [
+            {"expect": null,              "action": "\r\n",            "nextState": "login"}
+        ],
+        "login" : [
+            {"expect": "Uncommitted changes found, commit them.+", "action": "no", "nextState": "login"},
+            {"expect": "[Pp]ress (return|RETURN) to get started", "action": "\r\n",  "nextState": "login"},
+            {"expect": "$promptConfig",   "action": "exit",              "nextState": "login"},
+            {"expect": "$promptLogin",    "action": "sendUsername()",    "nextState": "login"},
+            {"expect": "$promptPassword", "action": "sendPassword()",    "nextState": "login"},
+            {"expect": "$promptDevice",   "action": null,                "nextState": "end"},
+            {"expect": "$errorLogin",     "action": "reportError()",     "nextState": "invalid"}
+        ]
+    }
+}

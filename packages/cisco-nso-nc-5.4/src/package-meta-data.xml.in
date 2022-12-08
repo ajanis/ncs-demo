@@ -1,0 +1,17 @@
+<ncs-package xmlns="http://tail-f.com/ns/ncs-packages">
+  <name>cisco-nso</name>
+  <package-version>5.4</package-version>
+  <description>Generated netconf package</description>
+  <ncs-min-version>5.7</ncs-min-version>
+  <component>
+    <name>cisco-nso</name>
+    <ned>
+      <netconf>
+        <ned-id>to be replaced by build</ned-id>
+      </netconf>
+      <device>
+        <vendor>Cisco</vendor>
+      </device>
+    </ned>
+  </component>
+</ncs-package>

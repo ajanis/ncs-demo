@@ -1,0 +1,36 @@
+{
+    "pattern" : {
+        "promptDevice" :   "^.*([>][ ]?)$",
+        "promptPriv" :     "^.*([#][ ]?(?:.\\[.+m)?)$",
+        "promptLogin" :    "^.*([Ll]ogin|[Uu]ser|[Uu]sername):[ ]?$",
+        "promptPassword" : "[Pp]assword:[ ]?$",
+        "promptIgnore" :   "copy of each such license is available at",
+        "promptEnter" :    "Please press Enter to.*",
+        "promptEnter" :    "Press RETURN .*",
+        "errorLogin" :     "([Aa]uthentication [Ff]ailed)|([Bb]ad [Pp]assword)|([Ll]ogin [Ii]nvalid)|([Aa]ccess [Dd]enied)|([Pp]ermission [Dd]enied)|([Rr]equest [Dd]enied)"
+    },
+    "command" : {
+    },
+    "state": {
+        "new" : [
+            {"expect": null,                "action": "connect()",      "nextState": "newline"}
+        ],
+        "newline" : [
+            {"expect": null,              "action":  "matches($(connection/send-login-newline),true,\r\n)", "nextState": "login"}
+        ],
+        "login" : [
+            {"expect": "$promptLogin",      "action": "sendUsername()", "nextState": "login"},
+            {"expect": "$promptPassword",   "action": "sendPassword()", "nextState": "login"},
+            {"expect": "$promptEnter",      "action": "sendNewline()", "nextState": "login"},
+            {"expect": "$promptDevice",     "action": "enable",         "nextState": "enable"},
+            {"expect": "$promptPriv",       "action": null,             "nextState": "end"},
+            {"expect": "$promptIgnore",     "action": null,             "nextState": "login"},
+            {"expect": "$errorLogin",       "action": "reportError()",  "nextState": "invalid"}
+        ],
+        "enable" : [
+            {"expect": "$promptPriv",       "action": null,                      "nextState": "end"},
+            {"expect": "$promptPassword",   "action": "sendSecondaryPassword()", "nextState": "enable"},
+            {"expect": "$errorLogin",       "action": "reportError()",           "nextState": "invalid"}
+        ]
+    }
+}

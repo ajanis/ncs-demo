@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<!-- This file has been generated. Do NOT edit it.
+     For changes edit the original instead.
+-->
+<ncs-package xmlns="http://tail-f.com/ns/ncs-packages">
+  <name>cisco-asa-cli-6.6</name>
+  <package-version>6.6.10</package-version>
+  <description>NED package for the Cisco ASA</description>
+  <ncs-min-version>4.4.2</ncs-min-version>
+  <component>
+    <name>cisco-asa</name>
+    <ned>
+      <cli>
+        <ned-id xmlns:id="http://tail-f.com/ns/ned-id/cisco-asa-cli-6.6">id:cisco-asa-cli-6.6</ned-id>
+        <java-class-name>com.tailf.packages.ned.asa.ASANedCli</java-class-name>
+      </cli>
+      <device>
+        <vendor>Cisco</vendor>
+      </device>
+      <option>
+        <name>entitlement-tag</name>
+        <value>regid.2015-10.com.cisco.cisco-asa-NED,1.0_1cb229c9-7a68-42ad-bb95-faa6997e8212</value>
+      </option>
+      <!--<option>
+        <name>requires-transaction-states</name>
+      </option>-->
+      <option>
+        <name>show-tag</name>
+        <value>interface</value>
+      </option>
+    </ned>
+  </component>
+  <component>
+    <name>ASADp</name>
+    <callback>
+      <java-class-name>com.tailf.packages.ned.asa.ASADp</java-class-name>
+    </callback>
+  </component>
+  <component>
+    <name>upgrade-ned-settings</name>
+    <upgrade>
+      <java-class-name>com.tailf.packages.ned.asa.UpgradeNedSettings</java-class-name>
+    </upgrade>
+  </component>
+</ncs-package>

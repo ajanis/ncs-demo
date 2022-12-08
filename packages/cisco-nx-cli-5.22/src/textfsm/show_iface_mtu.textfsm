@@ -1,0 +1,9 @@
+Value EthIface (Ethernet[0-9/]+)
+Value MTU ([0-9]+)
+
+Start
+  ^${EthIface} .* -> MTU
+
+MTU
+  ^\s+MTU ${MTU} .* -> Record Start
+

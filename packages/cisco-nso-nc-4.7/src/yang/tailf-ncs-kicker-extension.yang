@@ -1,0 +1,135 @@
+submodule tailf-ncs-kicker-extension {
+
+  belongs-to tailf-ncs {
+    prefix ncs;
+  }
+
+  import ietf-yang-types {
+    prefix yang;
+  }
+  import tailf-kicker {
+    prefix kicker;
+  }
+
+  include tailf-ncs-devices;
+
+  organization "Tail-f Systems";
+
+  description
+    "This submodule defines the kicker extensions that are specific
+     to NCS.";
+
+ revision 2017-09-28 {
+    description
+      "Released as part of NCS-4.5.
+
+       Added priority for notification kickers.";
+  }
+
+  revision 2017-03-16 {
+    description
+      "Initial revision, released as part of NCS-4.4.";
+  }
+
+  augment "/kicker:kickers" {
+
+    list notification-kicker {
+      key id;
+      description
+        "This list contains declared notification kickers.
+
+         The netconf notification kicker listens on notifications over
+         the device subscription and for notifications of a certain type,
+         identified by the notification-name container, an action is called.";
+
+      leaf id {
+        type string;
+        description
+          "A unique identifier for this kicker.";
+      }
+
+
+      leaf selector-expr {
+        type yang:xpath1.0;
+        mandatory true;
+        description
+          "An XPath 1.0 expression that is evaluated for all device
+           notifications that are received through any subscription defined
+           by /ncs:devices/device/netconf-notification/subscription.
+
+           The evaluation is performed using the following predefined
+           variable bindings (in addition to the variable bindings defined
+           in the 'variable' list):
+
+           DEVICE            - The name of the notification emitting device.
+           SUBSCRIPTION_NAME - The name of the subscription on this device
+                               that did catch the notification.
+           NOTIFICATION_NAME - The local name of the notification
+           NOTIFICATION_NS   - The namespace of the notification
+
+           This XPath expression is evaluated with the notification path
+   /ncs:devices/device/netconf-notifications/received-notifications/notification
+           as the current context and '/' as root context.";
+      }
+      list variable {
+        key name;
+        description
+          "A list of variable bindings that will be part of the
+           context when the selector expression is evaluated.";
+        leaf name {
+          type string;
+          description
+            "The name of the variable.";
+        }
+        leaf value {
+          type yang:xpath1.0;
+          mandatory true;
+          description
+            "An XPath expression that will be the value of variable
+             'name'. The expression is only evaluated when used in the
+             selector expression, and then it will have the
+             same context as that expression.
+
+             Note that both expressions and path expressions are
+             allowed, which implies that literals must be quoted.";
+        }
+      }
+
+      leaf kick-node {
+        mandatory true;
+        type union {
+          type instance-identifier;
+          type yang:xpath1.0;
+        }
+        description
+          "When the kicker is triggered, the 'action-name' action is invoked
+           on the 'kick-node' instance.
+
+           If the 'kick-node' is given as an XPath 1.0 expression, the
+           expression is evaluated with the notification that matched
+           the 'selector-expr' as the context node, and the expression must
+           return a node set.  The 'action-name' action is invoked on
+           the nodes in this node set.";
+      }
+      leaf action-name {
+        description
+          "The action to call when a notification is received.
+
+           The action either take the input parameters as defined by the
+           'kicker:action-input-params' grouping from tailf-kicker.yang
+           or else will be invoked without any parameters.";
+        type yang:yang-identifier;
+        mandatory true;
+      }
+      leaf priority {
+        type uint8;
+        description
+          "The priority value is used to order execution of notification
+           kickers that are selected and executed for the same subscription for
+           the same received notification.
+           First notification kickers with priority 0 are handled, then
+           priority 1, priority 2 etc.";
+      }
+    }
+  }
+}

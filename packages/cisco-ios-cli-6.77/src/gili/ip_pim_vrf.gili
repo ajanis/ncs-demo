@@ -1,0 +1,9 @@
+! ios-stats:ip/pim/vrf{}
+
+<root>
+ <buf-start :: ip\spim/>
+ <list :: . :: \n[ ]*(\S+)[ ]+?\S+/>
+  <key :: ip pim vrf (\S+).*/>
+  <template :: neighbor/>
+ </list>
+</root>

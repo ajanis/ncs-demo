@@ -1,0 +1,18 @@
+module cisco-ios-cli {
+  yang-version 1.1;
+  namespace "http://tail-f.com/ns/ned-id/cisco-ios-cli";
+  prefix cisco-ios-cli;
+
+  import tailf-common {
+    prefix tailf;
+  }
+
+  import tailf-ncs-ned {
+    prefix ned;
+  }
+
+  identity cisco-ios-cli {
+    tailf:abstract;
+    base ned:cli-ned-id;
+  }
+}

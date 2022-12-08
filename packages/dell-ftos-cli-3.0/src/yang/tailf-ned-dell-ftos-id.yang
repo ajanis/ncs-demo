@@ -1,0 +1,12 @@
+module tailf-ned-dell-ftos-id {
+  namespace 'http://tail-f.com/ned/dell-ftos-id';
+  prefix force10-id;
+
+  import tailf-ncs-ned {
+    prefix ned;
+  }
+
+  identity dell-ftos {
+    base ned:cli-ned-id;
+  }
+}

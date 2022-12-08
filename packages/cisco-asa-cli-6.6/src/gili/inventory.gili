@@ -1,0 +1,9 @@
+! asa-stats:inventory
+
+<root>
+ <list :: . :: Name: (.+), DESCR/>
+  <key :: Name: (.+), DESCR: :: name/>
+  <leaf :: descr :: Name: .+ DESCR: (.+)/>
+  <leaf :: sn :: PID: .+ SN: (\S+)/>
+ </list>
+</root>

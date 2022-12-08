@@ -1,0 +1,24 @@
+Value versionCapable ([0-9]+)
+Value maxVlans ([0-9]+)
+Value existingVlans ([0-9]+)
+Value operatingMode (\S+)
+Value domainName (.*)
+Value pruningMode (\S+)
+Value versionRunning ([0-9]+)
+Value interface (\S+)
+Value password (.+)
+
+Start
+  ^-+ -> VTP
+
+VTP
+  ^VTP Version\s+: ${versionCapable} .*
+  ^Maximum VLANs.* : ${maxVlans}
+  ^Number of existing.* : ${existingVlans}
+  ^VTP Operating .* : ${operatingMode}
+  ^VTP Domain .* : ${domainName}
+  ^VTP Pruning .* : ${pruningMode} .*
+  ^VTP version running\s+: ${versionRunning}
+  ^Preferred interface name is ${interface}\s*
+  ^VTP [Pp]assword: ${password}
+

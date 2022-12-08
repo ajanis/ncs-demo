@@ -1,0 +1,12 @@
+! ios-stats:lldp/neighbors{}
+
+<root>
+ <list :: . :: \nLocal Intf: (\S+)/>
+  <key :: Local Intf:\s+(\S+) :: local-interface/>
+  <leaf :: chassis-id :: Chassis id:\s+(\S+)/>
+  <leaf :: port-id :: Port id:\s+(\S+)/>
+  <leaf :: device-id :: System Name:\s+(\S+)/>
+  <leaf :: time-remaining :: Time remaining:\s+(.+)/>
+  <leaf :: capability :: Enabled Capabilities: (.+)/>
+ </list>
+</root>

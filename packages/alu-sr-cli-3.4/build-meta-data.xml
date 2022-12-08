@@ -1,0 +1,18 @@
+<ncs-pkg-build xmlns='http://tail-f.com/ns/ncs-pkg-build'>
+    <date>2022-01-26 09:47:35</date>
+    <file>alu-sr-cli-3.4-source-3.4.0.1.tar.gz</file>
+    <type>example</type>
+    <arch>.darwin.x86_64</arch>
+    <java>[architecture=6620928] [64-bit architecture=27146] [64-bit architecture=524400] [architecture=7603968] [64-bit architecture=524410]</java>
+    <package>
+        <name>alu-sr-cli-3.4</name>
+        <version>3.4.0.1</version>
+        <ref>3.4.0.1</ref>
+        <sha1>This_Is_An_Example_NED</sha1>
+    </package>
+    <ncs>
+        <version>5.7.1_HEAD</version>
+        <sha1>This_NED_should_not_be_used</sha1>
+    </ncs>
+    <dev-support/>
+</ncs-pkg-build>

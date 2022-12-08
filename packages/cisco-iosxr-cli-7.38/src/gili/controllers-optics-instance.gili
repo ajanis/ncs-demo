@@ -1,0 +1,17 @@
+! cisco-ios-xr-stats:controllers/Optics{}
+
+<root>
+ <container :: ./>
+  <leaf :: controller-state :: Controller State: (\S+)/>
+  <leaf :: transceiver-vendor-details/form-factor :: Form Factor\s*: (\S+)/>
+  <leaf :: transceiver-vendor-details/optics-type :: Optics type\s*: (\S+)/>
+  <leaf :: transceiver-vendor-details/name :: Name\s*: (\S+)/>
+  <leaf :: transceiver-vendor-details/oui-number :: OUI Number\s*: (\S+)/>
+  <leaf :: transceiver-vendor-details/part-number :: Part Number\s*: (\S+)/>
+  <leaf :: transceiver-vendor-details/rev-number :: Rev Number\s*: (\S+)/>
+  <leaf :: transceiver-vendor-details/serial-number :: Serial Number\s*: (\S+)/>
+  <leaf :: transceiver-vendor-details/pid :: PID\s*: (\S+)/>
+  <leaf :: transceiver-vendor-details/vid :: VID\s*: (\S+)/>
+  <leaf :: transceiver-vendor-details/date-code :: Date Code\(yy\/mm\/dd\)\s*: (\S+)/>
+ </container>
+</root>

@@ -1,0 +1,1045 @@
+module tailf-ned-cisco-ios-xr-meta {
+  namespace 'http://tail-f.com/ned/cisco-iosxr/meta';
+  prefix cisco-ios-xr-meta;
+
+  import tailf-common {
+    prefix tailf;
+  }
+
+  import tailf-ncs {
+    prefix ncs;
+  }
+
+  import ietf-inet-types {
+    prefix inet;
+  }
+
+  // This import is required when building for CDM style NSOs
+  // Is automatically un-commented in  by the NED build system when
+  // building for NSO >= 5.0
+  //#if (SUPPORTS_CDM == "YES")
+  //#replace (//) (  )
+  // import cisco-iosxr-cli {
+  //   prefix family;
+  // }
+  //#endif
+
+  // =========================================================================
+  // REVISION
+  // =========================================================================
+
+  revision 2022-01-21 {
+    description "version 7.38.3, see CHANGES";
+  }
+
+
+  // =========================================================================
+  // NED-SETTINGS
+  // =========================================================================
+
+  grouping cisco-iosxr-ned-settings-grouping {
+
+    // cisco-iosxr
+    container cisco-iosxr {
+      tailf:info "cisco-iosxr ned-settings";
+
+      // cisco-iosxr log-verbose
+      leaf log-verbose {
+        tailf:info "Enabled extra verbose logging in NED (for debugging)";
+        type boolean;
+        default false;
+      }
+
+      // cisco-iosxr extended-parser
+      leaf extended-parser {
+        tailf:info "Make the cisco-iosxr NED handle CLI parsing (i.e. transform the "
+          +"running-config from the device to the model based config tree)";
+        type enumeration {
+          enum "disabled" {
+            tailf:info "DEPRECATED. Same as robust-mode";
+          }
+          enum "turbo-mode" {
+            tailf:info "The NED executes the whole command parsing by itself, "
+              + "completely bypassing the NSO CLI parser. The configuration "
+              + "dump is transferred to NSO using maapi setvalues call";
+          }
+          enum "turbo-xml-mode" {
+            tailf:info "The NED executes the whole command parsing by itself, "
+              + "completely bypassing the NSO CLI parser. The configuration "
+              + "dump is transferred to NSO in XML format";
+          }
+          enum "robust-mode" {
+            tailf:info "Makes the NED filter the configuration so that unmodeled"
+              + " content is removed before being passed to the NSO CLI-engine."
+              + " This protects against configuration ending up at the wrong level"
+              + " when NSO CLI parser fallbacks (which potentially can cause"
+              + " following config to be skipped)";
+          }
+          enum "auto" {
+            tailf:info "Uses turbo-mode when available, will use fastest available"
+              + "method to load data to NSO. If NSO doesn't support data-loading "
+              + "from CLI NED, robust-mode is used.";
+          }
+        }
+        default auto;
+      }
+
+      // cisco-iosxr connection
+      container connection {
+        tailf:info "Connection configuration";
+
+        // cisco-iosxr connection connector
+        leaf connector {
+          tailf:info "Change the default connector. Default 'ned-connector-default.json'";
+          type string {
+            tailf:info "WORD;;Connector name (located in src/metadata resources)";
+          }
+        }
+
+        // cisco-iosxr connection number-of-retries
+        leaf number-of-retries {
+          tailf:info "Configure max number of extra retries the NED will try to"
+            + " connect to the device before giving up. Default 0";
+          type uint8 {
+            tailf:info "<0-255>;;Connection retry attempts (default 0)";
+            range "0..255";
+          }
+          default 0;
+        }
+
+        // cisco-iosxr connection time-between-retry
+        leaf time-between-retry {
+          tailf:info "Configure the time in seconds the NED will wait between"
+            +" each connect retry. Default 1s";
+          type uint8 {
+            tailf:info "<1-255>;;Connection retry wait time in seconds (default 1)";
+            range "1..255";
+          }
+          default 1;
+        }
+
+        // cisco-iosxr connection prompt-timeout
+        leaf prompt-timeout {
+          tailf:info "Timeout in milliseconds before sending a newline to wake the device (at login only)";
+          type uint32 {
+            tailf:info "<0|1000-1000000>;;milliseconds before sending newline. 0 disabled (default)";
+            range "0|1000..1000000" {
+              tailf:step 1000;
+            }
+          }
+          default 0;
+        }
+
+        // cisco-iosxr connection send-login-newline
+        leaf send-login-newline {
+          tailf:info "Send an initial newline in the login phase to wake device [legacy API only]";
+          type boolean;
+          default false;
+        }
+
+        // cisco-iosxr connection prefer-platform-serial-number
+        leaf prefer-platform-serial-number {
+          tailf:info "Set to false if the NED should not report the serial-number from"
+            +" devices device platform, i.e. always call show inventory|diag when"
+            +" NED connects to the device. Default true";
+          type boolean;
+          default true;
+        }
+
+        // cisco-iosxr connection serial-number-method
+        leaf serial-number-method {
+          tailf:info "The method to use to retrieve serial number from device";
+          type enumeration {
+            enum disabled {
+              tailf:info "Do not attempt to retrieve serial number from device";
+            }
+            enum diag {
+              tailf:info "Only use 'show diag'";
+            }
+            enum inventory {
+              tailf:info "Only use 'show inventory'";
+            }
+            enum prefer-diag {
+              tailf:info "First try 'show diag' then 'show inventory'";
+            }
+            enum prefer-inventory {
+              tailf:info "First try 'show inventory' then 'show diag'";
+            }
+            enum auto {
+              tailf:info "prefer-inventory for 'cisco CRS' and 'cisco NCS' else prefer-diag (default)";
+            }
+          }
+          default auto;
+        }
+
+        // cisco-iosxr connection platform-model-regex
+        leaf platform-model-regex {
+          tailf:info "Change default devices device model regex";
+          type string {
+            tailf:info "WORD;;devices device model regex";
+          }
+        }
+
+        // cisco-iosxr connection admin
+        container admin {
+          tailf:info "Admin connection credentials";
+
+          // cisco-iosxr connection admin name
+          leaf name {
+            tailf:info "Specify device admin name";
+            type string;
+          }
+
+          // cisco-iosxr connection admin password
+          leaf password {
+            tailf:info "Specify the remote admin password";
+            type tailf:aes-cfb-128-encrypted-string;
+          }
+        }
+
+        // cisco-iosxr connection ssh client
+        container ssh {
+          leaf client {
+            type enumeration {
+              enum default;
+              enum sshj;
+              enum ganymed;
+            }
+          }
+        }
+      }
+
+      // cisco-iosxr proxy
+      container proxy {
+        tailf:info "Configure NED to access device via a proxy";
+
+        // cisco-iosxr proxy remote-connection
+        leaf remote-connection {
+          tailf:info "Connection type between proxy and device|proxy2";
+          type enumeration {
+            enum "exec" {
+              tailf:info "master to slave board proxy";
+            }
+            enum "ssh" {
+              tailf:info "SSH jump host proxy";
+            }
+            enum "telnet" {
+              tailf:info "TELNET jump host proxy";
+            }
+            enum "serial" {
+              tailf:info "terminal server proxy";
+            }
+          }
+        }
+
+        // cisco-iosxr proxy remote-address
+        leaf remote-address {
+          tailf:info "Address of host behind the proxy";
+          tailf:display-when "not (../remote-connection='exec')";
+          type inet:ip-address;
+        }
+
+        // cisco-iosxr proxy remote-port
+        leaf remote-port {
+          tailf:info "Port of host behind the proxy";
+          tailf:display-when "not (../remote-connection='exec')";
+          type uint16;
+          default 22;
+        }
+
+        // cisco-iosxr proxy proxy-prompt
+        leaf proxy-prompt {
+          tailf:info "Prompt pattern on the proxy host";
+          type string;
+        }
+
+        // cisco-iosxr proxy proxy-prompt2
+        leaf proxy-prompt2 {
+          tailf:info "Prompt pattern on the proxy after sending telnet/ssh command";
+          type string;
+        }
+
+        // cisco-iosxr proxy remote-command
+        leaf remote-command {
+          tailf:info "Connection command used to initiate proxy on device";
+          type string;
+        }
+
+        // cisco-iosxr proxy remote-prompt
+        leaf remote-prompt {
+          tailf:info "DEPRECATED and not used. Use proxy-prompt";
+          type string;
+        }
+
+        // cisco-iosxr proxy remote-name
+        leaf remote-name {
+          tailf:info "User name on the device behind the proxy";
+          type string;
+        }
+
+        // cisco-iosxr proxy remote-password
+        leaf remote-password {
+          tailf:info "Password on the device behind the proxy";
+          type tailf:aes-cfb-128-encrypted-string;
+        }
+
+        // cisco-iosxr proxy authgroup
+        leaf authgroup {
+          tailf:info "Authentication credentials for the device behind the proxy";
+          type string {
+            tailf:info "WORD;;devices authgroup group";
+          }
+        }
+
+        // cisco-iosxr proxy send-login-newline
+        leaf send-login-newline {
+          tailf:info "Send a newline after connected to the proxy to wake up the device for a login prompt";
+          type boolean;
+          default false;
+        }
+
+        // cisco-iosxr proxy remote-ssh-args
+        leaf remote-ssh-args {
+          tailf:info "Additional arguments used to establish proxy connection (appended to end of ssh cmd line)";
+          tailf:display-when "not (../remote-command)";
+          type string {
+            tailf:info "WORD;;optional ssh arguments";
+          }
+        }
+      }
+
+      // cisco-iosxr proxy2
+      container proxy2 {
+        tailf:info "Configure double-proxy setup: NSO <-> proxy <-> proxy2 <-> device";
+
+        // cisco-iosxr proxy2 remote-connection
+        leaf remote-connection {
+          tailf:info "Connection type between proxy2 and device";
+          type enumeration {
+            enum "ssh" {
+              tailf:info "SSH jump host proxy";
+            }
+            enum "telnet" {
+              tailf:info "TELNET jump host proxy";
+            }
+          }
+        }
+
+        // cisco-iosxr proxy2 remote-address
+        leaf remote-address {
+          tailf:info "Address of device behind the proxy2";
+          tailf:display-when "not (../remote-connection='exec')";
+          type inet:ip-address;
+        }
+
+        // cisco-iosxr proxy2 remote-port
+        leaf remote-port {
+          tailf:info "Port of device behind the proxy2";
+          tailf:display-when "not (../remote-connection='exec')";
+          type uint16;
+          default 22;
+        }
+
+        // cisco-iosxr proxy2 proxy-prompt
+        leaf proxy-prompt {
+          tailf:info "Prompt pattern on the proxy2 host";
+          type string;
+        }
+
+        // cisco-iosxr proxy2 proxy-prompt2
+        leaf proxy-prompt2 {
+          tailf:info "Prompt pattern on the proxy2 after sending telnet/ssh command";
+          type string;
+        }
+
+        // cisco-iosxr proxy2 remote-command
+        leaf remote-command {
+          tailf:info "Connection command used to initiate proxy2 on proxy";
+          type string;
+        }
+
+        // cisco-iosxr proxy2 remote-name
+        leaf remote-name {
+          tailf:info "User name on the device behind the proxy2";
+          type string;
+        }
+
+        // cisco-iosxr proxy2 remote-password
+        leaf remote-password {
+          tailf:info "Password on the device behind the proxy2";
+          type tailf:aes-cfb-128-encrypted-string;
+        }
+
+        // cisco-iosxr proxy2 authgroup
+        leaf authgroup {
+          tailf:info "Authentication credentials for the device behind the proxy2";
+          type string {
+            tailf:info "WORD;;devices authgroup group";
+          }
+        }
+
+        // cisco-iosxr proxy2 send-login-newline
+        leaf send-login-newline {
+          tailf:info "Send a newline after connected to the device to wake it up for a login prompt";
+          type boolean;
+          default false;
+        }
+
+        // cisco-iosxr proxy2 remote-ssh-args
+        leaf remote-ssh-args {
+          tailf:info "Additional arguments used to establish proxy2 connection (appended to end of ssh cmd line)";
+          tailf:display-when "not (../remote-command)";
+          type string {
+            tailf:info "WORD;;optional ssh arguments";
+          }
+        }
+      }
+
+      // cisco-iosxr read {
+      container read {
+        tailf:info "Settings used when reading from device";
+
+        // cisco-iosxr read method
+        leaf method {
+          tailf:info "The method to use to get config";
+          type string {
+            tailf:info "<command> | sftp-transfer;;Command/method to get running-config"
+              +" (default: 'show running-config')";
+          }
+          default "show running-config";
+        }
+
+        // cisco-iosxr read admin-show-running-config
+        leaf admin-show-running-config {
+          tailf:info "Also enter admin mode and show running config there when showing config. Default true";
+          type boolean;
+          default true;
+        }
+
+        // cisco-iosxr read file
+        leaf file {
+          tailf:info "The path to the file containing running-config."
+            +" Default = disk0a:/usr/running-config.tmp";
+          type string {
+            tailf:info "FILE;;Path and name. Default = disk0a:/usr/running-config.tmp";
+          }
+          default "disk0a:/usr/running-config.tmp";
+        }
+
+        // cisco-iosxr read transaction-id-method
+        leaf transaction-id-method {
+          tailf:info "Method of the cisco-iosxr NED to use for calculating a transaction id. Typically used for check-sync operations";
+          type enumeration {
+            enum config-hash {
+              tailf:info "Use a snapshot of the running config for calculation";
+            }
+            enum commit-list {
+              tailf:info "Use the configuration commit list time of the latest commit for calculation. (default)";
+            }
+          }
+          default commit-list;
+        }
+
+        // cisco-iosxr read transaction-id-provisional
+        leaf transaction-id-provisional {
+          tailf:info "Set to false to disable use of new NSO feature to set provisional transaction-id in show() to save a call to getTransId() with sync-from";
+          type boolean;
+          default true;
+        }
+
+        // cisco-iosxr read strip-comments
+        leaf strip-comments {
+          tailf:info "Enable/disable stripping of device comments when reading from device. Default true";
+          type boolean;
+          default true;
+        }
+
+        // cisco-iosxr read show-running-strict-mode
+        leaf show-running-strict-mode {
+          tailf:info "Enable to replace all submode ! with exit in sync-from show running-config";
+          type boolean;
+          default false;
+        }
+
+        // cisco-iosxr read partial-show-method
+        leaf partial-show-method {
+          tailf:info "Method to use when executing a partial show on the device "
+            +"(for instance when doing a 'commit no-overwrite')";
+          type enumeration {
+            enum "walk-mode" {
+              tailf:info "The NED 'walks' the config tree on the device step by step and extracts " +
+                "the config from the requested locations (i.e. doing a 'show' for each path NSO checks).";
+            }
+            enum "filter-mode" {
+              tailf:info "The NED fetches a full configuration dump from the device. " +
+                "It then filters out everything except the requested parts. " +
+                "The filtered config is then sent back to NSO.";
+            }
+            enum "cmd-path-full" {
+              tailf:info "Hardwire NSO show-partial capability to 'cmd-path-full'";
+            }
+          }
+          default "walk-mode";
+        }
+
+        // cisco-iosxr read replace-config *
+        list replace-config {
+          tailf:info "Replace (or filter) config when reading from device";
+          tailf:cli-suppress-mode;
+          tailf:cli-delete-when-empty;
+          tailf:cli-compact-syntax;
+          tailf:cli-incomplete-command;
+          ordered-by user;
+          key id;
+          leaf id {
+            tailf:cli-suppress-range;
+            type string {
+              tailf:info "WORD;;List id, any string";
+            }
+          }
+          leaf regexp {
+            tailf:info "The regular expression (DOTALL) to which the config is to be matched";
+            type string {
+              tailf:info "WORD;;Regular expression";
+            }
+          }
+          leaf replacement {
+            tailf:info "The string which would replace all found matches. May use groups from regex";
+            type string {
+              tailf:info "WORD;;Replacement entry or leave unset for filtering";
+            }
+          }
+        }
+      }
+
+      // cisco-iosxr write
+      container write {
+        tailf:info "Settings used when writing to device";
+
+        // cisco-iosxr write commit-method
+        leaf commit-method {
+          tailf:info "Commit method to use for commit/rollback behaviour";
+          type enumeration {
+            enum confirmed {
+              tailf:info "Use 'commit confirmed' along with a confirming 'commit'"
+              +" when transaction is done, utilizing the implict device rollback"
+              +" if network connectivity is lost";
+            }
+            enum direct {
+              tailf:info "When using this method, the NED follows the NCS flow by"
+              +" doing 'commit' when NCS commits the transaction. If transaction is"
+              +" reverted, the NED calls 'rollback configuration last 1' to rollback"
+              +" the commit";
+            }
+          }
+          default confirmed;
+        }
+
+        // cisco-iosxr write commit-options
+        leaf commit-options {
+          tailf:info "Option(s) to commit [confirmed] command. Default 'show-error'";
+          type string {
+            tailf:info "WORD;;Option(s) to commit [confirmed] command. Default 'show-error'";
+          }
+          default "show-error";
+        }
+
+        // cisco-iosxr write commit-confirmed-timeout
+        leaf commit-confirmed-timeout {
+          tailf:info "Number of seconds used with commit confirmed command. Default 30";
+          type uint16 {
+            tailf:info "<30-65535>;;Number of seconds used with commit confirmed command. Default 30";
+            range "30..65535";
+          }
+          default 30;
+        }
+
+        // cisco-iosxr write commit-confirmed-delay
+        leaf commit-confirmed-delay {
+          tailf:info "Number of milliseconds to delay between commit confirmed and commit. Default 0";
+          type uint32 {
+            tailf:info "<0-2147483647>;;Number of milliseconds to delay between commit confirmed and commit";
+            range "0..2147483647";
+          }
+          default 0;
+        }
+
+        // cisco-iosxr write commit-override-changes
+        leaf commit-override-changes {
+          tailf:info "The answer when commiting and other sessions have commited since this session started. Default yes";
+          type enumeration {
+            enum yes;
+            enum no;
+          }
+          default yes;
+        }
+
+        // cisco-iosxr write revert-method
+        leaf revert-method {
+          tailf:info "The method used to rollback a commit in REVERT phase. Default is to use OS rollback.";
+          type enumeration {
+            enum rollback {
+              tailf:info "Use native OS rollback command";
+            }
+            enum apply-reverse-diff {
+              tailf:info "Apply the reverse diff (calculated by NSO) and apply in a new commit";
+            }
+          }
+          default rollback;
+        }
+
+        // cisco-iosxr write config-method
+        leaf config-method {
+          tailf:info "Config method to use when entering config mode";
+          type enumeration {
+            enum exclusive {
+              tailf:info "Configure exclusively from this terminal (DEFAULT)";
+            }
+            enum terminal {
+              tailf:info "Configure from the terminal";
+            }
+          }
+          default exclusive;
+        }
+
+        // cisco-iosxr write config-warning *
+        list config-warning {
+          tailf:info "List specifying device warnings to ignore";
+          tailf:cli-suppress-mode;
+          tailf:cli-delete-when-empty;
+          key warning;
+          leaf warning {
+            tailf:cli-multi-word-key;
+            type string {
+              tailf:info "WORD;;Warning regular expression, "+
+                "e.g. vlan.* does not exist.* creating vlan";
+            }
+          }
+        }
+
+        // cisco-iosxr write inject-command *
+        list inject-command {
+          tailf:info "Inject command (before or after) specified config-line upon commit";
+          tailf:cli-suppress-mode;
+          tailf:cli-delete-when-empty;
+          tailf:cli-compact-syntax;
+          tailf:cli-sequence-commands;
+          tailf:cli-incomplete-command;
+          ordered-by user;
+          key id;
+          leaf id {
+            type string {
+              tailf:info "WORD;;List id, any string";
+            }
+          }
+          leaf config {
+            tailf:info "The config line(s) where command should be injected (DOTALL regex)";
+            tailf:cli-incomplete-command;
+            type string {
+              tailf:info "WORD;;The config line(s) where command should be injected (DOTALL regex)";
+            }
+          }
+          leaf command {
+            tailf:info "The command(s) to inject after|before config-line";
+            tailf:cli-incomplete-command;
+            type string {
+              tailf:info "WORD;;Command line(s). Use \n for multiple commands. Use $i to inject groups from config regex";
+            }
+          }
+          leaf where {
+            tailf:cli-drop-node-name;
+            type enumeration {
+              enum before-each {
+                tailf:info "insert command before each matching config-line";
+              }
+              enum before-first {
+                tailf:info "insert command before first matching config-line";
+              }
+              enum after-each {
+                tailf:info "insert command after each matching config-line";
+              }
+              enum after-last {
+                tailf:info "insert command after last matching config-line";
+              }
+            }
+          }
+        }
+
+        // cisco-iosxr write number-of-lines-to-send-in-chunk
+        leaf number-of-lines-to-send-in-chunk {
+          tailf:info "Number of commands lines in a chunk sent by the cisco-iosxr"
+            + " NED to the device. Default is 100. A higher number normally result"
+            + " in better performance but will also have negative impact on"
+            + " the error handling";
+          type uint16 {
+            tailf:info "<1-1000>;;Max number of lines per chunk";
+            range "1..1000";
+          }
+          default 100;
+        }
+
+        // cisco-iosxr write sftp-threshold
+        leaf sftp-threshold {
+          tailf:info "The minimum threshold in lines of config when to transfer the config"
+            +" changes as a file using SFTP, and then copy to running-config. Default 2147483647";
+          type uint32 {
+            tailf:info "<0-2147483647>;;Minimum threshold (lines) for SFTP and copy commit";
+            range "0..2147483647";
+          }
+          default 2147483647;
+        }
+
+        // cisco-iosxr write file
+        leaf file {
+          tailf:info "The name of the temporary file to use when transferring the config"
+            +" Default = disk0a:/usr/commit-config.tmp";
+          type string {
+            tailf:info "FILE;;Path and name. Default = disk0a:/usr/commit-config.tmp";
+          }
+          default "disk0a:/usr/commit-config.tmp";
+        }
+
+        // cisco-iosxr write oob-exclusive-retries
+        leaf oob-exclusive-retries {
+          tailf:info "Maximum number of retries (one per second) when trying to enter config"
+            +" mode or commit on certain errors which may be solved by retrying";
+          type uint32;
+          default 1;
+        }
+
+        // cisco-iosxr write config-dependency *
+        list config-dependency {
+          tailf:info "Add a dynamic diff dependency to solve unsolved dependencies in the NED before next release";
+          tailf:cli-suppress-mode;
+          tailf:cli-delete-when-empty;
+          tailf:cli-compact-syntax;
+          tailf:cli-sequence-commands;
+          tailf:cli-incomplete-command;
+          ordered-by user;
+          key id;
+          leaf id {
+            tailf:cli-suppress-range;
+            type string {
+              tailf:info "WORD;;List id, any string";
+            }
+          }
+          leaf mode {
+            tailf:info "Regex specifying config mode where the rule is checked, don't set for top-mode";
+            tailf:cli-optional-in-sequence;
+            type string {
+              tailf:info "WORD;;Regex specifying config mode where the rule is checked.";
+            }
+          }
+          leaf move {
+            tailf:info "Regex|match-expr specifying line(s) to move";
+            tailf:cli-incomplete-command;
+            type string {
+              tailf:info "WORD;;regex|match-expr specifying line(s) to move";
+            }
+          }
+          leaf action {
+            tailf:cli-drop-node-name;
+            type enumeration {
+              enum before {
+                tailf:info "Move 'move' line(s) before 'stay' line(s)";
+              }
+              enum after {
+                tailf:info "Move 'move' line(s) before 'stay' line(s)";
+              }
+              enum last {
+                tailf:info "Move 'move' line(s) last";
+              }
+              enum first {
+                tailf:info "Move 'move' line(s) first";
+              }
+            }
+          }
+          leaf stay {
+            tailf:info "Regex|match-expr specifying where 'move' lines will be moved before|after";
+            tailf:cli-optional-in-sequence;
+            type string {
+              tailf:info "WORD;;Regex|match-expr specifying where 'move' lines will be moved before|after";
+            }
+          }
+          leaf options {
+            tailf:info "Optional rule option(s)";
+            type string {
+              tailf:info "WORD;;Optional rule option(s)";
+            }
+          }
+        }
+      }
+
+      // cisco-iosxr live-status
+      container live-status {
+        tailf:info "Configure NED settings related to live-status";
+
+        // cisco-iosxr live-status time-to-live
+        leaf time-to-live {
+          tailf:info "Define time-to-live for data fetched from the device"
+            +" via live-status (default 50)";
+          type int32;
+          default 50;
+        }
+
+        // cisco-iosxr live-status exec-strict-prompt
+        leaf exec-strict-prompt {
+          tailf:info "Set prompt <regex> to enable strict prompt matching for live-status commands."
+            +" %p = device prompt (auto-retrieved by sending newline)";
+          type string {
+            tailf:info "WORD;;Set prompt <regex> to enable strict prompt, e.g. '\\A%p$'";
+          }
+        }
+
+        // cisco-iosxr live-status auto-prompts *
+        list auto-prompts {
+          tailf:info "Pre-stored answers to device prompting questions";
+          tailf:cli-suppress-mode;
+          tailf:cli-delete-when-empty;
+          tailf:cli-compact-syntax;
+          tailf:cli-incomplete-command;
+          ordered-by user;
+          key id;
+          leaf id {
+            type string {
+              tailf:info "WORD;;List id, any string";
+            }
+          }
+          leaf question {
+            tailf:info "Device question, regular expression";
+            type string {
+              tailf:info "WORD;;Question, regex format";
+            }
+          }
+          leaf answer {
+            tailf:info "Answer to device question";
+            type string {
+              tailf:info "WORD;;Answer to device question | <exit|prompt|timeout|ignore|enter>";
+            }
+          }
+        }
+      }
+
+      // cisco-iosxr api
+      container api {
+        tailf:info "Configure API (new API features/changes)";
+
+        // cisco-iosxr api edit-route-policy
+        leaf edit-route-policy {
+          tailf:info "Set to true to change route-policy contents from a string to id list";
+          type boolean;
+          default false;
+        }
+
+        // cisco-iosxr api service-policy-list
+        leaf service-policy-list {
+          tailf:info "Replace single service-policy list container with a list, supporting multiple entries";
+          type boolean;
+          default false;
+        }
+
+        // cisco-iosxr api class-map-match-access-group-list
+        leaf class-map-match-access-group-list {
+          tailf:info "Replace single class-map * / match access-group container+leaf with a list, supporting multiple entries";
+          type boolean;
+          default false;
+        }
+
+        // cisco-iosxr api group-modeled
+        leaf group-modeled {
+          tailf:info "Set to true to switch to minimalistic modeled group configuration instead of a single string [EXPERIMENTAL]";
+          type boolean;
+          default false;
+        }
+
+        // cisco-iosxr api strict-interface-name
+        leaf strict-interface-name {
+          tailf:info "Enable strict interface name checking to avoid config diff when device auto-corrects";
+          type boolean;
+          default false;
+        }
+
+        // cisco-iosxr api snmp-server-enable-all-traps
+        leaf snmp-server-enable-all-traps {
+          tailf:info "Enable the all-traps API. Set to > 0 for minimum traps, < 0 for max missing traps and 0 to disable (default)";
+          type int32;
+          default 0;
+        }
+      }
+
+      // cisco-iosxr auto
+      container auto {
+        tailf:info "Configure auto (dynamic behaviour)";
+
+        // cisco-iosxr auto vrf-forwarding-restore
+        leaf vrf-forwarding-restore {
+          tailf:info "Restore interface ip address after vrf forwarding change. Default true";
+          type boolean;
+          default true;
+        }
+
+        // cisco-iosxr auto CSCtk60033-patch
+        leaf CSCtk60033-patch {
+          tailf:info "Delete class-maps last in separate commit due to XR OS bug [CSCtk60033]. Default true";
+          type boolean;
+          default true;
+        }
+        // cisco-iosxr auto CSCtk60033-patch2
+        leaf CSCtk60033-patch2 {
+          tailf:info "Extended CSCtk60033-patch; also delete all policy-maps last in separate commit. Default false";
+          type boolean;
+          default false;
+        }
+
+        // cisco-iosxr auto acl-delete-patch
+        leaf acl-delete-patch {
+          tailf:info "Delete referenced ipv4|ipv6 access-list last in separate commit due to XR OS bug. Default false";
+          type boolean;
+          default false;
+        }
+
+        // cisco-iosxr auto aaa-tacacs-patch
+        leaf aaa-tacacs-patch {
+          tailf:info "Inject extra commit when deleting aaa group server tacacs+ with aaa authentication config";
+          type boolean;
+          default true;
+        }
+
+        // cisco-iosxr auto snmp-server-community-patch
+        leaf snmp-server-community-patch {
+          tailf:info "Auto strip snmp-server-community 'IPv4' to support single API for various XR API's";
+          type boolean;
+          default false;
+        }
+
+        // cisco-iosxr auto router-static-patch
+        leaf router-static-patch {
+          tailf:info "Inject extra commit when editing static routes, where entries are first removed, then added in new commit";
+          type boolean;
+          default false;
+        }
+      }
+
+      // cisco-iosxr developer
+      container developer {
+        tailf:info "Developer settings used for debugging only";
+
+        // cisco-iosxr developer progress-verbosity
+        leaf progress-verbosity {
+          tailf:info "Maximum NED verbosity level which will get written in devel.log file";
+          type enumeration {
+            enum disabled {
+              value -1;
+            }
+            enum normal {
+              value 0;
+            }
+            enum verbose {
+              value 1;
+            }
+            enum very-verbose {
+              value 2;
+            }
+            enum debug {
+              value 3;
+            }
+          }
+          default debug;
+        }
+
+        // cisco-iosxr developer trace-enable
+        leaf trace-enable {
+          tailf:info "Enable developer tracing. WARNING: may choke NSO with large commits|systems";
+          type boolean;
+          default false;
+        }
+
+        // cisco-iosxr developer trace-input-bytes
+        leaf trace-input-bytes {
+          tailf:info "Enable tracing of input bytes. WARNING: may choke NSO with large commits|systems";
+          type boolean;
+          default false;
+        }
+
+        // cisco-iosxr developer trace-level
+        leaf trace-level {
+          tailf:info "DEPRECATED and not used";
+          type uint8 {
+            range "6..9";
+          }
+          default 6; // info
+        }
+
+        // cisco-ios developer trace-connection
+        leaf trace-connection {
+          tailf:info "Enable connection tracing. WARNING: may choke NSO with IPC messages";
+          type boolean;
+          default false;
+        }
+
+        // cisco-iosxr developer trace-timestamp
+        leaf trace-timestamp {
+          tailf:info "Add timestamp from NED instance in trace messages for debug purpose";
+          type boolean;
+          default false;
+        }
+
+        // cisco-iosxr developer simulate-command *
+        list simulate-command {
+          tailf:info "Used for debugging to simulate a device response to a command";
+          tailf:cli-suppress-mode;
+          tailf:cli-delete-when-empty;
+          key cmd;
+          leaf cmd {
+            type string {
+              tailf:info "WORD;;Full command, e.g. 'show version'";
+            }
+          }
+          leaf file {
+            tailf:info "Command output file";
+            type string {
+              tailf:info "WORD;;Path to file containing output of command";
+            }
+          }
+        }
+      }
+
+      // cisco-iosxr deprecated
+      container deprecated {
+        tailf:info "Deprecated ned-settings";
+
+        // cisco-iosxr deprecated cached-show-enable version
+        container cached-show-enable {
+          tailf:info "Enable cached-show [DEPRECATED]";
+          leaf version {
+            tailf:info "Enable caching of some output of 'show version' [DEPRECATED]";
+            type boolean;
+            default false;
+          }
+        }
+      }
+    }
+  }
+
+
+  augment "/ncs:devices/ncs:global-settings/ncs:ned-settings" {
+    uses cisco-iosxr-ned-settings-grouping;
+  }
+
+  augment "/ncs:devices/ncs:profiles/ncs:profile/ncs:ned-settings" {
+    uses cisco-iosxr-ned-settings-grouping;
+  }
+
+  augment "/ncs:devices/ncs:device/ncs:ned-settings" {
+    // CDM style syntax:
+    //#if (SUPPORTS_CDM == "YES")
+    //#replace (//) (  )
+    //when "derived-from(../ncs:device-type/ncs:cli/ncs:ned-id,'family:cisco-iosxr-cli')";
+    //#else
+    when "../ncs:device-type/ncs:cli/ncs:ned-id = 'cisco-ios-xr-id:cisco-ios-xr'";
+    //#endif
+
+    uses cisco-iosxr-ned-settings-grouping;
+  }
+
+}

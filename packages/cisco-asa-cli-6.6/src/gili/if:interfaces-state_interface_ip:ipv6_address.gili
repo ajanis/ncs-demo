@@ -1,0 +1,11 @@
+! if:interfaces-state/interface{}/ip:ipv6/address{}
+! RFC7277 - YANG IP Management
+
+<root>
+ <list :: . :: ipv6 address (\S.*)/>
+  <key :: ipv6 address (\S+)/ :: ip/>
+  <leaf :: prefix-length :: ipv6 address \S+/(\d+)/>
+  <leaf :: origin/>
+  <leaf :: status/>
+ </list>
+</root>

@@ -1,0 +1,11 @@
+! ios-stats:mroute/vrf{}/address{}/outgoing{}
+
+<root>
+ <buf-start :: Outgoing interface list/>
+ <list :: . :: \n[ ]*([^interface]\S+)[ ]+?\S+ />
+  <key :: \s+([^Null|interface|Forward|Sparse|\d\)|\(]\S+), :: interface/>
+  <leaf :: address :: \s+\S+,\s([^Forward|Sparse]\S+),/>
+  <leaf :: mode :: ,\s+([^\d+].*/.*),\s/>
+  <leaf :: up-time :: ,\s+[^\d+].*/.*,\s(\S+)/>
+ </list>
+</root>

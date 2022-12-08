@@ -1,0 +1,2853 @@
+cisco-asa v6.6.10 [2019-07-19]
+=============================
+
+General:
+
+    Look for 'API CHANGE' below to see what changes have been made that may
+    not be backwards compatible.
+
+Enhancements:
+
+  - Added remove-before-change in console/server_group leaf in
+     aaa authentication ssh|telnet|http|enable|serial
+     aaa accounting enable|ssh|telnet|serial
+    (ASA-298 / RT38178)
+
+Corrections:
+
+
+cisco-asa v6.6.9 [2019-06-14]
+=============================
+
+General:
+
+    Look for 'API CHANGE' below to see what changes have been made that may
+    not be backwards compatible.
+
+Enhancements:
+
+  - Lowered SCP upload chunk size from 16384 to 8192 to reduce the chance of
+     read-timeout on slow SCP connections.
+
+Corrections:
+
+  - Updated NEDCOM to version 1.81.
+     Contains a fix for a turbo parser filtering issue (with list keys
+     containing both '/' and ':') which could cause out of sync issues
+     when doing commit no-overwrite.
+    (ASA-296)
+
+
+cisco-asa v6.6.8 [2019-06-07]
+=============================
+
+General:
+
+    Look for 'API CHANGE' below to see what changes have been made that may
+    not be backwards compatible.
+
+Enhancements:
+
+  - Removed all ned-data annotations in the YANG model.
+    They are deprecated and not used by any NSO version supported by this NED.
+    Consequently, support for NSO 4.2 and 4.3 is now technically discontinued.
+    (ASA-295)
+
+  - Improved and future-proofed progress reports for the upcoming NSO
+     Maapi.reportDeviceProgress method.
+    (ASA-294)
+
+  - Added 'write serialize-maapi-acl-read true|false' ned-setting in order to
+     be able to serialize access-list Maapi read from CDB. This may temporarily
+     overcome an issue with poor NSO performance if multiple devices read from
+     the CDB at the same time.
+    (ASA-290)
+
+  - Lowered SCP upload chunk size from 32768 to 16384 to reduce the chance of
+     read-timeout on slow SCP connections.
+
+Corrections:
+
+
+cisco-asa v6.6.7 [2019-06-03]
+=============================
+
+General:
+
+    Look for 'API CHANGE' below to see what changes have been made that may
+    not be backwards compatible.
+
+Enhancements:
+
+Corrections:
+
+  - Do not specify user id in Maapi.attach or nacm may deny reading admin
+     device config.
+    (ASA-293 / RT37642)
+
+
+cisco-asa v6.6.6 [2019-05-17]
+=============================
+
+General:
+
+    Look for 'API CHANGE' below to see what changes have been made that may
+    not be backwards compatible.
+
+Enhancements:
+
+  - Added "auto" enum option to extended-parser ned-setting and changed
+     default from "disabled" to "auto" to make input parsing more robust.
+    (ASA-289)
+
+  - Do not write login passwords in the NED trace with log-verbose true.
+    (ASA-288)
+
+  - Replaced NedSecrets NAVU code with CdbSession.getObjects for improved
+     performance and replacement of a deprecated API.
+    (ASA-288)
+
+  - Statically disabled upgrade code of ned-settings (from v5.x -> v6.x) due
+     to performance reasons. Set ENABLED to true in UpgradeNedSettings.java
+     and recompile if needed.
+    (ASA-287)
+
+  - Show config mode in ApplyException when a config command fails on device.
+    (ASA-286)
+
+  - Trace initial NSO data in prepareDry with log-verbose before modifications.
+    (ASA-290)
+
+Corrections:
+
+  - Fixed problem with turbo-mode dropping "no arp permit-nonconnected" line.
+    (ASA-289)
+
+
+cisco-asa v6.6.5 [2019-04-26]
+=============================
+
+General:
+
+    Look for 'API CHANGE' below to see what changes have been made that may
+    not be backwards compatible.
+
+Enhancements:
+
+  - Upgraded nedcom.jar to release-1.76, improving read timeout Exception
+     output (time, input buffer + patterns waiting for).
+    (ASA-285)
+
+  - Check 'developer simulate-command' ned-setting list in live-status exec
+     any <command>.
+    (ASA-284 / RT37198)
+
+Corrections:
+
+
+cisco-asa v6.6.4 [2019-04-12]
+=============================
+
+General:
+
+    Look for 'API CHANGE' below to see what changes have been made that may
+    not be backwards compatible.
+
+Enhancements:
+
+  - Added support for NSO 5.1 config CLI command 'load-native-config' which
+     can be used to load and convert device config into ncs_cli config mode:
+     admin@ncs(config)# devices device <device> load-native-config data|file
+    Note: Even with netsim the data is parsed as it was in native IOS format.
+    (ASA-282)
+
+  - Added support for new NSO 5.1 'verbose' flag to sync-from CLI command,
+     printing additional info like unknown commands etc. in the CLI.
+    (ASA-282)
+
+  - Upgraded nedcom.jar to release-1.73.
+
+Corrections:
+
+
+cisco-asa v6.6.3 [2019-03-28]
+=============================
+
+General:
+
+    Look for 'API CHANGE' below to see what changes have been made that may
+    not be backwards compatible.
+
+Enhancements:
+
+  - Added new ned-setting to enable progress reports in potentially time
+     consuming code in order to get a better overview of time spent. The
+     first Verbosity.NORMAL progress reports implemented in the NED are:
+      - modifying output - prepare[-dry] phase
+      - sending config   - prepare phase
+      - reading config   - initialize|get-trans-id|show phases
+      - extended parsing - show phase
+      - reconnecting     - prepare|commit|keepalive phases
+     Set 'cisco-asa developer progress-verbosity' ned-setting to enable.
+     Notes:
+      - NED progress reports are not supported in all NSO versions.
+      - NED progress is not shown in 'commit | details <verbosity level>'
+         yet due to NSO limitations. File a ticket if needed.
+    (ASA-281)
+
+  - Improved rebuilding of NED since the pyang to yanger change (ASA-272)
+
+Corrections:
+
+
+cisco-asa v6.6.2 [2019-03-14]
+=============================
+
+General:
+
+    Look for 'API CHANGE' below to see what changes have been made that may
+    not be backwards compatible.
+
+Enhancements:
+
+  - Further improved access-list performance in PREPARE[-DRY] by disabling
+     access-list rule debug tracing if not enabled (see new ned-setting).
+    (ASA-279)
+
+  - Added new developer ned-setting 'trace-level' and moved some traceVerbose
+     calls to traceDebug2 and traceDebug3 level to save time and trace size.
+    (ASA-278)
+
+Corrections:
+
+  - Fixed delete dependency problem, correct order is:
+     object-group network * / no network-object *
+     no object network *
+    (ASA-277)
+
+  - Do not warn if access-list does not exist in CDB.
+
+
+cisco-asa v6.6.1 [2019-03-07]
+=============================
+
+General:
+
+    Look for 'API CHANGE' below to see what changes have been made that may
+    not be backwards compatible.
+
+Enhancements:
+
+  - Improved access-list performance in PREPARE[-DRY] when reading list
+     from CDB by replacing NAVU code with Maapi.getObjects().
+    (ASA-276 / RT36576)
+
+  - Updated NEDCOM to version 1.67.
+
+Corrections:
+
+
+cisco-asa v6.6 [2019-03-01]
+===========================
+
+General:
+
+    Look for 'API CHANGE' below to see what changes have been made that may
+    not be backwards compatible.
+
+Enhancements:
+
+  - Do not call 'configure session' to detect whether the device supports
+     session mode, this will avoid populating the trace with ERROR.
+     Instead, disable session mode if the device does not support it.
+     Check the trace for 'config-session-mode' for status.
+    (ASA-273)
+
+  - Switched from pyang to yanger with turbo mode parser.
+    Rebuilding from source code is now limited to within same NSO branch.
+    (ASA-272, ASA-274)
+
+  - Silently ignore, instead of log, empty lines as suspicious archive files.
+    (ASA-272)
+
+  - Improved config false live-status performance by:
+     - Added support for new NSO live-status API - showStatsPath
+     - Added run-after-show:false option to if:interfaces-state/interface list
+    (ASA-269)
+
+  - API CHANGE:
+     Removed 'cisco-asa deprecated connection legacy-mode' ned-setting
+      and the legacy connect code.
+    (ASA-268)
+
+  - Updated NEDCOM to version 1.66.
+
+Corrections:
+
+  - Added back "interfaces" container and "interfaces-ref" type in
+     local copy of ietf-interfaces.yang file.
+    Warning: NSO will interpret "interfaces" container as config false
+             even though it is not.
+    (ASA-269)
+
+
+cisco-asa v6.5.6 [2018-12-21]
+=============================
+
+General:
+
+    Look for 'API CHANGE' below to see what changes have been made that may
+    not be backwards compatible.
+
+Enhancements:
+
+Corrections:
+
+  - Restored auto 'noprompts' flag for live-status packet-tracer command.
+    (ASA-263)
+
+
+cisco-asa v6.5.5 [2018-11-30]
+=============================
+
+General:
+
+    Look for 'API CHANGE' below to see what changes have been made that may
+    not be backwards compatible.
+
+Enhancements:
+
+  - Do not default to group 1 if fail to lookup failover group in user context
+     config on admin device 'context{<name>}/join-failover-group'.
+     Instead, throw an Exception and optionally fallback to CLI if enabled.
+    (ASA261)
+
+  - 'scp-transfer device-lookup true' optimization:
+      When looking up the device for secondary failover groups, also check that
+      the Secondary admin interface does not list as Failed (e.g. due to cable
+      being disconnected). If lists as Failed, then do not use SCP at all.
+    (ASA260 / RT35523)
+
+Corrections:
+
+
+cisco-asa v6.5.4 [2018-11-16]
+=============================
+
+General:
+
+    Look for 'API CHANGE' below to see what changes have been made that may
+    not be backwards compatible.
+
+Enhancements:
+
+  - Honor 'write slow-newline-delay' ned-setting in live-status actions.
+    (ASA-258)
+
+Corrections:
+
+  - Removed unused tailf-cisco-asa-oper.yang file.
+
+
+cisco-asa v6.5.3 [2018-11-13]
+=============================
+
+General:
+
+    Look for 'API CHANGE' below to see what changes have been made that may
+    not be backwards compatible.
+
+Enhancements:
+
+Corrections:
+
+  - Do not move ssh timeout value inside context modification.
+    (ASA-256 / RT35324)
+
+
+cisco-asa v6.5.2 [2018-11-02]
+=============================
+
+General:
+
+    Look for 'API CHANGE' below to see what changes have been made that may
+    not be backwards compatible.
+
+Enhancements:
+
+Corrections:
+
+  - Added default and report-all default mode to ssh key-exchange group.
+    Strip group name and value when deleting.
+    (ASA-255 / RT35177)
+
+
+cisco-asa v6.5.1 [2018-10-25]
+=============================
+
+General:
+
+    Look for 'API CHANGE' below to see what changes have been made that may
+    not be backwards compatible.
+
+Enhancements:
+
+  - Throw a 'incomplete command' Exception insteaf of a 'internal deadlock
+     error' Exception when NSO tries to delete an empty access-list. NSO
+     should not have been able to configure this empty access-list. The CDB
+     can be cleaned by issuing a sync-from to remove the erronous access-list.
+    Note: Malformed line will still be shown in commit dry-run.
+    (ASA-254 / RT35133)
+
+  - Added 'write slow-newline-delay' ned-setting to be able to specify the
+     number of milliseconds the NED should pause before sending newline when
+     writing the following slow commands to the NED:
+      - copy to running-config
+      - show/more running-config
+      - session commit noconfirm
+      - write memory
+     The reason to delay sending newline is to trick the ASA CLI to allow
+      the command to complete regardless of the ssh timeout value.
+    (ASA-253)
+
+  - Reconnect to CLI session after SCP upload on admin session in case the
+     server side closed the CLI due to inactivity. Note: This can normally be
+     prevented using the 'scp-transfer cli-keepalive-interval' ned-setting.
+    (ASA-252)
+
+  - If 'ssh timeout' value is raised and using SCP, configure the new value
+     using CLI before uploading the remainder with SCP in order to be able
+     to use the new timeout value in this transaction.
+    (ASA-251)
+
+Corrections:
+
+  - Fixed %i substitution in config archive file name.
+    (ASA-250 / RT35070)
+
+
+cisco-asa v6.5 [2018-10-22]
+===========================
+
+General:
+
+    Look for 'API CHANGE' below to see what changes have been made that may
+    not be backwards compatible.
+
+Enhancements:
+
+  - Upgraded nedcom.jar to release-1.46, prepared for NSO 5.0 with CDM support.
+    (ASA-249)
+
+  - Switch to use NEDCOM reconnector, enabling support for TELNET reconnect
+     in e.g. commit, keepAlive as well as SSH.
+    (ASA-247)
+
+  - Support for using name umap lookup in authgroup settings when using
+     SCP or SCP to admin-device.
+    (ASA-241)
+
+  - Restrict allocated name to disallow base interface names, both
+     in system context allocate-interface and in user context allocated
+     list.
+    (ASA-227 / RT34694)
+
+Corrections:
+
+  - Added numerous missing dependencies to interface/allocated, used for
+     multi-contexts.
+    (ASA-248 / RT35051)
+
+
+cisco-asa v6.4.2 [2018-10-19]
+=============================
+
+General:
+
+    Look for 'API CHANGE' below to see what changes have been made that may
+    not be backwards compatible.
+
+Enhancements:
+
+  - Send a newline before the SCP copy to running-config in order to update
+     the ASA devices session timeout, which is only updated after a command.
+    (ASA-244 / RT35004)
+
+Corrections:
+
+  - Moved SSH reconnect code in doApply to after the SCP upload in order to
+     reconnect before the scp-transfer cli-fallback mode tries to upload via
+     CLI, which could by then have timed out.
+    (ASA-243 / RT34799)
+
+  - Fixed a minor issue with keepAlive where it did not immediately return
+     success after a reconnect. The subsequent call would return true though.
+    (ASA-243 / RT34799)
+
+
+cisco-asa v6.4.1 [2018-10-17]
+=============================
+
+General:
+
+    Look for 'API CHANGE' below to see what changes have been made that may
+    not be backwards compatible.
+
+Enhancements:
+
+  - Added 'scp-transfer device-lookup' ned-setting. Set if you want to use an
+     additional SSH session to lookup which device secondary failover group
+     contexts are running on. Typically this is not needed, since the NED will
+     fallback to try the other device if SCP transfer fails on its first choice.
+     NOTICE: Setting this setting will slow down all group 2 SCP transfers,
+             but reduce the worst-case transfer time for corner cases.
+             See ASA-329 ticket note below for information on those.
+    (ASA-246)
+
+  - Switched to use device write-timeout setting for the following operations:
+     #1 Using SCP: copy /noconfirm <file> running-config
+     #2 Using sessions: commit noconfirm
+     #3 All actions, i.e. live-status exec any <command> and config exec <command>
+     #4 Config Archiving
+    (ASA-244 / RT35004)
+
+  - show, getTransId, applyConfig, prepareDry, revert and abort methods now all
+     begin with setting timeout to read-timeout to override the NSO value.
+    (ASA-244 / RT35004)
+
+  - Added support for reconnecting using NewSSHSession if remote SSH server
+     closed the session due to inactivity in the following methods:
+      #1 commit
+      #2 keepAlive
+      #3 applyConfig, commit and revert (after transform but before sending)
+    Note: Although working, this solution is temporary and will be replaced
+          when the NSO NED API supports a reconnect using standard methods.
+    (ASA-243 / RT34799)
+
+Corrections:
+
+  - Fixed bug in offline prepareDry timeout reset which set timeout too short.
+    (ASA-244 / RT35004)
+
+
+cisco-asa v6.4 [2018-10-15]
+===========================
+
+General:
+
+    Look for 'API CHANGE' below to see what changes have been made that may
+    not be backwards compatible.
+
+Enhancements:
+
+  - Added 'scp-transfer cli-fallback' ned-setting. If enabled, the NED will
+     fallback to use CLI to read/write data if current SCP transfer fails.
+     Hence, SCP will always be tried first, even if failed in the past.
+    (ASA-242)
+
+  - Added 'scp-transfer device2-address' ned-setting to use with active/active
+     failover setup with user mode contexts. NED will auto-detect if the context
+     belongs to secondary failover group and is Active on Secondary and then use
+     this address instead of the device-name address to SCP to/from. Port and
+     login credentials for device2 are inherited from scp-transfer/device-name.
+    (ASA-239)
+
+  - SCP code used with active/active failover group 2 will fallback and use the
+     other physical device IP if initial upload/download fails due to connection
+     failure or upload to wrong physical device. For most cases it will deduce
+     the correct device first, but in worst case (#3 group 1 and 2 on PHY B)
+     and (#4 group 2 on PHY A and group 1 on PHY B) it will pick the wrong
+     device first and the SCP transfer may take twice as long. Both these cases
+     should be temporary since they have in common that both devices are up and
+     running. The system is either manually (mis)configured to run like this,
+     or the contexts have not switched over yet but will soon.
+    (ASA-239)
+
+  - Added 'scp-transfer cli-keepalive-interval' used to specify interval in
+     seconds when the SCP upload code should 'ping' the user context SSH
+     session to keep it from timing out during a time consuming SCP upload
+     using a second SSH session to admin-device.
+    (ASA-239)
+
+  - Removed 'scp-transfer read-timeout' ned-setting. It is no longer needed
+     because the NED will auto reset timeouts during SCP upload and download.
+    (ASA-239)
+
+  - Updated NEDCOM to version 1.45.
+
+Corrections:
+
+
+cisco-asa v6.3.1 [2018-10-12]
+=============================
+
+General:
+
+    Look for 'API CHANGE' below to see what changes have been made that may
+    not be backwards compatible.
+
+Enhancements:
+
+  - Reset timeout if less than half left insteaf of less than 20% as before.
+    (ASA-238)
+
+  - Throw Exception before SCP transfer if copy to/from temporary file failed.
+    (ASA-237)
+
+  - Added 'scp-transfer read-timeout' ned-setting in order to temporarily
+     raise the device read-timeout when downloading via SCP. Upload timeout
+     uses normal read-timeout and is continuously reset automatically.
+    (ASA-236)
+
+  - Added support for %c in scp-transfer/directory. %c will be replaced by
+     the directory part in context config-url, including the ending /.
+    (ASA-235)
+
+Corrections:
+
+  - Fixed problem with enable password and pbkdf2 secret.
+    (ASA-231 / RT34814)
+
+
+cisco-asa v6.3 [2018-10-09]
+===========================
+
+General:
+
+    Look for 'API CHANGE' below to see what changes have been made that may
+    not be backwards compatible.
+
+Enhancements:
+
+  - Added support for SCP transfer when reading running-configuration.
+     Set 'read scp-transfer method enabled' and configure scp-transfer
+     ned-settings.
+    (ASA-234)
+
+Corrections:
+
+  - Added workaround for NSO bug which surfaced in v6.2.3 where prepareDry
+     could reset timeout to 0 if called in offline mode, i.e. initNoConnect.
+    (ASA-233 / RT34834)
+
+  - API CHANGE:
+     Moved all ned-settings from 'write scp-transfer' to 'scp-transfer' except
+      'threshold' due to the addition of SCP support while reading config as
+      well and they should share the same SCP information.
+    (ASA-222 / RT34609)
+
+
+cisco-asa v6.2.3 [2018-10-06]
+=============================
+
+General:
+
+    Look for 'API CHANGE' below to see what changes have been made that may
+    not be backwards compatible.
+
+Enhancements:
+
+  - Reset NSO read-timeout in APPLY-CONFIG transformations in order to be able
+     to keep a low timeout even though extensive access-list data.
+    (ASA-233 / RT34834)
+
+  - Improved error output if no response from device in bulk sending mode.
+    (ASA-232 / RT34843)
+
+  - Added support for pbkdf2 in username and enable passwords.
+    (ASA-231 / RT34814)
+
+  - Additions to the YANG model:
+     asp rule-engine transactional-commit access-group
+     asp rule-engine transactional-commit nat
+    (ASA-230 / RT34810)
+
+  - Updated NEDCOM to version 1.43.
+
+Corrections:
+
+  - Fixed problems with secrets for admin user on multi mode device.
+    (ASA-231 / RT34814)
+
+  - Throw error on SCP transfer when copy commit config to running config
+     returns "Command not valid".
+    (ASA-231 / RT34814)
+
+
+cisco-asa v6.2.2 [2018-09-30]
+=============================
+
+General:
+
+    Look for 'API CHANGE' below to see what changes have been made that may
+    not be backwards compatible.
+
+Enhancements:
+
+  - Rewrote SCPSession implementation to improve performance by parallelization.
+    (ASA-222 / RT34609)
+
+Corrections:
+
+  - Fixed SCP connection close issue leaving stale connections on server.
+    Fixed two harmless Exceptions when failing to open SCP connection.
+    (ASA-222 / RT34609)
+
+
+cisco-asa v6.2.1 [2018-09-29]
+=============================
+
+General:
+
+    Look for 'API CHANGE' below to see what changes have been made that may
+    not be backwards compatible.
+
+Enhancements:
+
+  - The NED package now contains folder with third party licences.
+    (ASA-200)
+
+  - config-archive improvements:
+     Archive even if 'write memory-setting' is set to disabled.
+     Also issue a 'dir' command on standby device in order to honor max files.
+    (ASA-224 / RT34628)
+
+  - Implemented a set of new ned-settings to be able transfer config to
+    device using SCP. For user contexts, the admin-device is used to transfer
+    the config since it is not possible to do it via user context in ASA.
+    To enable:
+
+      (1) Enable SCP copy on device:
+           asa5545-adm(config)# ssh scopy enable
+      (2) Set 'write scp-transfer threshold' ned-setting to e.g. '0'.
+      (3) Check and optionally modify ned-settings in 'write scp-transfer'
+
+      If configured for a user context on a multi-mode device, also:
+
+      (4) Set 'context name' ned-setting to user context name.
+      (5) Create private directory on device in system mode:
+           asa5545-adm# mkdir /noconfirm disk0:/contexts
+      (6) Config 'storage-url private disk0:/contexts disk0'
+          in each context config in system mode.
+      (7) Set 'write scp-transfer directory' ned-setting to "disk0:/contexts/"
+      (8) Set 'write scp-transfer device-name' ned-setting to admin-device name
+
+      Example config for a user mode context:
+
+       devices device asa5545-ctx ned-settings cisco-asa write scp-transfer threshold 0
+       devices device asa5545-ctx ned-settings cisco-asa write scp-transfer directory "disk0:/contexts/"
+       devices device asa5545-ctx ned-settings cisco-asa write scp-transfer max-sessions 1
+       devices device asa5545-ctx ned-settings cisco-asa write scp-transfer number-of-retries 60
+       devices device asa5545-ctx ned-settings cisco-asa write scp-transfer device-name asa5545-adm
+    (ASA-222 / RT34609)
+
+Corrections:
+
+
+cisco-asa v6.2 [2018-09-21]
+===========================
+
+General:
+
+    Look for 'API CHANGE' below to see what changes have been made that may
+    not be backwards compatible.
+
+Enhancements:
+
+  - Major rewrite of live-status action handling, adding support for
+     passing one-shot auto-prompts list entries and built-in answer
+     keywords <ignore>, <prompt>, <exit> and <timeout> for improved
+     device output parsing flexibility. See README for details.
+    (ASA-225)
+
+  - Added built-in archive support, executed when NED saves config.
+    See 'ned-settings cisco-asa write config-archive' list description
+     for details.
+    (ASA-224 / RT34628)
+
+Corrections:
+
+
+cisco-asa v6.1 [2018-09-14]
+===========================
+
+General:
+
+    Look for 'API CHANGE' below to see what changes have been made that may
+    not be backwards compatible.
+
+Enhancements:
+
+  - Additions to the YANG model:
+     admin-context
+     class * / limit-resource * Storage
+    (ASA-223 / RT34625)
+
+  - Additions to the YANG model:
+     aaa authentication login-history
+    (ASA-218 / RT34545)
+
+  - Adapted NED build system to support future NSO versions containing the
+     new feature CDM.
+    (ASA-217)
+
+Corrections:
+
+  - API CHANGE:
+     prompt *
+      Remodelled from container/leaf to enum leaf-list
+     aaa-server * / reactivation-mode
+      Remodelled to support depletion and deadtime.
+    (ASA-223 / RT34625)
+
+
+cisco-asa v6.0.13 [2018-08-31]
+==============================
+
+General:
+
+    Look for 'API CHANGE' below to see what changes have been made that may
+    not be backwards compatible.
+
+    WARNING:
+    When using cisco-asa with other NEDs, certain combinations of NED versions
+    may cause 'random' Exceptions. The reason for this is the introduction of
+    a new common NED component - nedcom.jar - which initially was located in
+    shared-jar, but later moved to private-jar. However, since the JAVA loader
+    looks in shared-jar directories first, a newer NED with nedcom.jar in
+    private-jar will still load another NED's older nedcom.jar in shared-jar;
+    causing a version conflict and quite possibly an Exception.
+
+    Hence, if you are using a newer NED (with private-jar/nedcom.jar) you must
+    make sure no other NEDs in your project has a shared-jar/nedcom.jar. If they
+    do, you must upgrade them to a version which also has nedcom in private-jar.
+
+    The following NED versions have their nedcom.jar in shared-jar:
+
+    a10-acos      3.6.5
+    alu-sr        6.0.2 to 6.1.1
+    cisco-asa     5.2 to to 5.2.1
+    cisco-ios     5.2.8 to 5.4.2
+    cisco-iosxr   6.0 to 6.1
+    cisco-nx      4.4.7 to 4.5.2
+    huawei-vrp    4.2.6
+
+    In short, avoid the above NED versions when using other NEDs.
+
+Enhancements:
+
+  - Added support for automatic decryption of $8 maaapi encrypted passwords
+     when sending password(s) to the device.
+    (ASA-216 / RT34451)
+
+Corrections:
+
+
+cisco-asa v6.0.12 [2018-08-29]
+==============================
+
+Enhancements:
+
+  - Avoid busy-loop deadlock in commit caused by an empty access-list
+     by throwing a 'incomplete command' Exception instead.
+    Note: Malformed line will still be shown in commit dry-run.
+    (ASA-215 / RT34437)
+
+Corrections:
+
+
+cisco-asa v6.0.11 [2018-08-24]
+==============================
+
+Enhancements:
+
+  - Implemented keepAlive method for use with newer NSO in keeping idle
+     device connections alive. Set /devices/device/ned-keep-alive/interval
+     or /devices/global-settings/ned-keep-alive/interval to enable.
+    (ASA-213)
+
+  - Additions to the YANG model:
+     crypto map * set reverse-route
+    (ASA-209 / RT34024)
+
+  - Added new ned-setting 'cisco-asa write recreate-acl-threshold' to optimize
+     large modifications of access-list, ending up in much fewer rules.
+     See README.
+    (ASA-205)
+
+Corrections:
+
+  - Properly clean up NSO resources when closing NED.
+    (ASA-211)
+
+
+cisco-asa v6.0.10 [2018-07-13]
+==============================
+
+Enhancements:
+
+  - Added ordered-by user and tailf:cli-show-long-obu-diffs on
+     policy-map * / class list for BGP traffic.
+    (ASA-207 / RT33854)
+
+Corrections:
+
+
+cisco-asa v6.0.9 [2018-06-15]
+=============================
+
+Enhancements:
+
+  - Improved support for special characters in NedSecrets config names.
+    (ASA-203 / RT33500)
+
+Corrections:
+
+
+cisco-asa v6.0.8 [2018-06-07]
+=============================
+
+Enhancements:
+
+  - Additions to the YANG model:
+     route-map * / match route-type
+    (ASA-202 / RT33415)
+
+Corrections:
+
+
+cisco-asa v6.0.7 [2018-05-29]
+=============================
+
+Enhancements:
+
+Corrections:
+
+  - Fixed bug with extended-parser ned-setting and context config causing
+     the context config to end up in system (top-mode).
+    (ASA-201)
+
+
+cisco-asa v6.0.6 [2018-05-28]
+=============================
+
+Enhancements:
+
+  - Optimized performance for all access-list modifications.
+    (ASA-199 / RT33296)
+
+Corrections:
+
+
+cisco-asa v6.0.5 [2018-05-24]
+=============================
+
+Enhancements:
+
+  - Optimized performance of deleting an entire access-list.
+    (ASA-197 / RT33262)
+
+  - Added info about ASA 9.6.(2) storage-url config in README.
+    (ASA-196 / RT33239)
+
+Corrections:
+
+  - Fixed delete dependency issue with access-list and object-group *
+     / group-object. The access-list must be deleted first.
+    (ASA-198 / RT33278)
+
+
+cisco-asa v6.0.4 [2018-05-18]
+=============================
+
+Enhancements:
+
+  - NedLiveStats GILIParser improvements:
+     Improved parsing of live-status performance.
+     Added src/gili/properties.gili properties for show error detection regex.
+     Added src/gili/README.gili for syntax help on templates
+     Added live-status/template-root ned-setting for template debugging.
+    (ASA-195)
+
+  - Ignore 'failover lan unit' config in compare-config and transaction-id
+     calculations using config-hash[-cached] method in order to continue
+     unnoticed with a failover between primary and secondary.
+    (ASA-194 / RT33176)
+
+Corrections:
+
+
+cisco-asa v6.0.3 [2018-05-11]
+=============================
+
+Enhancements:
+
+Corrections:
+
+  - Fixed problem with the following config changes in context mode:
+     tcp-map * / tcp-options range
+     crypto ca certificate chain
+     no interface *
+    (ASA-193)
+
+  - Fixed delete dependency issue with context / allocate-interface and
+     changeto context * / interface
+    (ASA-192)
+
+  - Temporarily replaced NedSettings.java code for context/list for
+     reenabling support for ordered-by user in the list.
+    (ASA-186 / RT33002)
+
+
+cisco-asa v6.0.2 [2018-05-11]
+=============================
+
+Enhancements:
+
+Corrections:
+
+  - Fixed issue with context/list hide-configuration always being set to true
+     with new ned-settings.
+    (ASA-187)
+
+
+cisco-asa v6.0.1 [2018-05-10]
+=============================
+
+Enhancements:
+
+  - The cisco-asa live-status stats implementation has been replaced with the
+     new NEDCOM NedLiveStats module, enabling support for RPL, UTAH, GILI and
+     XSL parsers. Current live-status support ported to use GILI templates,
+     see src/gili directory for examples and README.
+    (ASA-188)
+
+Corrections:
+
+  - Fixed dependency problem with:
+     object-group icmp-type * / group-object *
+     object-group network * / group-object *
+     object-group service * / group-object *
+     object-group user * / group-object *
+    (ASA-191 / RT33096)
+
+  - Throw error on "does not exist" from device when commiting config.
+     Old code had a '.' in the check, i.e. "does not exist."
+    (ASA-190 / RT33095)
+
+  - Support % character in NedSecrets to not throw exception when used
+     in e.g. username.
+    (ASA-189 / RT33062)
+
+
+cisco-asa v6.0 [2018-05-04]
+===========================
+
+Enhancements:
+
+  - New major release due to ned-settings API CHANGE.
+
+  - API CHANGE:
+     Due to NED standardisation, moved the YANG path to all ned-settings
+     not residing under cisco-asa container.
+     Notice: 'cisco-asa context list * hide-configuration' changed from
+             type empty to type boolean due to lack of support for type
+             empty in new NedSettings implementation in NEDCOM.
+     The path changes should be intuitive, but if not, see README.
+     Upgrade code in UpgradeNedSettings.java updates to new paths in CDB.
+    (ASA-187)
+
+Corrections:
+
+  - Replaced hard-coded profile name "cisco-asa" with devices device
+     <devname> device-profile name.
+    (ASA-186 / RT33002)
+
+  - Fixed delete order dependency, correct order is:
+     no tunnel-group * general-attributes / authorization-server-group
+     no aaa-server *
+    (ASA-185 / RT32990)
+
+  - Fixed problem with live-status exec command and exit prompting for
+     multiple device prompts.
+    (ASA-185 / RT32990)
+
+
+cisco-asa v5.10.6 [2018-04-27]
+==============================
+
+Enhancements:
+
+  - Additions to the YANG model:
+     context * / storage-url
+    (ASA-181)
+
+Corrections:
+
+  - Do not throw exception for uninitialized contexts in show/compare.
+
+
+cisco-asa v5.10.5 [2018-04-20]
+==============================
+
+Enhancements:
+
+  - Additions to the YANG model:
+     crypto ca trustpoint * / enrollment url
+     crypto ca trustpoint * / serial-number
+    (ASA-176 / RT32625)
+
+  - Additions to the YANG model:
+     access-list * log default
+     ipv6 icmp * deny|permit *
+     interface * / ipv6 address * standby
+     logging message * level
+     policy-map * / class * / inspect pptp
+     policy-map * / class * / inspect icmp error
+     xlate per-session *
+    (ASA-175 / RT32708)
+
+Corrections:
+
+  - API CHANGE:
+     object-group icmp-type * / group-object *
+     object-group network * / group-object *
+     object-group service * / group-object *
+     object-group user * / group-object *
+      changed from leaf to list-syntax leaf-list to support multiple entries.
+    (ASA-180 / RT32886)
+
+  - Throw error on "not available" from device when commiting config.
+    (ASA-179 / RT32849)
+
+  - Fixed problem with live-status exec command and exit prompting.
+    Added '\\S+ has the following attributes' to list of prompts to ignore.
+    (ASA-176 / RT32625)
+
+  - Do not use connect-timeout in SSH/TELNET session (5.10.4 only bug)
+    Use read-timeout once again.
+
+
+cisco-asa v5.10.4 [2018-04-12]
+==============================
+
+Enhancements:
+
+  - Support for SSH/TELNET proxy login configuration.
+     Set huawei-vrp proxy under ned-settings to enable and configure.
+     Also see src/metadata/README for connection info.
+    (ASA-177)
+
+  -  Changed default connect code to used the new NEDCOM Connector.
+     The NED connection steps are configured in JSON connection templates,
+     from now on called connectors. The connectors work in combination
+     with connection ned-settings (such as those located in 'connection'
+     or 'proxy' containers) to specify the prompts, commands and states
+     required to connect, allowing for flexible connect configuration.
+     If for some reason the old connect is required, enable it with the
+     'deprecated connection legacy-mode' ned-setting.
+     See src/metadata/README for more information.
+     New ned-settings (see standard README):
+      cisco-asa connection connector
+    (ASA-170, ASA-171)
+
+  - Additions to the YANG model:
+     crypto ca trustpoint * / enrollment protocol scep url
+    (ASA-166 / RT32568)
+
+Corrections:
+
+
+cisco-asa v5.10.3 [2018-03-28]
+==============================
+
+Enhancements:
+
+  - Restored support for NCS-3.4.8 or newer.
+    (ASA-168)
+
+Corrections:
+
+
+cisco-asa v5.10.2 [2018-03-28]
+==============================
+
+Enhancements:
+
+Corrections:
+
+  - Strip "standard" keyword when inserting entries using "line" keyword
+     with access-list modifications.
+    (ASA-167 / RT32597)
+
+
+cisco-asa v5.10.1 [2018-03-22]
+==============================
+
+Enhancements:
+
+  - Optimized access-list commit performance for !insert after comment.
+    Added debug performance profiling info in applyConfig() method to log
+     the time spent in modifying config.
+    Reset timeout in applyConfig() after modifying the config to account for
+     the time spent transforming, decreasing chances of timeout.
+     The timeout value used is max of read-timeout and connect-timeout.
+    (ASA-162)
+
+  - Changed apply-device-config-settings number-of-lines-to-send-in-chunk
+     ned-setting default from 100 to 32 to avoid buffer overflow on device.
+    (ASA-162)
+
+  - SonarQube inspection and fixes to achieve 0 Bugs and Vulnerabilities.
+    Removed old ned-id upgrade code.
+    (ASA-160)
+
+  - Additions to the YANG model:
+     object-group security *
+     object-group security * / description
+     object-group security * / security-group
+    (ASA-159 / RT32414)
+
+Corrections:
+
+
+cisco-asa v5.10 [2018-03-14]
+============================
+
+Enhancements:
+
+  - Switched NedSecrets implementation from private to new NEDCOM NedSecrets.
+    (ASA-158)
+
+  - Adapted cisco-asa NED Java class to the latest NED base class features in
+     NEDCOM. The NED and NEDCOM now built with Java source/target version 1.7.
+    (ASA-157)
+
+  - Only insert device command in output of live-status action if multiple
+     commands are executed by use of " ; ".
+
+Corrections:
+
+  - API CHANGE:
+     Due to standardisation, moved the YANG path to the following ned-settings:
+      cisco-asa-log-verbose -> cisco-asa log-verbose
+    (ASA-157)
+
+
+cisco-asa v5.9.3 [2018-03-09]
+=============================
+
+Enhancements:
+
+  - Additions to the YANG model:
+     sysopt radius ignore-secret
+    (ASA-153 / RT32157)
+
+Corrections:
+
+
+cisco-asa v5.9.2 [2018-03-06]
+=============================
+
+Enhancements:
+
+  - Additions to the YANG model:
+     no sysopt connection permit-vpn
+     no sysopt connection reclassify-vpn
+     sysopt traffic detailed-statistics
+    (ASA-153 / RT32157)
+
+Corrections:
+
+  - Enabled support for "login" keyword in access-list entry.
+    (ASA-155, ASA-156 / RT32250)
+
+
+cisco-asa v5.9.1 [2018-03-02]
+=============================
+
+Enhancements:
+
+  - Additions to the YANG model:
+     aaa-server * / dynamic-authorization
+     aaa-server * / interim-accounting-update
+     aaa-server * / max-failed-attempts
+    (ASA-154 / RT32166)
+
+  - Additions to the YANG model:
+     sysopt connection timewait
+    (ASA-153 / RT32157)
+
+Corrections:
+
+  - API CHANGE:
+     sysopt connection tcpmss minimum
+      Due to bad modelling not allowing a value.
+    (ASA-153 / RT32157)
+
+
+cisco-asa v5.9 [2018-02-23]
+===========================
+
+Enhancements:
+
+  - Added 'cisco-asa apply-device-config-settings compress-acl-delete'
+     ned-setting to control delete of entire access-lists. With this setting
+     set to true, the entire access-list is deleted using a single command
+     (clear config access-list <name>). If left at its default, each access-list
+     entry is deleted individually when deleting the entire access-list.
+    WARNING:
+     When using this ned-setting and switching between standard and extended
+     access-list entries with the same name the device may end up in a bad state
+     not allowing creation of an access-list entry of different type, i.e.
+      asav-1(config)# clear config access-list ACL2
+      asav-1(config)# access-list ACL2 standard permit any4
+      ERROR: Cannot mix different types of access lists
+     The only work around we found (so far) is to reboot the device and either
+     disable the use of this ned-setting, or do not reuse the same name for
+     access-lists with different type.
+    (ASA-152 / RT32054)
+
+  - Commit performance optimization:
+     Added apply-device-config-settings number-of-lines-to-send-in-chunk
+     ned-setting in order to be able to send certain config in larger chunks
+     instead of line by line. A higher number normally results in better
+     performance but may have a negative impact on the error handling.
+     If you get an 'Internal ERROR: retry-command', set this
+     setting to 1 and report the config line which triggered the exception.
+     Default is 100 lines per chunk.
+    (ASA-151 / RT32022)
+
+Corrections:
+
+
+cisco-asa v5.8.4 [2018-02-16]
+=============================
+
+Enhancements:
+
+  - Additions to the YANG model:
+     access-list * time-range
+     time-range *
+    (ASA-148 / RT31923)
+
+- Additions to the YANG model:
+     group-policy * attributes / banner value
+     webvpn / hostscan
+    (ASA-144 / RT31703)
+
+Corrections:
+
+  - Fixed aaa delete order dependency, correct order is:
+     no aaa accounting *
+     no aaa-server *
+    (ASA-149 / RT31925)
+
+  - Fixed logging delete order dependency, correct order is:
+     no logging trap
+     no logging list *
+    (ASA-147 / RT31899)
+
+
+cisco-asa v5.8.3 [2018-02-08]
+=============================
+
+Enhancements:
+
+Corrections:
+
+  - Dont throw exception on missing startup-config file in context when
+     trying to show config using more. Save running and continue.
+    (ASA-146)
+
+
+cisco-asa v5.8.2 [2018-02-02]
+=============================
+
+Enhancements:
+
+  - Additions to the YANG model:
+     class *
+     class * / limit-resource *
+     mac-address auto prefix
+     ssh scopy enable
+    (ASA-145 / RT31771)
+
+  - Additions to the YANG model:
+     dynamic-access-policy-record * / user-message
+    (ASA-144 / RT31703)
+
+  - Support for port names in object network * / nat * service tcp|udp
+    (ASA-140 / RT31543)
+
+Corrections:
+
+  - API CHANGE:
+     tls-proxy maximum-sessions -> tls-proxy maximum-session
+    (ASA-145 / RT31771)
+
+  - Fixed access-list delete order dependency, correct order is:
+     no access-list *
+     no object-group *
+    (ASA-143 / RT31702)
+
+  - Fixed access-list insert code bug when access-list modifications were split
+     by dependencies.
+    (ASA-143 / RT31702)
+
+  - Do not add "log disable" when deleting context access-lists.
+    (ASA-140 / RT31543)
+
+
+cisco-asa v5.8.1 [2018-01-05]
+=============================
+
+Enhancements:
+
+  - Additions to the YANG model:
+     as-path access-list *
+    (ASA-139)
+
+  - Support for commiting during Configuration Replication. Command is
+     retried after waiting for 'End Configuration Replication to mate'.
+    (ASA-138)
+
+  - Additions to the YANG model:
+     aaa-server * host * / server-type
+     aaa-server * host * / ldap-base-dn
+     aaa-server * host * / ldap-group-base-dn
+     aaa-server * host * / ldap-scope
+     aaa-server * host * / ldap-naming-attribute
+     aaa-server * host * / ldap-login-password
+     aaa-server * host * / ldap-over-ssl
+     aaa-server * host * / ldap-login-dn
+     aaa-server * host * / ldap-attribute-map
+     ldap attribute-map * / map-name *
+     ldap attribute-map * / map-value *
+    (ASA-137 / RT31255)
+
+Corrections:
+
+
+cisco-asa v5.8 [2017-12-21]
+===========================
+
+Enhancements:
+
+  - Rewrote 'cisco-asa admin-device method ssh*' ned-setting to reuse a pool
+     of SSH admin connections by means of a synchronized Multiton class.
+    Implemented a new ned-setting 'cisco-asa admin-device max-sessions' to
+     configure maximum number of admin SSH connections per admin-device.
+    Note: The actual amount will be 1 higher if the admin-device is also
+     communicating directly.
+    Note: Set the admin-device max-sessions ned-setting, not the contexts.
+    (ASA-136)
+
+  - Added a semaphore around 'cisco-asa admin-device method maapi' code using
+     the new 'cisco-asa admin-device max-sessions' net-setting to limit usage
+     of SSH connections due to creation of multiple admin-device NED instances.
+    (ASA-136)
+
+  - Additions to the YANG model:
+     bgp-community new-format
+    (ASA-134)
+
+Corrections:
+
+  - Fixed support for device encrypted secret in:
+     username * attributes / ssh authentication publickey
+    (ASA-135)
+
+
+cisco-asa v5.7.3 [2017-12-04]
+=============================
+
+Enhancements:
+
+  - Additions to the YANG model:
+     logging class *
+     logging list * class
+     logging mail
+     logging permit-hostdown
+     ssh cipher integrity
+     ssl server-version
+     ssl client-version
+    (ASA-133 / RT30894)
+
+Corrections:
+
+
+cisco-asa v5.7.2 [2017-11-22]
+=============================
+
+Enhancements:
+
+  - Added ordered-by user on cisco-asa-context-list ned-setting list.
+    (ASA-130)
+
+  - Append [[2..N]] to duplicate remarks when reading access-lists from device,
+     e.g. [[2]] for first duplicate remark. Strip [[N]] from CDB access-list
+     remark when writing to device to avoid diff. Note: if you delete a
+     duplicate remark in NSO, you will have to renumber the remaining duplicates
+     to avoid a compare-config diff since the following duplicate remarks will
+     be renumbered when read from device.
+    (ASA-129 / RT30802)
+
+  - Additions to the YANG model:
+     arp rate-limit
+     crypto ca trustpool policy / auto-import
+     ssh cipher encryption custom
+     track * rtr
+     username * attributes / ssh authentication publickey
+    (ASA-128)
+
+  - Additions to the YANG model:
+     object service * / service icmp [type] [code]
+    (ASA-126 / RT30720)
+
+  - use-startup-config ned-setting changes:
+     Removed check in commit for unsaved config changes (v5.6.1, ASA-118)
+     Removed warning notice in prepareDry (v5.6.1, ASA-118)
+     Auto-save config in show() (sync-from and compare-config) if running
+      config differs vs saved config (determined by checksum comparison).
+    (ASA-124 / RT30494)
+
+Corrections:
+
+  - Make sure object-group is not empty when replacing network-object.
+    (ASA-127 / RT30757)
+
+
+cisco-asa v5.7.1 [2017-11-10]
+=============================
+
+Enhancements:
+
+  - Additions to the YANG model:
+     sla monitor * / num-packets
+     sla monitor * / tos
+     sla monitor * / timeout
+    (ASA-125)
+
+  - Ignore malformed obu comment from NSO (an !insert using non-existing rule)
+    (ASA-123)
+
+  - Throw an exception if ned-setting cisco-asa-context-name is set for multi
+     mode login with admin context, i.e. capable of switching contexts. Reason
+     being cisco-asa-context-name setting is for single context logins only.
+     If you need to restrict contexts for admin device, use the context-list
+     ned-setting, specifying the contexts which should be allowed.
+    (ASA-122 / RT30404)
+
+  - Added optional 'hide-configuration' leaf to cisco-asa-context-list in order
+     to specify context(s) where only the context definition is of interest, i.e.
+     the context configuration under "changeto context <name>" is not included
+     in the sync-from / compare-config.
+    (ASA-122 / RT30404)
+
+Corrections:
+
+
+cisco-asa v5.7 [2017-10-20]
+===========================
+
+Enhancements:
+
+  - Rewrote hard coded live-status code to use the NedLiveStatus.java class.
+    Added live-status inventory to show serial numbers.
+    Removed demo live-status inside-interface. Use new interfaces-state.
+    (ASA-121)
+
+  - Replaced internal debug command 'show fixed-config' with 'sync-from-file'
+    The internal live-status exec any sync-from-file command is used to inject
+    a config file in NETSIM. The next 1 sync-from will sync-from this file.
+    For example:
+      admin@ncs# devices device netsim-0 live-status exec any "sync-from-file
+         /home/myuser/cisco-test-config.yxy"
+      admin@ncs# devices device netsim-0 sync-from
+    (ASA-120)
+
+  - Added generic software support for showPartial(), enabling support for
+     'commit no-overwrite' and 'partial-sync-from'.
+    (ASA-119)
+
+  - Support for running multiple commands in 'live-status exec any' and config
+     mode 'exec' commands. Use the delimiter " ; " (note: must be white spaces)
+     to separate each command. If need to answer prompts, supply them separatedly
+     for each command, e.g.:
+       exec "command 1 | prompts Y ; command 2 | prompts N"
+     Warning: No error checking is done on command output, i.e. this command
+              is 100% raw, you must check the errors yourself. Only exception
+              (of course) is that config command may not leave config mode.
+    (ASA-117)
+
+  - Added live-status interfaces-state for basic RFC7223 ietf-interfaces.yang
+     and RFC7277 ietf-ip.yang operational support.
+    See the YANG files for YANG model and ASANedCli.java nedLiveStatusRegister()
+     method for regular expressions scraping the info from show commands.
+    (ASA-106)
+
+Corrections:
+
+
+cisco-asa v5.6.2 [2017-10-17]
+=============================
+
+Enhancements:
+
+  - Added 'ssh-resuse' cisco-asa admin-device method. Same as 'ssh' except that
+     the SSH connection is kept open for the duration of the NED session.
+
+Corrections:
+
+  - Only perform the save check in applyConfig and not abort and revert.
+    (ASA-110 / RT30127)
+
+
+cisco-asa v5.6.1 [2017-10-13]
+=============================
+
+Enhancements:
+
+  - Throw an exception in commit with cisco-asa get-device-config-settings
+     use-startup-config ned-setting if device has unsaved config, i.e a
+     checksum diff between startup-config and running-config. To solve this
+     in NSO, save the device by use of 'do devices device <devname> live-status
+     exec any "write memory"'; and then commit again.
+    (ASA-118)
+
+  - Added ms timestamps for performance profiling. Grep for DONE in trace.
+
+Corrections:
+
+  - Do not fallback to show config using 'show startup-config' if first method
+     fails to get saved-config. Reason being if we do, we will fail to remove
+     leftover config in a failed commit.
+    (ASA-110 / RT30127)
+
+
+cisco-asa v5.6 [2017-10-11]
+===========================
+
+Enhancements:
+
+  - Implemented support for using 'configuration session' when editing
+     access-list, object-group and object. See ASA documentations for details.
+     Enable by setting cisco-asa apply-device-config-settings config-session-mode.
+    (ASA-111)
+
+  - Additions to the YANG model:
+     forward-reference enable
+     object service *
+    (ASA-111)
+
+  - Save only modified contexts, as opposed to the old behaviour where all
+     contexts were saved using the write memory all command.
+     Note: if the old behaviour is preferred, set cisco-asa-write-memory-setting
+     to the new setting 'on-commit-all'.
+    (ASA-101)
+
+Corrections:
+
+  - Fixed order dependency between:
+     object *
+     object-group *
+    (ASA-111)
+
+
+cisco-asa v5.5.4 [2017-10-06]
+=============================
+
+Enhancements:
+
+Corrections:
+
+  - Fixed transaction id problem with secrets and show-checksum option.
+    (ASA-116)
+
+  - Redisable terminal pager in exec mode if pager configured in config mode.
+    (ASA-115 / RT30210)
+
+  - Fixed problem with NED deadlocking and timing out if empty access-list
+     erronously configured.
+    (ASA-115 / RT30210)
+
+  - Don't fail when debugging JVM inside Eclipse.
+    (RT30198)
+
+
+cisco-asa v5.5.3 [2017-10-05]
+=============================
+
+Enhancements:
+
+Corrections:
+
+  - Fixed problem with service-policy config causing order dependency issues
+     with policy-map vs class-map and access-list vs object-group.
+    (ASA-112, RT30143, ASA-113 / RT30167)
+
+  - Do not throw an exception if config is not saved with use-startup-config
+     in order to avoid a recently (v5.3.3) introduced problem where a failed
+     transaction did not rollback properly.
+    (ASA-110 / RT30127)
+
+  - Fixed order dependency between:
+     access-list *
+     object-group *
+    (ASA-109 / RT30113)
+
+  - Send 'changeto system' when leaving 'changeto context' context in order
+     to be able to continue modify system config in same transaction.
+
+
+cisco-asa v5.5.2 [2017-09-21]
+=============================
+
+Enhancements:
+
+Corrections:
+
+  - Fixed maapi exception in close.
+    (ASA-96 / RT29853, ASA-105)
+
+
+cisco-asa v5.5.1 [2017-09-20]
+=============================
+
+Enhancements:
+
+  - Removed cli-show-no on:
+     interface * / nameif
+     interface * / security-level
+      Note: if an interface is created with these leaves set, a fix will be
+            needed to clear them.
+    (ASA-107 / RT29975)
+
+Corrections:
+
+  - Restored trimming of commands sent to device (broken in v5.5).
+    (ASA-107 / RT29975)
+
+
+cisco-asa v5.5 [2017-09-18]
+===========================
+
+Enhancements:
+
+  - Added support for commit dry-run without connecting to device.
+    (ASA-105)
+
+  - Additions to the YANG model:
+     interface * / management-only
+     policy-map * / class * / set connection advanced-options <tcp-map>
+     policy-map * / parameters / tcp-inspection
+     timeout igp stale-route
+    (ASA-104 / RT29935)
+
+  - Rewrote the access-list code from scratch to:
+     - No longer use a show command on device to read the old list
+     - Be more liberate in accepting diffset from NSO; by ignoring already
+       existing access-list entries, except for updating the insert index.
+     - Show what the NED will send to the device in commit dry-run.
+    (ASA-102 / RT29895, ASA-103)
+
+  - Additions to the YANG model:
+     vpn load-balancing / cluster port
+
+Corrections:
+
+
+cisco-asa v5.4.1 [2017-09-14]
+=============================
+
+Enhancements:
+
+  - Additions to the YANG model:
+     interface BVI*
+    (ASA-94 / RT29833)
+
+Corrections:
+
+  - Ignore delete of non-existant cli-show-no interface leaves:
+     interface * / nameif
+     interface * / security-level
+     interface * / ip address
+    (ASA-98 / RT29863)
+
+
+cisco-asa v5.4 [2017-09-13]
+===========================
+
+Enhancements:
+
+  - Inject delete of context disk file in transaction when context is deleted
+     or when context config-url is (re)set and new ned-setting cisco-asa auto
+     context-config-url-file-delete is set to true (default). Hence in this case
+     all config must come from NSO and not a pre-existing context config file.
+    (ASA-99 / RT29864)
+
+  - Added support for "?" in 'live-status exec any' and 'config exec' commands
+     in order to be able to show help menus.
+    (ASA-95)
+
+  - Added a new optional method to calculate transaction id:
+     cisco-asa-transaction-id-method config-hash-cached
+      Same as config-hash except that transaction id method will reuse
+      the last unmodified config from show (sync-from).
+    (ASA-93)
+
+Corrections:
+
+  - Restored devices device platform data broken for some NSO versions
+     in cisco-asa v5.3.2.
+    (ASA-100)
+
+  - Removed ordered-by user from two lists:
+     object-group service * / service-object *
+     object-group service * / port-object *
+    (ASA-99 / RT29864)
+
+  - API CHANGE:
+     loopback-proxy server
+     loopback-proxy client syslog
+     arp permit-nonconnected
+      Changed from cli-show-no type empty leaf to cli-boolean-no type boolean
+      leaf to avoid sending down unsupported config to new context.
+    (ASA-99 / RT29864)
+
+  - Corrected badly placed cli-show-no on pager lines to assure that
+     'no pager lines' is sent down on a newly created context.
+    (ASA-99 / RT29864)
+
+  - Fixed compare-config diff and problem setting 'enable password'.
+    Removed erronous support for enable password with level.
+    (ASA-97 / RT29860)
+
+  - Fixed two problems with long banners:
+     Bad dequoting of string causing lost characters.
+     NED was blocked on ^H characters generated in echo for long strings.
+    (ASA-96 / RT29853)
+
+
+cisco-asa v5.3.3 [2017-09-08]
+=============================
+
+Enhancements:
+
+  - Removed the cisco-asa admin-device reuse ned-setting and
+    introduced a new ned-setting; cisco-asa admin-device method
+     which is used to configure which method should be used to pull
+     the context config from an admin device.
+    (ASA-84 / RT29248)
+
+  - Added cisco-asa admin-device number-of-retries and
+     cisco-asa admin-device time-between-retry ned-settings to
+     enable retrying if admin SSH connect fails.
+    (ASA-84 / RT29248)
+
+Corrections:
+
+  - Cleaned up and fix banner exec issue.
+
+
+cisco-asa v5.3.2 [2017-09-01]
+=============================
+
+Enhancements:
+
+  - Additions to the YANG model:
+     devices device platform serial-number
+      Note: Only supported by newer NSO versions.
+    (ASA-91)
+
+Corrections:
+
+  - API CHANGE:
+     policy-map * / class * / set connection timeout idle
+      Changed time leaf type from hhmm-type to string with pattern.
+    (ASA-90 / RT29679)
+
+  - API CHANGE
+     icmp *
+      Combined deny and permit lists to a single ordered-by user list.
+      NOTE: Since the list is ordered per interface, the command ordering
+            had to be changed to: icmp <nameif> <rule>. NED will swap order
+            to device order when writing and reading.
+    (ASA-88 / RT29546)
+
+
+cisco-asa v5.3.1 [August 18, 2017]
+==================================
+
+Enhancements:
+
+  - Additions to the YANG model:
+     app-agent heartbeat
+    (ASA-87 / RT29451)
+
+Corrections:
+
+  - Removed ordered-by user from icmp permit|deny rule lists.
+    (ASA-88 / RT29546)
+
+
+cisco-asa v5.3 [August 11, 2017]
+==================================
+
+Enhancements:
+
+  - Additions to the YANG model:
+     timeout conn-holddown
+    (ASA-87 / RT29451)
+
+  - API CHANGE:
+     Changed admin-device ned-setting config from specific info to just the
+     name of the admin device. Hence new connection example looks like this:
+      devices device asa5545-ctx ned-settings cisco-asa admin-device name asa5545-adm
+    (ASA-84 / RT29248)
+
+  - Do not open admin-device SSH connection until needed, i.e. reading config.
+    Close admin-device SSH connection immediately after use, unless the new
+     ned-setting cisco-asa admin-device reuse is set to true.
+    (ASA-84 / RT29248)
+
+Corrections:
+
+  - Moved nedcom.jar from shared-jar to private-jar directory.
+
+
+cisco-asa v5.2.1 [August 04, 2017]
+==================================
+
+Enhancements:
+
+Corrections:
+
+  - Do not cache worker in utility classes since worker may change.
+    (ASA-86)
+
+
+cisco-asa v5.2 [July 28, 2017]
+==============================
+
+Enhancements:
+
+  - Additions to the YANG model:
+     flow-export active refresh-interval
+     flow-export delay flow-create
+     flow-export destination *
+     flow-export template timeout-rate
+     policy-map * / class * / flow-export event-type * destination *
+    (ASA-85 / RT29249)
+
+  - Implemented 'cisco-asa get-device-config-settings use-startup-config'
+    ned-setting in order to force the NED to retrieve startup-config only, i.e.
+    saved config. This can be used to avoid a race condition when a 2nd connection
+    is used to retrieve config, which occurs if the latest transaction was not
+    saved yet.
+    (ASA-83 / RT29234)
+
+  - Added new feature for optimizing sync-from (and compare-config).
+    Enable with ned-setting 'cisco-asa extended-parser turbo-mode'.
+    (ASA-81)
+
+Corrections:
+
+  - Close secondary admin connection/session in close method.
+    (ASA-84 / RT29248)
+
+
+cisco-asa v5.1.1 [June 24, 2017]
+================================
+
+Enhancements:
+
+  - Additions to the YANG model:
+     context * / join-failover-group
+     failover group * / primary|secondary
+     failover group * / preempt
+    (ASA-82 / RT28808)
+
+Corrections:
+
+  - Use config-url from context config to specify file containing running-config.
+    (ASA-77 / RT28639)
+
+
+cisco-asa v5.1 [June 15, 2017]
+==============================
+
+Enhancements:
+
+  - Additions to the YANG model:
+     crypto dynamic-map * set reverse-route
+     crypto map * set ikev1 transform-set
+     crypto isakmp identity
+     webvpn / cache / disable
+    (ASA-80 / RT28750)
+
+  - Read device-profile from devices device <devname> device-profile.
+    Default to cisco-asa.
+    (ASA-78)
+
+  - Implemented support for a secondary (admin) connection with single context
+    logins on multiple-mode devices (i.e. using cisco-asa-context-name). The
+    admin connection (must use SSH) is used to list configuration using the
+    more command from system context, thereby also showing cleartext passwords.
+    Example of how to configure a connection to an admin connection:
+     devices device asa5545-ctx ned-settings cisco-asa admin-device address 1.2.3.4
+     devices device asa5545-ctx ned-settings cisco-asa admin-device port 22
+     devices device asa5545-ctx ned-settings cisco-asa admin-device remote-name cisco
+     devices device asa5545-ctx ned-settings cisco-asa admin-device remote-password cisco
+     devices device asa5545-ctx ned-settings cisco-asa admin-device remote-secondary-password cisco
+    WARNING: Running-config must be saved or more command will not be used, i.e
+             make sure to have cisco-asa-write-memory-setting set to on-commit.
+    (ASA-77 / RT28639)
+
+Corrections:
+
+  - API CHANGE:
+     webvpn / error-recovery disable
+      Changed from enum to boolean leaf to support 'no error-recovery disable'
+    (ASA-80 / RT28750)
+
+  - Fixed bug with "snmp-server group|host" and Nedsecrets.
+    (ASA-79)
+
+
+cisco-asa v5.0.8 [May 19, 2017]
+===============================
+
+Enhancements:
+
+Corrections:
+
+  - Restored support for reordering access-lists on NETSIM.
+    Uses to-transaction, hence introduced the need for ned-data.
+    (ASA-75)
+
+
+cisco-asa v5.0.7 [May 5, 2017]
+==============================
+
+Enhancements:
+
+  - Additions to the YANG model:
+     policy-map * / class * / set connection random-sequence-number
+     ssl cipher
+    (ASA-74 / RT28057)
+
+Corrections:
+
+  - Added order dependency between:
+     policy-map * / class * / inspect dns
+     policy-map *
+
+
+cisco-asa v5.0.6 [April 21, 2017]
+=================================
+
+Enhancements:
+
+  - Additions to the YANG model:
+     aaa-server * host * / server-port
+     policy-map * / class * / inspect http
+     tcp-map * / tcp-options range *
+     timeout * sctp
+    (ASA-73 / RT27864)
+
+Corrections:
+
+  - Removed order-by user on object-group network * / network-object list to
+     avoid ending up with empty list while modiyfing it.
+    Added object-group/network tailf:cli-diff-dependency on nat list.
+    (ASA-72)
+
+  - Strip meta-data prefix in NedSecrets if shown, to avoid bad regexp.
+    Fixed problem with TACACS+ key secret by escaping + in key name(s).
+
+
+cisco-asa v5.0.5 [March 31, 2017]
+=================================
+
+Enhancements:
+
+  - Additions to the YANG model:
+     object network * / nat * service tcp|udp
+    (ASA-71 / RT27662)
+
+  - Additions to the YANG model:
+     aaa accounting serial console
+    (ASA-70)
+
+Corrections:
+
+
+cisco-asa v5.0.4 [March 20, 2017]
+=================================
+
+Enhancements:
+
+  - Added "| noprompts" option to live-status exec commands in order to be able
+     to ignore (erronously) triggered question prompts. Also added 'IGNORE' as
+     an option to '| prompts' in order to specify what prompts to ignore.
+    (ASA-69)
+
+Corrections:
+
+  - Revisited: Fixed problem with live-status exec any "packet-tracer input"
+    (ASA-68 / RT27376)
+
+
+cisco-asa v5.0.3 [March 17, 2017]
+=================================
+
+Enhancements:
+
+Corrections:
+
+  - Fixed problem with live-status exec any "packet-tracer input" command.
+    (ASA-68 / RT27376)
+
+
+cisco-asa v5.0.2 [February 03, 2017]
+====================================
+
+Enhancements:
+
+  - Support for NedSecrets on non-transaction id setups.
+    (ASA-65)
+
+  - Changed ned-setting log format.
+
+Corrections:
+
+  - Discontinued support for NSO-4.3 due to NSO bug. Use NSO-4.3.1.
+
+
+cisco-asa v5.0.1 [January 13, 2017]
+===================================
+
+Enhancements:
+
+  - Assert that terminal width is either 0 or 511 upon connect in order to
+     avoid issues with NSO blocking due to too low terminal width.
+    (ASA-63)
+
+Corrections:
+
+  - Fixed problem with error detection mechanism matching command echo by
+     increasing the match echo line length from 50 to 500. NOTE: terminal
+     width must always be set to 511 in day 0 (See README).
+    (ASA-63)
+
+
+cisco-asa v5.0 [December 22, 2016]
+==================================
+
+Enhancements:
+
+  - Rewrote the implementation for supporting device encrypted data in order
+     to support commit queues.
+    (ASA-60)
+
+  - Additions to the YANG model:
+     snmp-server user * engineID
+    (ASA-53 / RT25886)
+
+Corrections:
+
+  - Ignore error when "no nameif" is sent to interface which does not support
+     the nameif config.
+    (ASA-62 / RT26266)
+
+  - Properly clean up resources when closing NED.
+    (ASA-61)
+
+  - Fixed crypto ca certificate chain vs trustpoint order dependency problem.
+    (ASA-58)
+
+  - Fixed null pointer exception in print_line_wait introduced in v4.2.4.
+
+
+cisco-asa v4.2.4 [December 16, 2016]
+====================================
+
+Enhancements:
+
+  - Decrypt maaapi encrypted passwords (starting with $4$) before sending
+     them to the device. Cleartext password decrypted by the NED are not
+     logged in NED trace.
+    (ASA-55 / RT26081)
+
+Corrections:
+
+  - Fixed broken generation of java namespace files.
+    (ASA-51)
+
+
+cisco-asa v4.2.3 [November 18, 2016]
+====================================
+
+Enhancements:
+
+  - Support for snmp-server user * encrypted auth and priv secrets.
+    (ASA-50)
+
+  - Improved sync-from performance.
+
+Corrections:
+
+  - Fixed problem with live-status exec any crypto ca trustpool command.
+    (ASA-49 / RT25719)
+
+  - Strip " log disable" from access-list line if shown on device.
+    (ASA-48 / RT25722)
+
+
+cisco-asa v4.2.2 [October 28, 2016]
+===================================
+
+Enhancements:
+
+  - Additions to the YANG model:
+     crypto ipsec transform-set *
+     crypto map * set transform-set *
+    (ASA-47)
+
+  - Added timing info logs in ncs-java-vm.log.
+
+Corrections:
+
+
+cisco-asa v4.2.1 [October 11, 2016]
+===================================
+
+Enhancements:
+
+  - Ignore all device errors in abort/reverse phase in order to minimize risk
+    of out of sync or config diff due to the reverse transaction failing too.
+
+  - Improved performance for modifying access-list by reducing the
+     number of show run access-list calls to the device.
+    (ASA-45 / RT25014)
+
+  - access-list improvements:
+     Do not accept extended rules ending with whitespace.
+     Exclude 'access-list * does not exist' to avoid logging expected "errors".
+
+
+Corrections:
+
+
+cisco-asa v4.2 [September 25, 2016]
+===================================
+
+Enhancements:
+
+  - Removed package parameter "requires-transaction-states".
+     cisco-asa NED can once again be used with commit queues.
+    (ASA-37)
+
+  - Additions to the YANG model:
+     access-group ? in interface * control-plane
+     fragment *  (note: API differs from device, works anyway)
+    (ASA-43 / RT24883)
+
+Corrections:
+
+  - Fixed access-list * webtype log disable bug
+
+
+cisco-asa v4.1.10 [September 19, 2016]
+======================================
+
+Enhancements:
+
+  - API CHANGE:
+    Added log [level] [interval] and inactive config leaves to access-list
+    in order to support modification of rule options. Hence, those keywords
+    must (and can) no longer be part of the rule id. Enforced by disallow-value
+    (ASA-42 / RT24877)
+
+Corrections:
+
+
+cisco-asa v4.1.9 [September 16, 2016]
+=====================================
+
+Enhancements:
+
+  - Additions to the YANG model:
+     object network * / nat * net-to-net|no-proxy-arp|route-lookup
+    (ASA-39 / RT24753)
+
+Corrections:
+
+  - API CHANGE:
+     access-group
+    Changed YANG due to bad model allowing multiple entries per interface
+    (ASA-41 / RT24773)
+
+
+cisco-asa v4.1.8 [September 09, 2016]
+=====================================
+
+Enhancements:
+
+Corrections:
+
+  - Added internal ned error exceptions if malformed access-list command
+     from NSO, device fails to show run access-list or trying to insert
+     a new entry after a non-existing one.
+    (ASA-36 / RT24572)
+
+
+cisco-asa v4.1.7 [September 02, 2016]
+=====================================
+
+Enhancements:
+
+  - Support for insert of access-list missing line info in show access-list
+    (ASA-36 / RT24572)
+
+Corrections:
+
+  - Do not prompt for question on live-status exec command with /noconfirm.
+    Do not let 'Cryptochecksum:' trigger a question in live-status exec write.
+
+  - Fixed string index out of range error when manipulating ACL lines.
+    (ASA-35 / RT24573)
+
+  - Added workaround for old Maapi.attach() bug which could cause an error, now
+     uses 2-arg version of attach() which avoids problem in NCS prior to 4.1.
+    (ASA-33)
+
+
+cisco-asa v4.1.6 [August 12, 2016]
+==================================
+
+Enhancements:
+
+  - Additions to the YANG model
+     threat-detection * scanning-threat rate-interval *
+    (ASA-27 / RT24265)
+
+  - Added new package parameter "requires-transaction-states".
+     This will instruct the NSO that this NED can not be used together
+     with commit queues.
+    (ASA-30)
+
+Corrections:
+
+  - Fixed aaa authentication * console vs aaa-server dependency, correct order is:
+     no aaa authentication * console <server_group>
+     no aaa-server
+
+  - API CHANGE: Moved cisco-asa-oper data used to cache encrypted secrets
+     from devices/device to devices/device/ned-settings in order to optimize
+     the CLI when used with a large number of devices.
+    (ASA-31)
+
+  - Raised vpn-sessiondb max-anyconnect-premium-or-essentials-limit limit
+     from 250 to 750. Type changed from uint8 to uint16.
+    (ASA-29 / RT24263)
+
+  - Fixed snmp-server host vs user dependency, correct order is:
+     no snmp-server host
+     no snmp-server user
+     no snmp-server group
+    (ASA-25 / RT24262)
+
+
+cisco-asa v4.1.5 [August 05, 2016]
+==================================
+
+Corrections:
+
+   - Fixed 'aaa authentication ssh console * LOCAL' related issue.
+     (ASA-24 / RT24171)
+
+
+cisco-asa v4.1.4 [August 02, 2016]
+==================================
+
+Enhancements:
+
+  - Additions to the YANG model:
+     interface * / ospf cost
+    (ASA-22 / RT23820)
+
+  - Additions to the YANG model:
+     router bgp * / address-family * / neighbor * ha-mode
+    (ASA-23 / RT23852)
+
+Corrections:
+
+   - Added failing error messages.
+     (ASA-24 / RT24171)
+
+
+cisco-asa v4.1.3 [June 30, 2016]
+================================
+
+Enhancements:
+
+  - Let '| prompts' answers override auto-prompts ned-setting in live-status
+    exec and config exec commands.
+    (RT23699)
+
+Corrections:
+
+  - Return error in live-status exec and config exec when missing answer to prompt.
+    (RT23686)
+
+  - Fixed problem with live-status exec any copy command.
+
+  - Fixed problem with live-status exec ping and crypto key export commands.
+    (RT23640)
+
+  - API CHANGE:
+    Fixed support for encrypted aaa-server * host * / key
+
+
+cisco-asa v4.1.2 [June 24, 2016]
+================================
+
+Enhancements:
+
+  - Additions to the YANG model:
+     crypto map * match address
+     crypto map * set peer
+     crypto map * set ikev2 ipsec-proposal *
+     dhcpd address *
+     dhcpd lease
+     dhcpd enable *
+     tunnel-group * ipsec-attributes / ikev2 local-authentication pre-shared-key
+    (RT23596)
+
+  - Support for setting cleartext username password and still avoid diff
+    when device encrypts password.
+
+  - Added README file.
+
+Corrections:
+
+  - Fixed problem with live-status exec any copy command.
+    Added command ignore pattern on: [OK] and [Done]
+    (RT23602)
+
+  - Do not prompt for question on live-status exec show command.
+
+
+cisco-asa v4.1.1 [June 16, 2016]
+================================
+
+Enhancements:
+
+  - Removed config commands 'crypto key' and 'crypto ca import'.
+    Use 'exec' commands which supports all config commands as well as
+    context and input-string options.
+
+  - Implemented cisco-asa-auto-prompts ned-setting which can be used to
+    register standard answers to standard questions. For example:
+    devices global-settings ned-settings cisco-asa-auto-prompts Q1 question
+      "System configuration has been modified" answer "no"
+
+  - Additions to the YANG model:
+     crypto map * set security-association lifetime kilobytes
+     failover lan unit
+     interface * / mac-address
+     object network * / fqdn
+     snmp-server host-group *
+     sysopt connection preserve-vpn-flows
+     terminal width
+     tunnel-group * ipsec-attributes / ikev2 remote-authentication pre-shared-key
+    (RT23334)
+
+Corrections:
+
+  - Removed "terminal width 511" config line in login code since it breaks
+    show-checksum cisco-asa-transaction-id-method. Make sure the terminal
+    width is set to maximum in device config.
+
+
+cisco-asa v4.1 [June 2, 2016]
+=============================
+
+Enhancements:
+
+  - Additions to the YANG model:
+     password encryption aes
+   (RT22672)
+
+  - Implemented support for replacing encrypted device secrets with the
+    cleartext cdb value in order to avoid compare-config diff and out of
+    sync with service. The new design requires support for tailf:meta-data
+    which means the minimum NCS/NSO versions had to be raised accordingly.
+    All transformed secrets on the device should now be supported.
+   (RT22672)
+
+  - Added support for passing answers to prompts in live-status exec and
+    config exec commands. Append '| prompts <answer1> [answer2]' to command.
+    Note: For hitting enter only on a prompt, add the prompt key 'ENTER'
+    Note: Single character replies are sent without LF.
+    Examples:
+     admin@ncs(config-config)# exec "crypto key generate rsa label LENNART | prompts yes"
+
+  - Additions to the YANG model:
+     interface * / policy-route route-map
+    (RT21203)
+
+Corrections:
+
+  -  Removed sla monitor set hook. Using a different method to detect and
+     modify changes on active sla monitor, requring temporary delete of
+     sla monitor schedule.
+    (RT22176)
+
+  - API CHANGE:
+     object network * / nat
+    Changed from multi-word-key to specific in order to support dependencies.
+    (RT23244)
+
+
+cisco-asa v4.0.4 [May 20, 2016]
+===============================
+
+Enhancements:
+
+  - Additions to the YANG model:
+     threat-detection * shun except ip-address *
+    (RT23050)
+
+  - Support for NSO-4.2
+
+Corrections:
+
+  - Removed "ssh timeout 60" setting in connect code.
+    (RT23035)
+
+
+cisco-asa v4.0.3 [May 9, 2016]
+==============================
+
+Enhancements:
+
+  - Added support for direct use of single context on multiple-mode device.
+    Example of how to specify the single context 'FOO':
+    devices device <devname> ned-settings cisco-asa-context-name FOO
+    (RT22791)
+
+  - Use 'more disk0:/<context>.cfg file if multi-context admin and context
+    config is saved in order to show pre-shared secrets in cleartext.
+
+  - Added 'any' exec command and optional context name under live-status
+    to be able to execute any ASA command in any context on the device.
+    For example:
+    devices device <devname> live-status exec any context FOO "show ver"
+    NOTE: Only works if logged in as multi-context admin.
+
+  - Added support for all config exec commands under 'exec'. For example,
+    to run a command in config mode, type: 'exec clear configure dns'.
+    Also added support for optional context change prior to running the
+    command, e.g.: 'exec context FOO clear configure dns'
+
+  - Additions to the YANG model:
+     interface * / ospf message-digest-key *
+     interface * / ospf authentication
+    (RT22671)
+
+  - Additions to the YANG model:
+     ntp authenticate
+     ntp authentication-key *
+     ntp trusted-key *
+    (RT22670)
+
+  - Additions to the YANG model:
+    ipv6 router ospf *
+
+  - Added support for disabling persistent memory write on the device. E.g:
+    devices device 5545 ned-settings cisco-asa-write-memory-setting disabled
+
+
+Corrections:
+
+  - Added object[-group]/network dependency on access-list rule.
+
+  - Fixed problem with access-list ordering and contexts.
+    (RT21899)
+
+  - API CHANGE: monitor-interface list changed from 'no-list' to support
+    devices which also show when enabled. Use enable/disable, keyword
+    will be translated to send/receive correct format to/from device.
+    (RT21930)
+
+
+cisco-asa v4.0.2 [February 29, 2016]
+====================================
+
+Enhancements:
+
+  - Additions to the YANG model:
+     logging host * secure
+    (RT21680)
+
+  - Additions to the YANG model:
+     group-policy * attributes / msie-proxy method
+    (RT21730)
+
+  - Additions to the YANG model:
+     call-home / source-interface *
+    (RT20941)
+
+  - Added cisco-asa-log-verbose ned-settings option to enable extra
+    verbose logging in NED (for debugging).
+
+Corrections:
+
+  - Removed 'overlaps with' warning.
+    (RT21964)
+
+  - Do not log telnet login password in trace.
+    (RT21780)
+
+  - Fixed problem with setting snmp-server enable traps.
+    (RT21849)
+
+  - Removed bad cli-diff-dependency on access-list rule deadlocking netsim.
+
+  - Repaired broke java code to make sure one rule delete is made last.
+
+  - Fixed dependency rule on:
+     aaa-server * * host
+    (RT21733)
+
+  - Fixed dependency rule on:
+     group-policy * attributes / address-pools value
+    (RT21760)
+
+  - Error in registering default-group-policy.
+    (RT21626)
+
+  - Scheduled access-list entries deletion after the direct configuration.
+    (RT21551)
+
+  - Added new failing error message:
+    'addresses overlap with existing localpool range'
+    (RT21609)
+
+  - Standard rules cannot be moved.
+    (RT21539)
+
+  - Added 'member-interface' - 'nameif' dependency.
+    (RT21319)
+
+  - Filtered out the 'sla monitor' hook remove callpoint executions.
+
+  - Fixed 'vpn load-balancing' rollback issue.
+    (RT21300)
+
+  - Added 'sla monitor' support.
+    (RT21267)
+
+  - Added 'vpn load-balancing' - 'interface' dependency.
+    (RT21214)
+
+  - Added 'tailf:cli-no-value-on-delete' on 'redirect-fqdn'.
+
+  - Added 'cluster key' - 'cluster encryption' dependency.
+    (RT21259)
+
+  - anyconnect-custom-data * * *: changed from leaf to leaf-list.
+    (RT21004)
+
+
+cisco-asa v4.0.1 [November 26, 2015]
+====================================
+
+Enhancements:
+
+  - Added support for Port-channel sub interface.
+
+  - Implemented a context filter list to control access to contexts.
+    Contexts not in this list are filtered out in sync-from.
+    The config option cisco-asa-context-list is available under:
+      /ncs:devices/global-settings/ned-settings/
+      /ncs:devices/ncs:profiles/profile:cisco-asa/ned-settings/
+      /ncs:/device/devices/device:<dev name>/ned-settings/
+    Regexp expressions in list entry are allowed, e.g.:
+      devices device 5585 ned-settings cisco-asa-context-list VAS.*
+    NOTE: Do not forget to commit context list changes prior to config.
+
+  - Additions to the YANG model:
+    interface * / bridge-group
+
+Corrections:
+
+  - Added '|(ethertype .*)' pattern to access-list id leaf.
+    (RT20886)
+
+  - Fixed dependency problem group-policy / vpn-filter value vs access-list.
+    (RT20868)
+
+  - Reverted all username password changes since 2015-09-18 3.5.0.6.
+    (RT20268, RT20702)
+
+  - Change to system context before 'write memory all'.
+    (RT20691)
+
+  - Added 'firewall transparent' to system mode as well.
+
+  - Fixed problem with # in password and prompt parsing.
+    (RT20406)
+
+
+cisco-asa v4.0 [October 2, 2015]
+================================
+
+Enhancements:
+
+  - Support for NSO-4.0 and 4.1 (note: NSO is new name for NCS)
+
+  - The method to use by the NED for calculating transaction ID is now a
+     configurable option.
+    The config option cisco-asa-transaction-id-method is available under:
+     /ncs:devices/global-settings/ned-settings/
+     /ncs:devices/ncs:profiles/profile:cisco-asa/ned-settings/
+     /ncs:/device/devices/device:<dev name>/ned-settings/
+    Two values are supported:
+     config-hash (default)
+      Use a MD5 checksum of running-config for transaction id.
+     show-checksum
+      Use built in 'show checksum' Cryptochecksum.
+
+  - The NED is now compliant with NSO 4.0 regarding registering
+     platform information.
+
+  - Optimization: Use 'show checksum' for transaction ID if available.
+
+  - Fixed support for encrypted passwords in username config.
+
+  - Additions to the YANG model:
+     anyconnect-custom-data *
+     group-policy * attributes / anyconnect-custom *o
+     vpn load-balancing / interface
+    (RT20220)
+
+  - Additions to the YANG model:
+     webvpn / anyconnect-custom-attr
+
+  - Implemented support for 'insert' in access-list.
+     API change: removed multi-word from key string, must now quote rules.
+
+  - Additions/expansions in the YANG model:
+     crypto dynamic-map *
+     crypto map *
+     crypto ipsec ikev1
+     crypto ipsec ikev2
+     crypto ikev2
+     crypto ikev1
+     logging asdm
+     vpn load-balancing
+
+  - Expanded config:
+     failover
+     webvpn
+     group-policy
+     tunnel-group
+     object network *
+     dynamic-access-policy-record
+     aaa-server *
+
+  - Additions to the YANG model:
+     tunnel-group-map *
+     crypto ca certificate map *
+
+Corrections:
+
+  - Numerous bug fixes found with DRNET: dependencies, ranges, defaults etc.
+
+  - Do not log enable password in trace.
+    (RT20268)
+
+  - Fixed some problems with failover; if description and dependency.
+    And made 'failover' into a single boolean leaf entry. API change.
+
+  - Fixed problem with license INFO string and prompt regexp.
+
+  - Fixed connection timeout for SSH connection.
+
+
+This NED requires NCS version 3.3.3 or later.
+
+
+cisco-asa v3.4.0 [June 23, 2015]
+================================
+
+Enhancements:
+
+  - Additions to the YANG model:
+     monitor-interface *
+    (RT18960)
+
+  - Support for context config.
+    NOTE: sync-from must be run after creating a new context before
+          (changeto) context config can modified.
+    Additions to the YANG model:
+     aaa-server *
+     aaa accounting
+     aaa authorization
+     arp *
+     context * / description|allocate-interface|config-url
+     changeto context * / firewall transparent
+     interface * / ospf priority|network
+     interface * / vlan
+     logging list *
+     rest-api
+     route-map * / set ip address prefix-list
+     snmp-server user *
+    (RT18702)
+
+  - Additions to the YANG model:
+     boot system
+     call-home reporting anonymous
+     http server session-timeout
+     jumbo-frame reservation
+     no monitor-interface service-module
+     policy-map * / class * / inspect icmp
+     ssl trust-point <name> <interface>
+     sysopt noproxyarp
+     username * attributes / service-type remote-access
+     webvpn / anyconnect-essentials
+    (#12852)
+
+Corrections:
+
+  - Bugfixed ip audit attack.
+
+  - Changed same-security-traffic permit from single enum to two leaves.
+    Swap remove & create of access-lists to avoid dependency problems.
+   (RT18755) (RT18748)
+
+  - Removed 'terminal width' config in yang model to avoid sync problem.
+
+  - Raised tls-proxy maximum sessions to 13000 (ASA 5580 maximum).
+    (RT18672)
+
+This NED requires NCS version 3.2.2 or later.
+
+
+cisco-asa v3.2.0 [April 16, 2015]
+=================================
+
+Enhancements:
+
+  - First official and supported cisco-asa release.
+
+Corrections:
+
+
+This NED requires NCS version 3.2.2 or later.
+====================================================

@@ -1,0 +1,76 @@
+// =========================================================================
+//                          cisco-iosxr NED
+// =========================================================================
+// This file contains the cdb-oper part of the CISCO XR YANG model.
+
+module tailf-ned-cisco-ios-xr-oper {
+  namespace 'http://tail-f.com/ned/cisco-iosxr/oper';
+  prefix iosxr-op;
+
+  import tailf-ncs {
+    prefix ncs;
+  }
+
+  import tailf-common {
+    prefix tailf;
+  }
+
+  import ietf-inet-types {
+    prefix inet;
+  }
+
+  import cisco-iosxr-cli {
+    prefix family;
+  }
+
+
+  // =========================================================================
+  // REVISION
+  // =========================================================================
+
+  revision 2022-01-21 {
+    description "version 7.38.3, see CHANGES";
+  }
+
+
+  /// ========================================================================
+  /// cisco-iosxr-oper
+  /// ========================================================================
+
+  augment "/ncs:devices/ncs:device/ncs:ned-settings" {
+    // Different 'when' expressions used when building for NSOs with and without CDM support.
+    // The NED build system will automatically 'uncomment' the right one.
+    //
+    // CDM style syntax
+    //when "derived-from(../ncs:device-type/ncs:cli/ncs:ned-id,'family:cisco-iosxr-cli')";
+    //
+    // Old style syntax:
+    //when "../ncs:device-type/ncs:cli/ncs:ned-id = 'cisco-ios-xr-id:cisco-ios-xr'";
+
+    container cisco-iosxr-oper {
+      tailf:info "Cisco XR internal oper data";
+      config false;
+      tailf:cdb-oper {
+        tailf:persistent true;
+      }
+
+      list edit-list {
+        tailf:cli-suppress-mode;
+        tailf:cli-delete-when-empty;
+        key name;
+        leaf name {
+          type string;
+        }
+        leaf lineno {
+          type string;
+        }
+      }
+
+      // snmp-server-enable-num-traps
+      leaf snmp-server-enable-num-traps {
+        tailf:info "Number of traps enabled with 'snmp-server enable traps' on device";
+        type string;
+      }
+    }
+  }
+}

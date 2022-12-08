@@ -1,0 +1,35 @@
+// Global nedcom cli parser extensions
+// NOTE: Original of this file resides in nedcom, don't edit local copy in ned.
+
+module cliparser-extensions-v10 {
+  namespace "http://tail-f.com/ned/cliparser";
+  prefix cli;
+
+  extension direction {
+    argument value;
+  }
+
+  extension arguments {
+    argument value;
+  }
+
+  extension callback-pre-match {
+    argument value;
+  }
+
+  extension callback-post-match {
+    argument value;
+  }
+
+  extension callback-enter-context {
+    argument value;
+  }
+
+  extension callback-exit-context {
+    argument value;
+  }
+
+  extension context-value-inject {
+    argument value;
+  }
+}

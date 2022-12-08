@@ -1,0 +1,14 @@
+! ios-stats:ip/dhcp/snooping/binding{}
+
+<root>
+ <buf-start :: .*VLAN  Interface />
+ <buf-end :: .*Total number of bindings:/>
+ <list :: . :: \n([^-|MacAddress]\S+) />
+  <key :: \s+(\S+) :: mac-address/>
+  <leaf :: ip-address :: $2/>
+  <leaf :: lease :: $3 :: type=integer/>
+  <leaf :: type :: $4/>
+  <leaf :: vlan :: $5 :: type=integer/>
+  <leaf :: interface :: $6/>
+ </list>
+</root>

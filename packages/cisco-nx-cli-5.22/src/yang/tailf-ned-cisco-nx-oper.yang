@@ -1,0 +1,80 @@
+module tailf-ned-cisco-nx-oper {
+  namespace 'http://tail-f.com/ned/cisco-nx/oper';
+  prefix nx-oper;
+
+  import tailf-common {
+    prefix tailf;
+  }
+
+  import tailf-ncs {
+    prefix ncs;
+  }
+
+  // This import is required when building for CDM style NSOs
+  // Is automatically un-commented by the NED build system when
+  // building for NSO >= 5.0
+  //#if (SUPPORTS_CDM == "YES")
+  //  #replace (//) (  )
+  //  import cisco-nx-cli {
+  //    prefix family;
+  //  }
+  //#endif
+
+  // =========================================================================
+  // REVISION
+  // =========================================================================
+
+  revision 2022-01-12 {
+    description "version 5.22.8, see CHANGES";
+  }
+
+  augment "/ncs:devices/ncs:device/ncs:ned-settings" {
+    // CDM style syntax:
+    //#if (SUPPORTS_CDM == "YES")
+    //#replace (//) (  )
+    //when "derived-from(../ncs:device-type/ncs:cli/ncs:ned-id,'family:cisco-nx-cli')";
+    //#else
+    when "../ncs:device-type/ncs:cli/ncs:ned-id = 'cisco-nx-id:cisco-nx'";
+    //#endif
+    container cisco-nx-oper {
+      tailf:cdb-oper {
+        tailf:persistent true;
+      }
+      config false;
+      leaf last-known-config {
+        type binary;
+      }
+      leaf last-known-config-sz {
+        type uint32;
+      }
+      leaf last-known-config-time {
+        type uint64;
+      }
+      leaf last-set-trans-id {
+        type string;
+      }
+      leaf last-transid-config {
+        type binary;
+      }
+      leaf last-transid-config-sz {
+        type uint32;
+      }
+      leaf snmp-traps-config {
+        type binary;
+      }
+      leaf snmp-traps-config-sz {
+        type uint32;
+      }
+      list node-map {
+        key id;
+        leaf id {
+          type string;
+        }
+        leaf value {
+          type string;
+        }
+      }
+    }
+  }
+
+}

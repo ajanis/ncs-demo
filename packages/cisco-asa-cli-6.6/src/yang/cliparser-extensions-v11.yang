@@ -1,0 +1,218 @@
+// Global nedcom cli parser extensions
+// NOTE: Original of this file resides in nedcom, don't edit local copy in ned.
+
+module cliparser-extensions-v11 {
+  namespace "http://tail-f.com/ned/cliparser_v11";
+  prefix cli;
+
+  // Yang syntax extension statements
+  //
+  extension builtin {
+    argument value;
+    cli:builtin "true";
+  }
+
+  extension direction {
+    cli:builtin "true";
+    argument value;
+  }
+
+  extension state {
+    cli:builtin "true";
+    argument value;
+  }
+
+  extension arguments {
+    cli:builtin "true";
+    argument value;
+  }
+
+  extension callback {
+    cli:builtin "true";
+    argument value;
+  }
+
+  extension module-meta-data {
+    cli:builtin "true";
+  }
+
+  extension java-callback-method {
+    cli:builtin "true";
+    argument value;
+  }
+
+
+  // Cli parser builtins
+  //
+  extension parse-compact-syntax {
+    cli:builtin "true";
+  }
+  extension parse-relaxed-syntax {
+    cli:builtin "true";
+  }
+  extension parse-global-when {
+    cli:builtin "true";
+  }
+  extension parse-inline-when {
+    cli:builtin "true";
+  }
+  extension parse-alt-name {
+    cli:builtin "true";
+    argument value;
+  }
+  extension parse-no-auto-match {
+    cli:builtin "true";
+  }
+  extension diff-dependency {
+    cli:builtin "true";
+    cli:state "none";
+    argument value;
+  }
+  extension diff-explicit-choice {
+    cli:builtin "true";
+    cli:state "none";
+    argument value;
+  }
+  extension diff-delete-before {
+    cli:builtin "true";
+    cli:state "none";
+    argument value;
+  }
+  extension diff-delete-after {
+    cli:builtin "true";
+    cli:state "none";
+    argument value;
+  }
+  extension diff-set-before {
+    cli:builtin "true";
+    cli:state "none";
+    argument value;
+  }
+  extension diff-set-after {
+    cli:builtin "true";
+    cli:state "none";
+    argument value;
+  }
+  extension when-target-delete {
+    cli:builtin "true";
+    cli:state "none";
+  }
+  extension when-target-set {
+    cli:builtin "true";
+    cli:state "none";
+  }
+  extension compact-need-when-eval {
+    cli:builtin "true";
+  }
+  extension forced-when-eval-in-path {
+    cli:builtin "true";
+    argument value;
+  }
+  extension forced-relaxed-parse-in-path {
+    cli:builtin "true";
+    argument value;
+  }
+
+  // Extensions implemented in nedcom package
+  //
+  extension context-value-inject {
+    //
+    // Used in leaf nodes inside a context to inject values into context
+    // (e.g. hidden defaults which are dynamic). This extension is called when
+    // parser direction is FROM_DEVICE. Values will be injected in the resulting
+    // CLI config, when using either parseAndLoadXMLConfigStream() or
+    // filterConfig() from NedComCliBase.
+    //
+    // The argument can be any of the following:
+    //
+    // 'static'  This indicates that the value to inject is a static (hard-coded
+    //           in yang) value given with the cli:arguments substatement.
+    //
+    // 'default' In this case the value to inject is the default of the leaf
+    //           itself.
+    //
+    // 'dynamic' This is the most flexible variant which takes the value to
+    //           inject from another leaf in the data tree (i.e. which is
+    //           present in the CLI lines parsed before this context is
+    //           encountered). The path to the leaf from where to get the value
+    //           is either absolute, or relative to the context (i.e. NOT to the
+    //           leaf where the extension is present). It is given with the
+    //           cli:arguments substatement.
+    //
+    // Example usage, if the below 'shutdown' leaf is contained within a list
+    // (context) which has a key leaf 'ethernet' the 'shutdown' leaf will be
+    // injected with value 'false' (i.e. 'no shutdown' since it's a boolean-no)
+    // when the key contains a '.', but if the key does not contain a '.' the
+    // value to be injected will be fetched (at parse time) from the value of
+    // '../default/shutdown' (i.e. which must have been present/parsed before
+    // parsing the line which enters the context containing this 'shutdown'
+    // leaf). Note, in this case, the path to the leaf is relative to the
+    // enclosing list, not the leaf with the 'context-value-inject' extension.
+    //
+    //    leaf shutdown {
+    //      cli:context-value-inject "static" {
+    //        cli:arguments "false";
+    //        when "contains(ethernet, '.')";
+    //      }
+    //      cli:context-value-inject "dynamic" {
+    //        cli:arguments "../default/shutdown";
+    //        when "not(contains(ethernet, '.'))";
+    //      }
+    //      tailf:cli-boolean-no;
+    //      type boolean;
+    //    }
+    //
+    cli:direction "from-device";
+    cli:state "enter-context";
+    cli:java-callback-method "com.tailf.packages.ned.nedcom.NedComCliExtensions.contextValueInject";
+    argument value;
+  }
+
+  //
+  extension shutdown-before-edit {
+    cli:direction "to-device";
+    cli:state "post-match";
+    cli:java-callback-method "com.tailf.packages.ned.nedcom.NedComCliExtensions.shutdownBeforeEdit";
+    argument value;
+  }
+
+  extension globally-unique-value {
+    cli:direction "to-device";
+    cli:state "post-match|parent-context-deleted";
+    cli:java-callback-method "com.tailf.packages.ned.nedcom.NedComCliExtensions.globallyUniqueValue";
+    argument value;
+  }
+
+  extension replace-input {
+    cli:direction "from-device";
+    cli:state "pre-match";
+    cli:java-callback-method "com.tailf.packages.ned.nedcom.NedComCliExtensions.replaceInput";
+    argument value; // "regex-to-match :: replacement"
+  }
+
+  extension replace-output {
+    cli:direction "to-device";
+    cli:state "post-match";
+    cli:java-callback-method "com.tailf.packages.ned.nedcom.NedComCliExtensions.replaceOutput";
+    argument value; // "regex-to-match :: replacement"
+  }
+
+  extension no-value-on-delete {
+    cli:direction "to-device";
+    cli:state "post-match";
+    cli:java-callback-method "com.tailf.packages.ned.nedcom.NedComCliExtensions.noValueOnDelete";
+  }
+
+  extension no-name-on-delete {
+    cli:direction "to-device";
+    cli:state "post-match";
+    cli:java-callback-method "com.tailf.packages.ned.nedcom.NedComCliExtensions.noNameOnDelete";
+  }
+
+  extension show-leaf-as-no {
+    argument value; // "name-of-leaf-to-replace"
+    cli:direction "both";
+    cli:state "pre-match";
+    cli:java-callback-method "com.tailf.packages.ned.nedcom.NedComCliExtensions.showLeafAsNo";
+  }
+}

@@ -1,0 +1,11 @@
+! cisco-ios-xr-stats:inventory
+
+<root>
+ <list :: . :: NAME: (.+), DESCR/>
+  <key :: NAME: (.+), DESCR: :: name/>
+  <leaf :: descr :: NAME: .* DESCR: (.*)/>
+  <leaf :: pid :: PID: (\S+) .* VID: .* SN: .*/>
+  <leaf :: vid :: PID: .* VID: (\S+)\s*,\s*SN: .*/>
+  <leaf :: sn :: PID: .* SN: (\S+)/>
+ </list>
+</root>

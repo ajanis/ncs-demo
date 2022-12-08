@@ -1,0 +1,207 @@
+<clispec xmlns="http://tail-f.com/ns/clispec/1.0" style="i">
+  <operationalMode>
+
+    <cmd name="version" mount="show">
+      <info>System hardware and software status</info>
+      <help>System hardware and software status</help>
+      <callback>
+        <exec>
+          <osCommand>./show_version.sh</osCommand>
+          <options>
+            <noInput/>
+            <pty>false</pty>
+          </options>
+        </exec>
+      </callback>
+    </cmd>
+
+    <cmd name="length" mount="terminal">
+      <info>Set number of lines on a screen</info>
+      <help>Set number of lines on a screen</help>
+      <callback>
+        <exec>
+          <osCommand>maapi</osCommand>
+          <args>--cliset screen-length</args>
+          <options>
+            <noInput/>
+          </options>
+        </exec>
+      </callback>
+      <params>
+        <param>
+          <type>
+            <simpleType namespace="http://tail-f.com/ns/cli-builtin/1.0"
+                        name="screen-length" />
+          </type>
+        </param>
+      </params>
+    </cmd>
+
+    <cmd name="width" mount="terminal">
+      <info>Set width of the display terminal</info>
+      <help>Set width of the display terminal</help>
+      <callback>
+        <exec>
+          <osCommand>/bin/echo</osCommand>
+          <options>
+            <noInput/>
+          </options>
+        </exec>
+      </callback>
+      <params>
+        <param>
+          <type>
+            <simpleType namespace="http://tail-f.com/ns/cli-builtin/1.0"
+                        name="screen-width" />
+          </type>
+        </param>
+      </params>
+    </cmd>
+
+  <cmd name="ping">
+      <info>Send echo messages</info>
+      <help>Send echo messages</help>
+      <callback>
+        <exec>
+          <osCommand>./ping.sh</osCommand>
+          <options>
+            <noInput/>
+            <pty>false</pty>
+          </options>
+        </exec>
+      </callback>
+      <params>
+        <param>
+          <name>vrf</name>
+          <argFlag>--vrf</argFlag>
+          <optional/>
+          <type>
+            <simpleType namespace="" name="string" />
+          </type>
+        </param>
+        <param>
+          <type>
+            <simpleType namespace="" name="string" />
+          </type>
+        </param>
+      </params>
+  </cmd>
+
+  <cmd name="interfaces" mount="show">
+    <info>Interface status and configuration (snapshot for debug)</info>
+    <help>Interface status and configuration (snapshot for debug)</help>
+    <params>
+      <any>
+        <info>show interfaces</info>
+        <help>show interfaces</help>
+      </any>
+    </params>
+    <callback>
+      <exec>
+        <osCommand>./show_interfaces.sh</osCommand>
+        <options>
+          <noInput/>
+          <pty>false</pty>
+        </options>
+      </exec>
+    </callback>
+  </cmd>
+
+  <cmd name="arp" mount="show">
+    <info>ARP table</info>
+    <help>ARP table</help>
+    <callback>
+      <exec>
+        <osCommand>./show_arp.sh</osCommand>
+        <options>
+          <noInput/>
+          <pty>false</pty>
+        </options>
+      </exec>
+    </callback>
+  </cmd>
+
+  <cmd name="lldp" mount="show">
+    <info>LLDP table</info>
+    <help>LLDP table</help>
+    <params>
+      <any>
+        <info>show lldp</info>
+        <help>show lldp</help>
+      </any>
+    </params>
+    <callback>
+      <exec>
+        <osCommand>./show_lldp.sh</osCommand>
+        <options>
+          <noInput/>
+          <pty>false</pty>
+        </options>
+      </exec>
+    </callback>
+  </cmd>
+
+  <cmd name="vrf" mount="show">
+    <info>VPN Routing/Forwarding instance information</info>
+    <help>VPN Routing/Forwarding instance information</help>
+    <callback>
+      <exec>
+        <osCommand>./show_vrf.sh</osCommand>
+        <options>
+          <noInput/>
+          <pty>false</pty>
+        </options>
+      </exec>
+    </callback>
+  </cmd>
+
+  <cmd name="crypto" mount="show">
+    <info>Encryption module</info>
+    <help>Encryption module</help>
+    <params>
+      <any>
+        <info>show crypto</info>
+        <help>show crypto</help>
+      </any>
+    </params>
+    <callback>
+      <exec>
+        <osCommand>./show_crypto.sh</osCommand>
+        <options>
+          <noInput/>
+          <pty>false</pty>
+        </options>
+      </exec>
+    </callback>
+  </cmd>
+
+  <cmd name="bgp" mount="show">
+    <info>BGP status (snapshot for debug)</info>
+    <help>BGP status (snapshot for debug)</help>
+    <params>
+      <any>
+        <info>show bgp</info>
+        <help>show bgp</help>
+      </any>
+    </params>
+    <callback>
+      <exec>
+        <osCommand>./show_bgp.sh</osCommand>
+        <options>
+          <noInput/>
+          <pty>false</pty>
+        </options>
+      </exec>
+    </callback>
+  </cmd>
+
+  </operationalMode>
+
+  <configureMode>
+    <modifications>
+      <delete src="privilege"/>
+      <delete src="enable"/>
+    </modifications>
+  </configureMode>
+
+</clispec>

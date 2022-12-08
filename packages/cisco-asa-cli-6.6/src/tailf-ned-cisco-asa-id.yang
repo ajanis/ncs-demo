@@ -1,0 +1,12 @@
+module tailf-ned-cisco-asa-id {
+  namespace "http://cisco.com/ned/asa-id";
+  prefix asa-id;
+
+  import tailf-ncs-ned {
+    prefix ned;
+  }
+
+  identity cisco-asa {
+    base ned:cli-ned-id;
+  }
+}

@@ -1,0 +1,36 @@
+{
+    "pattern" : {
+        "promptDevice" :   "\\A[^\\# ]+>[ ]?$",
+        "promptPriv" :     "\\A[^\\# ]+#[ ]?$",
+        "promptLogin" :    "^.*([Ll]ogin|[Uu]ser|[Uu]sername):[ ]?$",
+        "promptPassword" : "^.*[Pp]assword:[ ]?$",
+        "promptIgnore" :   "([Pp]assword OK)|(User Access Verification)",
+        "promptRetry" :    "Authorization failed",
+        "errorLogin" :     "(Authentication failed)|(Bad passwords)|(Login invalid)|(Access denied)|(Permission denied)|(Request Denied)",
+        "errorEnable" :    "(Unknown command)|(Access denied)"
+    },
+    "command" : {
+    },
+    "state": {
+        "new" : [
+            {"expect": null,              "action": "connect()",      "nextState": "newline"}
+        ],
+        "newline" : [
+            {"expect": null,              "action":  "matches($(connection/send-login-newline),true,\r\n)", "nextState": "login"}
+        ],
+        "login" : [
+            {"expect": "$promptIgnore",   "action": null,             "nextState": "login"},
+            {"expect": "$promptRetry",    "action": "sendNewline()",  "nextState": "login"},
+            {"expect": "$promptLogin",    "action": "$(remote-name)", "nextState": "login"},
+            {"expect": "$promptPassword", "action": "sendPassword()", "nextState": "login"},
+            {"expect": "$promptDevice",   "action": "enable",         "nextState": "enable"},
+            {"expect": "$promptPriv",     "action": null,             "nextState": "end"},
+            {"expect": "$errorLogin",     "action": "reportError()",  "nextState": "invalid"}
+        ],
+        "enable" : [
+            {"expect": "$promptPriv",     "action": null,                      "nextState": "end"},
+            {"expect": "$promptPassword", "action": "sendSecondaryPassword()", "nextState": "enable"},
+            {"expect": "$errorEnable",    "action": "reportError()",           "nextState": "invalid"}
+        ]
+    }
+}

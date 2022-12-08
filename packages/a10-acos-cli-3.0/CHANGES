@@ -1,0 +1,39 @@
+a10-acos v3.0.2.1 [Feb 28, 2017]
+================================
+
+Corrections:
+
+  - Fixed so we compile for java 1.6
+
+
+a10-acos v3.0.2 [March 10, 2015]
+================================
+
+Corrections:
+
+  -  Fixed a dependency issue in one of the must expressions.
+
+
+a10-acos v3.0.1 [January 30, 2015]
+==================================
+
+Corrections:
+
+  -  Fixed wrong spelling in one of the "when" expressions in the yang model.
+
+
+a10-acos v3.0 [March 5, 2014]
+=============================
+
+This release is function wise equivalent to the previous release, which was 1.0.
+The only difference is that this NED now is maintained using
+a new product life-cycle which is independent of the NCS release life-cycle.
+
+The version number 3.0 has been chosen to indicate a common baseline for
+all NEDs, which is higher than any previous NED version.
+
+For this NED no upgrades are necessary.
+
+
+===============================================================================
+The Tail-f package: a10-acos NED was initially imported 2014-02-25

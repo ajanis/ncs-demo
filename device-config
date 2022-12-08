@@ -1,0 +1,32 @@
+policer aggregate DemoUser-pol cir 2000000 bc 375000 conform-action transmit exceed-action drop
+policy-map DemoUser
+ class class-default
+  police aggregate DemoUser-pol
+ !
+!
+vlan internal allocation policy ascending
+vlan dot1q tag native
+vlan 500
+ name DemoUser
+!
+interface GigabitEthernet0/1
+ port-type nni
+ no shutdown
+ udld port aggressive
+ switchport
+ switchport mode trunk
+ switchport trunk allowed vlan 1,500,1000
+exit
+interface GigabitEthernet0/10
+ description DemoUser
+ media-type  rj45
+ no mdix auto
+ speed       100
+ duplex      full
+ no snmp trap link-status
+ service-policy input DemoUser
+ switchport
+ switchport access vlan 500
+ storm-control broadcast level 1.0
+ no ethernet cfm interface
+exit

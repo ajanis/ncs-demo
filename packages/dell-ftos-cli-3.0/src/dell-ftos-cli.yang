@@ -1,0 +1,18 @@
+module dell-ftos-cli {
+  yang-version 1.1;
+  namespace "http://tail-f.com/ns/ned-id/dell-ftos-cli";
+  prefix dell-ftos-cli;
+
+  import tailf-common {
+    prefix tailf;
+  }
+
+  import tailf-ncs-ned {
+    prefix ned;
+  }
+
+  identity dell-ftos-cli {
+    tailf:abstract;
+    base ned:cli-ned-id;
+  }
+}

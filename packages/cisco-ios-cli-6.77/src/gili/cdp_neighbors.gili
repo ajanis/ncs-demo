@@ -1,0 +1,12 @@
+! ios-stats:cdp/neighbors{}
+
+<root>
+ <list :: . :: \nDevice ID: (\S+)/>
+  <key :: Interface:\s+(\S+), :: local-interface/>
+  <leaf :: device-id :: Device ID:\s+(\S+)/>
+  <leaf :: hold-time :: Holdtime :\s+(\S+)/>
+  <leaf :: capability :: Capabilities: (.*)/>
+  <leaf :: platform :: Platform:\s+(.+),\s+Capabilities/>
+  <leaf :: port-id :: Port ID [(]\S+ port[)]:\s+(\S+)/>
+ </list>
+</root>

@@ -1,0 +1,2999 @@
+module tailf-ned-dell-ftos {
+  namespace 'http://tail-f.com/ned/dell-ftos';
+  prefix force10;
+
+  import tailf-common {
+    prefix tailf;
+  }
+  import ietf-inet-types {
+    prefix inet;
+  }
+
+  import ietf-yang-types {
+    prefix yang;
+  }
+
+  typedef ipv4-prefix {
+    type string {
+      pattern
+         '(([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])\.){3}'
+       +  '([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])'
+       + '/(([0-9])|([1-2][0-9])|(3[0-2]))';
+    }
+    description
+     "The ipv4-prefix type represents an IPv4 address prefix.
+      The prefix length is given by the number following the
+      slash character and must be less than or equal to 32.
+
+      A prefix length value of n corresponds to an IP address
+      mask that has n contiguous 1-bits from the most
+      significant bit (MSB) and all other bits set to 0.
+
+      The canonical format of an IPv4 prefix has all bits of
+      the IPv4 address set to zero that are not part of the
+      IPv4 prefix.";
+  }
+
+  typedef ipv6-prefix {
+    type string {
+      pattern '((:|[0-9a-fA-F]{0,4}):)([0-9a-fA-F]{0,4}:){0,5}'
+            + '((([0-9a-fA-F]{0,4}:)?(:|[0-9a-fA-F]{0,4}))|'
+            + '(((25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])\.){3}'
+            + '(25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])))'
+            + '(/(([0-9])|([0-9]{2})|(1[0-1][0-9])|(12[0-8])))';
+      pattern '(([^:]+:){6}(([^:]+:[^:]+)|(.*\..*)))|'
+            + '((([^:]+:)*[^:]+)?::(([^:]+:)*[^:]+)?)'
+            + '(/.+)';
+    }
+    description
+     "The ipv6-prefix type represents an IPv6 address prefix.
+      The prefix length is given by the number following the
+      slash character and must be less than or equal 128.
+
+      A prefix length value of n corresponds to an IP address
+      mask that has n contiguous 1-bits from the most
+      significant bit (MSB) and all other bits set to 0.
+
+      The IPv6 address should have all bits that do not belong
+      to the prefix set to zero.
+
+      The canonical format of an IPv6 prefix has all bits of
+      the IPv6 address set to zero that are not part of the
+      IPv6 prefix.  Furthermore, IPv6 address is represented
+      in the compressed format described in RFC 4291, Section
+      2.2, item 2 with the following additional rules: the ::
+      substitution must be applied to the longest sequence of
+      all-zero 16-bit chunks in an IPv6 address.  If there is
+      a tie, the first sequence of all-zero 16-bit chunks is
+      replaced by ::.  Single all-zero 16-bit chunks are not
+      compressed.  The canonical format uses lowercase
+      characters and leading zeros are not allowed.";
+    reference
+     "RFC 4291: IP Version 6 Addressing Architecture";
+  }
+
+  grouping secret-grouping {
+    leaf encryption {
+      tailf:cli-drop-node-name;
+      type enumeration {
+        enum 0 {
+          tailf:info "Specifies an UNENCRYPTED password will follow";
+        }
+        enum 5 {
+          tailf:info "Specifies a HIDDEN secret will follow";
+        }
+      }
+    }
+    leaf password {
+      tailf:cli-drop-node-name;
+      type string {
+        tailf:info "LINE;;The UNENCRYPTED (cleartext) 'enable' secret";
+      }
+    }
+  }
+
+  grouping password-grouping {
+    leaf encryption {
+      tailf:cli-drop-node-name;
+      type enumeration {
+        enum 0 {
+          tailf:info "Specifies an UNENCRYPTED password will follow";
+        }
+        enum 7 {
+          tailf:info "Specifies a HIDDEN password will follow";
+        }
+      }
+    }
+    leaf password {
+      tailf:cli-drop-node-name;
+      type string {
+        tailf:info "LINE;;The UNENCRYPTED (cleartext) 'enable' password";
+      }
+    }
+  }
+
+  // aaa                           Authentication, Authorization and Accounting
+  // arp                             Set a static ARP entry
+  // asf-mode                        Enable Cut-Thru Mode
+  // banner                          Define a login banner
+  // bfd                             Configure BFD protocol
+  container boot {
+    tailf:info "Modify system boot parameters";
+    container system {
+      tailf:info "System image file and boot interface";
+      leaf gateway {
+        tailf:info "Boot interface gateway";
+        type inet:ipv4-address {
+          tailf:info "A.B.C.D;;IP address";
+        }
+      }
+      list stack-unit {
+        tailf:info "Stack processor module";
+        tailf:cli-suppress-mode;
+        key "id";
+        leaf id {
+          type union {
+            type uint8 {
+              tailf:info "<0-11>;;Stack unit number";
+              range "0..11";
+            }
+            type enumeration {
+              enum all {
+                tailf:info "All stack units";
+              }
+            }
+          }
+        }
+        grouping location-grouping {
+          leaf location {
+            tailf:cli-drop-node-name;
+            type enumeration {
+              enum "system:" {
+                tailf:info "System image file URL (system)";
+              }
+              enum "tftp:" {
+                tailf:info "System image file URL (tftp://hostip/filepath)";
+              }
+            }
+          }
+          leaf partition {
+            tailf:cli-drop-node-name;
+            type enumeration {
+              enum "A:" {
+                tailf:info "Partition A";
+              }
+              enum "B:" {
+                tailf:info "Partition B";
+              }
+            }
+          }
+        }
+        container default {
+          tailf:info "Default release image file";
+          tailf:cli-sequence-commands;
+          tailf:cli-compact-syntax;
+
+          uses location-grouping;
+        }
+        container primary {
+          tailf:info "Primary release image file";
+          tailf:cli-sequence-commands;
+          tailf:cli-compact-syntax;
+
+          uses location-grouping;
+        }
+        container secondary {
+          tailf:info "Secondary release image file";
+          tailf:cli-sequence-commands;
+          tailf:cli-compact-syntax;
+
+          uses location-grouping;
+        }
+      }
+    }
+  }
+  container redundancy {
+    tailf:info "Set up Stack unit redundancy configuration";
+    container disable-auto-reboot {
+      tailf:info "Disable automatic rebooting";
+      list stack-unit {
+        tailf:cli-suppress-mode;
+        tailf:info "Stack-unit Number";
+        key "id";
+        leaf id {
+          type union {
+            type uint8 {
+              tailf:info "<0-11>;;Unit number id";
+              range "0..11";
+            }
+            type enumeration {
+              enum members {
+                tailf:info "All stack-unit";
+              }
+            }
+          }
+        }
+      }
+    }
+    leaf protocol {
+      tailf:info "Enable hitless failover for protocol";
+      type enumeration {
+        enum lacp {
+          tailf:info "LACP protocol";
+        }
+        enum xstp {
+          tailf:info "STP, RSTP, MSTP, PVST protocol";
+        }
+      }
+    }
+
+    leaf auto-synchronize {
+      type enumeration {
+        enum full;
+      }
+    }
+  }
+
+  container hardware {
+    tailf:info "Define hardware settings and actions on hardware events";
+    leaf watchdog {
+      tailf:info "Enable hardware watchdog";
+      type empty;
+    }
+  }
+
+  leaf hostname {
+    tailf:info "Set system's network name";
+    type string {
+      tailf:info "WORD;;This system's network name (max 32 chars)";
+      length "1..32";
+    }
+  }
+
+  container enable {
+    tailf:info "Modify enable password parameters";
+
+    leaf inverse-mask {
+      tailf:info "Enable inverse mask option";
+      type empty;
+    }
+    container optic-info-update {
+      tailf:info "Enable Optic power and temperature updates for SNMP";
+      presence true;
+      leaf interval {
+        tailf:info "Polling interval";
+        type uint16 {
+          tailf:info "<120-6000>;;Polling interval in seconds (default = 300)";
+          range "120..6000";
+        }
+      }
+    }
+    container password {
+      tailf:info "Assign the privileged level password";
+
+      list level {
+        tailf:info "Set exec level password";
+        tailf:cli-suppress-mode;
+        tailf:cli-sequence-commands;
+        tailf:cli-compact-syntax;
+        key "id";
+        leaf id {
+          type uint8 {
+            tailf:info "<1-15>;;Level number";
+            range "1..15";
+          }
+        }
+
+        uses password-grouping;
+      }
+
+      container enable {
+        tailf:cli-drop-node-name;
+        tailf:cli-sequence-commands;
+        tailf:cli-compact-syntax;
+
+        uses password-grouping;
+      }
+    }
+    container restricted {
+      tailf:info "Set password for accessing restricted commands";
+      tailf:cli-sequence-commands;
+      tailf:cli-compact-syntax;
+
+      uses password-grouping;
+    }
+    container secret {
+      tailf:info "Assign the privileged level secret";
+
+      list level {
+        tailf:info "Set exec level password";
+        tailf:cli-suppress-mode;
+        tailf:cli-sequence-commands;
+        tailf:cli-compact-syntax;
+        key "id";
+        leaf id {
+          type uint8 {
+            tailf:info "<1-15>;;Level number";
+            range "1..15";
+          }
+        }
+        uses secret-grouping;
+      }
+      container secret {
+        tailf:cli-drop-node-name;
+        tailf:cli-sequence-commands;
+        tailf:cli-compact-syntax;
+
+        uses secret-grouping;
+      }
+    }
+  }
+
+  list username {
+    tailf:info "Establish user name authentication";
+    tailf:cli-suppress-mode;
+    tailf:cli-compact-syntax;
+    key "id";
+    leaf id {
+      type string {
+        tailf:info "WORD;;User name (max length 63)";
+        length "1..63";
+      }
+    }
+    leaf access-class {
+      tailf:info "Restrict access by access-class";
+      type string {
+        tailf:info "WORD;;Access-class name";
+      }
+    }
+    choice user-pass-choice {
+      leaf nopassword {
+        tailf:info "No password is required for the user to log in";
+        type empty;
+      }
+      container password {
+        tailf:info "Specify the password for the user";
+        tailf:cli-flatten-container;
+        tailf:cli-compact-syntax;
+        tailf:cli-sequence-commands;
+        uses password-grouping;
+      }
+      container secret {
+        tailf:info "Specify the secret for the user";
+        tailf:cli-flatten-container;
+        tailf:cli-compact-syntax;
+        tailf:cli-sequence-commands;
+        uses secret-grouping;
+      }
+    }
+    leaf privilege {
+      tailf:info "Set user privilege level";
+      type uint8 {
+        tailf:info "<0-15>;;Default privilege level for user";
+        range "0..15";
+      }
+    }
+  }
+
+  list stack-unit {
+    tailf:info "Configure stack unit";
+    tailf:cli-suppress-mode;
+    key "id";
+    leaf id {
+      type uint8 {
+        tailf:info "<0-11>;;Unit number";
+        range "0..11";
+      }
+    }
+    list port {
+      tailf:info "Port number to be configured";
+      tailf:cli-suppress-mode;
+      key "id";
+      leaf id {
+        type uint8 {
+          tailf:info "<48-60>;;Port Number";
+          range "48..60";
+        }
+      }
+      leaf portmode {
+        tailf:info "Set portmode for a module";
+        type enumeration  {
+          enum quad {
+            tailf:info "Enable quad mode";
+          }
+        }
+      }
+    }
+    leaf priority {
+      tailf:info "Master priority of the unit";
+      type uint8 {
+        tailf:info "<1-14>;;Priority Value";
+        range "1..14";
+      }
+    }
+    list provision {
+      tailf:info "Switch type";
+      tailf:cli-suppress-mode;
+      key "id";
+      leaf id {
+        type enumeration {
+          enum S4810 {
+            tailf:info "52-port GE/TE/FG (SE)";
+          }
+        }
+      }
+      leaf mac-address {
+        tailf:info "Configure system MAC address for stack provisioning";
+        type yang:mac-address {
+          tailf:info "nn:nn:nn:nn:nn:nn;;48 bit MAC address";
+        }
+      }
+    }
+    leaf stack-group {
+      tailf:info "Configure a group of stack ports";
+      type uint8 {
+        tailf:info "<0-15>;;Stack group ID";
+        range "0..15";
+      }
+    }
+  }
+
+  grouping interface-grouping {
+    // arp                     Set ARP information
+    // dampening               Interface dampening
+    // dcb-policy              Configure DCB policy
+    // dei                     Configure drop eligible indicator
+    leaf description {
+      tailf:info "Interface description";
+      tailf:cli-full-command;
+      tailf:cli-multi-value;
+      type string {
+        tailf:info "LINE;;Interface description";
+      }
+    }
+    // dot1p-priority          IEEE 802.1p/Q priority level
+    // dot1x                   Configure 802.1x
+    // ethernet                Ethernet Interface Parameters
+    // fefd                    Enable FEFD for selected interface
+    // fip-snooping            FIP snooping options
+    // flowcontrol             Enable Flow control
+    // gvrp                    Interface GVRP config subcommands
+    container ip {
+      tailf:info "Interface IP config subcommands";
+      list access-group {
+        tailf:cli-suppress-mode;
+        tailf:info "Specify access control for packets";
+        tailf:cli-sequence-commands {
+          tailf:cli-reset-siblings;
+        }
+        tailf:cli-compact-syntax;
+        key inout;
+
+        leaf inout {
+          type enumeration {
+            enum in {
+              tailf:info "Inbound packets";
+            }
+            enum out {
+              tailf:info "Outbound packets";
+            }
+          }
+        }
+
+        choice acl-choice {
+          leaf extended-group {
+            tailf:cli-drop-node-name;
+            tailf:cli-prefix-key;
+            tailf:non-strict-leafref {
+              path "/ip/access-list/extended/id";
+            }
+            type string;
+          }
+          leaf standard-group {
+            tailf:cli-drop-node-name;
+            tailf:cli-prefix-key;
+            type string;
+            tailf:non-strict-leafref {
+              path "/ip/access-list/standard/id";
+            }
+          }
+        }
+      }
+      leaf address {
+        tailf:info "Set the IP address of an interface";
+        tailf:cli-show-no;
+        type ipv4-prefix {
+          tailf:info "A.B.C.D/XX;;IP Address";
+        }
+      }
+      // dhcp                    Define the DHCP configurations
+      // directed-broadcast      Enable forwarding of directed broadcast
+      // helper-address          Set the DHCP server address
+      // igmp                    IGMP interface commands
+      // ospf                    OSPF interface commands
+      // pim                     PIM interface commands
+      // poison-reverse          Enable poison reverse
+      // proxy-arp               Enable proxy ARP (default = enabled)
+      // rip                     Router Information Procotol
+      // router                  IP router interface commands
+      // split-horizon           Perform split horizon
+      // udp-helper              Configure UDP helper
+      // unreachables            Enable IP unreachables
+    }
+    container ipv6 {
+      tailf:info "Interface IPV6 config subcommands";
+      list access-group {
+        tailf:info "Specify access control for packets";
+        tailf:cli-suppress-mode;
+        tailf:cli-compact-syntax;
+        key inout;
+
+        leaf inout {
+          type enumeration {
+            enum in {
+              tailf:info "Inbound packets";
+            }
+            enum out {
+              tailf:info "Outbound packets";
+            }
+          }
+        }
+        leaf group {
+          tailf:cli-drop-node-name;
+          tailf:cli-prefix-key;
+          tailf:non-strict-leafref {
+            path "/ipv6/access-list/id";
+          }
+          type string;
+        }
+      }
+      // address                 Set the IPV6 address of an interface
+      // nd                      IPv6 interface Neighbor Discover subcommands
+      // ospf                    OSPFv3 interface commands
+      // router                  IPv6 Router interface commands
+    }
+    container iscsi {
+      tailf:info "Apply auto-configuration for Compellent Device";
+      // aging                   Configure iSCSI Aging time
+      // cos                     COS profile for iSCSI traffic
+      leaf enable {
+        tailf:info "Enable iSCSI Optimizations (default)";
+        type boolean;
+        tailf:cli-boolean-no;
+        default "true";
+      }
+      // target           Target tcp port on which iSCSI communication happens
+    }
+    // isis                    IS-IS commands
+    // keepalive               Enable keepalive
+    // mac                     Interface MAC config subcommands
+    // mtu                     Configure interface link MTU
+    // negotiation             Select autonegotiation mode
+    // no                      Negate a command or set its defaults
+    // ntp                     Configure NTP
+    // of-instance             Configure interface in openflow instance
+    // pfc                     Configure PFC
+    // port-channel-protocol   Configure port channel protocol on the
+    //                         selected interface
+    // portmode                Enable hybrid mode on the port
+    // protocol                Configure a protocol
+    // rate                    Configure rate control
+    leaf rate-interval {
+      tailf:info "Configure interface rate interval";
+      type uint16 {
+        tailf:info "<5-299>;;Interface rate interval in seconds (default = "
+          +"299)";
+        range "5..299";
+      }
+    }
+    // rmon             Configures RMON ether statistics/history collection.
+    // service-class  Define service class to policy based QoS/Routing mapping
+    container service-policy {
+      tailf:info "Configure QoS service policy";
+      leaf input {
+        tailf:info "Assign policy-map to the input of an interface";
+        type string {
+          tailf:info "WORD;;Policy map name (max 32 chars)";
+          length "1..32";
+        }
+      }
+      leaf output {
+        tailf:info "Assign policy-map to the output of an interface";
+        type string {
+          tailf:info "WORD;;Policy map name (max 32 chars)";
+          length "1..32";
+        }
+      }
+    }
+    // sflow                   sFlow configuration
+    // show                    Show interface configuration information
+    // shutdown                Shutdown the selected interface
+    // snmp                    Modify SNMP interface parameters
+    // spanning-tree           Interface Spanning Tree config subcommand
+    // speed                   Interface speed parameter
+    // storm-control           Configure storm-control
+    container switchport {
+      tailf:info "Set the selected interface into switchport mode";
+      presence true;
+      // backup                  Backup interface
+      // mode                    Interface mode
+    }
+    // vlan-stack              Add vlan-stacking-compatibility on interface
+    // vrrp                    VRRP commands
+    // vrrp-group              Select a VRRP IPv4 group to configure
+    // vrrp-ipv6-group         Select a VRRP IPv6 group to configure
+    // vsn                     Interface VSN config subcommands
+    // SBN-73(conf-if-te-0/0)#do terminal length 0
+    // SBN-73(conf-if-te-0/0)#?
+    // arp                     Set ARP information
+    // dampening               Interface dampening
+    // dcb-policy              Configure DCB policy
+    // dei                     Configure drop eligible indicator
+    // description             Interface description
+    // dot1p-priority          IEEE 802.1p/Q priority level
+    // dot1x                   Configure 802.1x
+    // end                     Exit from configuration mode
+    // ethernet                Ethernet Interface Parameters
+    // exit                    Exit from interface configuration mode
+    // fefd                    Enable FEFD for selected interface
+    // fip-snooping            FIP snooping options
+    container flowcontrol {
+      tailf:info "Enable Flow control";
+      tailf:cli-compact-syntax;
+      tailf:cli-sequence-commands {
+        tailf:cli-reset-siblings;
+      }
+
+      leaf rx {
+        tailf:info "Receive";
+        type enumeration {
+          enum off {
+            tailf:info "Disable (default)";
+          }
+          enum on {
+            tailf:info "Enable";
+          }
+        }
+      }
+
+      leaf tx {
+        tailf:info "Transmit";
+        type enumeration {
+          enum off {
+            tailf:info "Disable (default)";
+          }
+          enum on {
+            tailf:info "Enable";
+          }
+        }
+      }
+    }
+    // gvrp                    Interface GVRP config subcommands
+    // ipv6                    Interface IPV6 config subcommands
+    // iscsi                   Apply auto-configuration for Compellent Device
+    // isis                    IS-IS commands
+    // keepalive               Enable keepalive
+    // mac                     Interface MAC config subcommands
+    // mtu                     Configure interface link MTU
+    // negotiation             Select autonegotiation mode
+    // no                      Negate a command or set its defaults
+    // ntp                     Configure NTP
+    // of-instance             Configure interface in openflow instance
+    // pfc                     Configure PFC
+    // port-channel-protocol   Configure port channel protocol on
+    //                         the selected interface
+    // portmode                Enable hybrid mode on the port
+    // protocol                Configure a protocol
+    // rate                    Configure rate control
+    // rate-interval           Configure interface rate interval
+    // rmon                    Configures RMON ether statistics/history
+    //                         collection.
+    // service-class           Define service class to policy based
+    //                         QoS/Routing mapping
+    // service-policy          Configure QoS service policy
+    // sflow                   sFlow configuration
+    // show                    Show interface configuration information
+    leaf shutdown {
+      tailf:info "Shutdown the selected interface";
+      tailf:cli-boolean-no;
+      type boolean;
+      default "true";
+      tailf:cli-trim-default;
+    }
+    // snmp                    Modify SNMP interface parameters
+    // spanning-tree           Interface Spanning Tree config subcommand
+    // speed                   Interface speed parameter
+    // storm-control           Configure storm-control
+    // switchport              Set the selected interface into switchport mode
+    // vlan-stack              Add vlan-stacking-compatibility on interface
+    // vrrp                    VRRP commands
+    // vrrp-group              Select a VRRP IPv4 group to configure
+    // vrrp-ipv6-group         Select a VRRP IPv6 group to configure
+    // vsn                     Interface VSN config subcommands
+  }
+
+  container interface {
+    tailf:info "Select an interface to configure";
+
+    list fortyGigE {
+      tailf:info "FortyGigabit Ethernet interface";
+      key "id";
+      leaf id {
+        type string {
+        }
+      }
+
+      uses interface-grouping;
+    }
+    list GigabitEthernet {
+      tailf:info "Gigabit Ethernet interface";
+      key "id";
+      leaf id {
+        type string {
+          tailf:info "SLOT/PORT;;Gigabit Ethernet interface number";
+        }
+      }
+
+      uses interface-grouping;
+    }
+    // loopback                Loopback interface
+    list ManagementEthernet {
+      tailf:info "Management Ethernet interface";
+      key "id";
+      leaf id {
+        type string {
+          tailf:info "SLOT/PORT;;Management Ethernet interface number";
+        }
+      }
+      leaf shutdown {
+        tailf:info "Shutdown the selected interface";
+        tailf:cli-boolean-no;
+        type boolean;
+        default "true";
+        tailf:cli-trim-default;
+      }
+      leaf description {
+        tailf:info "Interface description";
+        tailf:cli-full-command;
+        tailf:cli-multi-value;
+        type string {
+          tailf:info "LINE;;Interface description";
+        }
+      }
+      // duplex                  Interface duplex parameter
+      // end                     Exit from configuration mode
+      // exit                    Exit from interface configuration mode
+      container ip {
+        tailf:info "Interface IP config subcommands";
+        // access-group            Specify access control for packets
+        leaf address {
+          tailf:info "Set the IP address of an interface";
+          tailf:cli-show-no;
+          type ipv4-prefix {
+            tailf:info "A.B.C.D/XX;;IP Address";
+          }
+        }
+      }
+      // ipv6                    Interface IPV6 config subcommands
+      // keepalive               Enable keepalive
+      // snmp                    Modify SNMP interface parameters
+      // speed                   Interface speed parameter
+    }
+    // null                    Null interface
+    // port-channel            Port-channel interface
+    // range                   Configure interface range
+
+    list TenGigabitEthernet {
+      tailf:info "TenGigabit Ethernet interface";
+      key "id";
+      leaf id {
+        type string {
+          tailf:info "SLOT/PORT;;TenGigabit Ethernet interface number";
+        }
+      }
+
+      uses interface-grouping;
+    }
+    list Vlan {
+      tailf:info "VLAN interface";
+      key "id";
+      leaf id {
+        type uint16 {
+          tailf:info "<1-4094>;;VLAN interface number";
+          range "1..4094";
+        }
+      }
+      leaf description {
+        tailf:info "Interface description";
+        tailf:cli-full-command;
+        tailf:cli-multi-value;
+
+        type string {
+          tailf:info "LINE;;Interface description";
+        }
+      }
+      container arp {
+        tailf:info "Set ARP information";
+        leaf inspection {
+          tailf:info "Enable Dynamic ARP Inspection";
+          type empty;
+        }
+        leaf timeout {
+          tailf:info "Set ARP cache timeout";
+          type uint32 {
+            tailf:info "<0-35790>;;Minutes (default = 4 hours)";
+            range "0..35790";
+          }
+        }
+      }
+
+      container fip-snooping {
+        tailf:info "FIP snooping options";
+        leaf enable {
+          tailf:info "Enable FIP Snooping on this vlan";
+          type empty;
+        }
+        leaf fc-map {
+          tailf:info "Configure FC MAC Address Prefix for this vlan (default "
+            +"0EFC00)";
+          type string {
+            tailf:info "<0EFC00-0EFCFF>;;FC-MAP range";
+          }
+        }
+      }
+      container icmp6-redirect {
+        tailf:info "Enable ICMP6 Redirect on VLAN";
+        leaf enable {
+          tailf:info "Enable ICMP6 Redirect on VLAN";
+          type empty;
+        }
+      }
+      container ip {
+        tailf:info "Interface IP config subcommands";
+        list access-group {
+          tailf:cli-suppress-mode;
+          tailf:info "Specify access control for packets";
+          tailf:cli-sequence-commands {
+            tailf:cli-reset-siblings;
+          }
+          tailf:cli-compact-syntax;
+          key inout;
+
+          leaf inout {
+            type enumeration {
+              enum in {
+                tailf:info "Inbound packets";
+              }
+              enum out {
+                tailf:info "Outbound packets";
+              }
+            }
+          }
+
+          choice acl-choice {
+            leaf extended-group {
+              tailf:cli-drop-node-name;
+              tailf:cli-prefix-key;
+              type string;
+              tailf:non-strict-leafref {
+                path "/ip/access-list/extended/id";
+              }
+            }
+            leaf standard-group {
+              tailf:cli-drop-node-name;
+              tailf:cli-prefix-key;
+              type string;
+              tailf:non-strict-leafref {
+                path "/ip/access-list/standard/id";
+              }
+            }
+          }
+        }
+        leaf address {
+          tailf:info "Set the IP address of an interface";
+          tailf:cli-show-no;
+          type ipv4-prefix {
+            tailf:info "A.B.C.D/XX;;IP Address";
+          }
+        }
+        leaf directed-broadcast {
+          tailf:info "Enable forwarding of directed broadcast";
+          type empty;
+        }
+        leaf helper-address {
+          tailf:info "Set the DHCP server address";
+          type inet:ipv4-address {
+            tailf:info "A.B.C.D;;IP Helper Address";
+          }
+        }
+        container igmp {
+          tailf:info "IGMP interface commands";
+          leaf access-group {
+            tailf:info "IGMP group access group";
+            type string {
+              tailf:info "WORD;;Extended Access-list name (max 140 chars)";
+            }
+          }
+          leaf group-join-limit {
+            tailf:info "IGMP group join limit";
+            type uint32 {
+              tailf:info "<1-10000>;;Number of IGMP groups that can be joined "
+                +"in a second";
+              range "1..10000";
+            }
+          }
+          leaf immediate-leave {
+            tailf:info "IGMP leave multicast group(s)";
+            type empty;
+          }
+          leaf last-member-query-interval {
+            tailf:info "IGMP last member query interval";
+            type uint16 {
+              tailf:info "<100-65535>;;Last member query interval in "
+                +"milliseconds (default = 1000)";
+              range "100..65535";
+            }
+          }
+          leaf querier-timeout {
+            tailf:info "IGMP previous querier timeout";
+            type uint16 {
+              tailf:info "<60-300>;;Timeout value in seconds (default = 125)";
+              range "60..300";
+            }
+          }
+          leaf query-interval {
+            tailf:info "IGMP host query interval";
+            type uint16 {
+              tailf:info "<1-18000>;;Query interval in seconds (default = 60)";
+              range "1..18000";
+            }
+          }
+          leaf query-max-resp-time {
+            tailf:info "IGMP max query response value";
+            type uint8 {
+              tailf:info "<1-25>;;Query response value in seconds (default = "
+                +"10)";
+              range "1..25";
+            }
+          }
+          container snooping {
+            tailf:info "Enable IGMP snooping";
+            presence true;
+            leaf fast-leave {
+              tailf:info "Enable IGMP fast leave processing";
+              type empty;
+            }
+            leaf last-member-query-interval {
+              tailf:info "Configure last member query interval";
+              type uint16 {
+                tailf:info "<100-65535>;;Last member query interval in "
+                  +"milliseconds (default = 1000)";
+                range "100..65535";
+              }
+            }
+            // mrouter     Configure an L2 port as a multicast router port
+            leaf querier {
+              tailf:info "Enable IGMP querier processing";
+              type empty;
+            }
+          }
+          leaf static-group {
+            tailf:info "IGMP static multicast group";
+            type inet:ipv4-address {
+              tailf:info "A.B.C.D;;IP multicast group address";
+            }
+          }
+          leaf version {
+            tailf:info "IGMP version";
+            type uint8 {
+              tailf:info "<2-3>;;IGMP Version (default = 2)";
+              range "2..3";
+            }
+          }
+        }
+        leaf local-proxy-arp {
+          tailf:info "Enable local proxy arp";
+          type empty;
+        }
+        // ospf                    OSPF interface commands
+        // pim                     PIM interface commands
+        leaf poison-reverse {
+          tailf:info "Enable poison reverse";
+          type empty;
+        }
+        leaf proxy-arp {
+          tailf:info "Enable proxy ARP (default = enabled)";
+          type empty;
+        }
+        // rip                     Router Information Procotol
+        // router                  IP router interface commands
+        leaf split-horizon {
+          tailf:info "Perform split horizon";
+          type empty;
+        }
+        // udp-helper              Configure UDP helper
+        leaf unreachables {
+          tailf:info "Enable IP unreachables";
+          type empty;
+        }
+      }
+      container ipv6 {
+        tailf:info "Interface IPV6 config subcommands";
+        list access-group {
+          tailf:info "Specify access control for packets";
+          tailf:cli-suppress-mode;
+          tailf:cli-compact-syntax;
+          key inout;
+
+          leaf inout {
+            type enumeration {
+              enum in {
+                tailf:info "Inbound packets";
+              }
+              enum out {
+                tailf:info "Outbound packets";
+              }
+            }
+          }
+          leaf group {
+            tailf:cli-drop-node-name;
+            tailf:cli-prefix-key;
+            tailf:non-strict-leafref {
+              path "/ipv6/access-list/id";
+            }
+            type string;
+          }
+        }
+        leaf address {
+          tailf:info "Set the IPV6 address of an interface";
+          type ipv6-prefix {
+            tailf:info "X:X:X:X::X/Prefix;;IPv6 address";
+          }
+        }
+        // nd                      IPv6 interface Neighbor Discover subcommands
+        // ospf                    OSPFv3 interface commands
+        // router                  IPv6 Router interface commands
+      }
+      // isis                    IS-IS commands
+      leaf keepalive {
+        tailf:info "Enable keepalive";
+        type empty;
+      }
+      leaf mtu {
+        tailf:info "Configure interface MTU";
+        type uint16 {
+          tailf:info "<594-12000>;;Interface MTU (default = 1554)";
+          range "594..12000";
+        }
+      }
+      leaf name {
+        tailf:info "Configure vlan name";
+        tailf:cli-multi-value;
+        type string {
+          tailf:info "LINE;;VLAN name";
+        }
+      }
+      // ntp                     Configure NTP
+      // private-vlan            Update private vlan configuration
+      leaf shutdown {
+        tailf:info "Shutdown the selected interface";
+        tailf:cli-boolean-no;
+        type boolean;
+        default "true";
+        tailf:cli-trim-default;
+      }
+      list tagged {
+        tailf:cli-suppress-mode;
+        tailf:cli-delete-when-empty;
+        key id;
+
+        leaf id {
+          type string {
+            tailf:info "Interface";
+          }
+        }
+      }
+
+      list untagged {
+        tailf:cli-suppress-mode;
+        tailf:cli-delete-when-empty;
+        key id;
+
+        leaf id {
+          type string {
+            tailf:info "Interface";
+          }
+        }
+      }
+      // track       Specify VLAN ports to track L3 operational state of VLAN
+
+      // vlan-stack              Add vlan-stacking-compatibility on interface
+      // vrrp                    VRRP commands
+      // vrrp-group              Select a VRRP IPv4 group to configure
+      // vrrp-ipv6-group         Select a VRRP IPv6 group to configure
+    }
+  }
+
+  // aaa                         Authentication, Authorization and Accounting
+  // arp                             Set a static ARP entry
+  // asf-mode                        Enable Cut-Thru Mode
+  // banner                          Define a login banner
+  // bfd                             Configure BFD protocol
+  // bpdu-destination-mac-address    Use Provider Bridge Address for xStp/Gvrp
+  // buffer-profile                  Configure buffer-carving profile
+  container cam-acl {
+    tailf:info "Configure CAM ACL";
+    tailf:cli-compact-syntax;
+    tailf:cli-sequence-commands;
+    leaf l2acl {
+      tailf:info "Set L2-ACL entries";
+      type uint8 {
+        tailf:info "<1-8>;;Number of FP blocks for l2acl";
+        range "1..8";
+      }
+    }
+
+    leaf ipv4acl {
+      tailf:info "Set IPV4-ACL entries";
+      type uint8 {
+        tailf:info "<0-8>;;Number of FP blocks for IPV4";
+        range "0..8";
+      }
+    }
+    leaf ipv6acl {
+      tailf:info "Set IPV6-ACL entries";
+      type uint8 {
+        tailf:info "<0-4>;;Number of FP blocks for IPV6 should be 4";
+        range "0..4";
+      }
+    }
+    leaf ipv4qos {
+      tailf:info "Set IPV4-QOS entries";
+      type uint8 {
+        tailf:info "<0-8>;;Number of FP blocks for IPV4";
+        range "0..8";
+      }
+    }
+    leaf l2qos {
+      tailf:info "Set L2-QOS entries";
+      type uint8 {
+        tailf:info "<1-8>;;Number of FP blocks for l2QoS";
+        range "1..8";
+      }
+    }
+    leaf l2pt {
+      tailf:info "Set L2-Protocol tunneling entries";
+      type uint8 {
+        tailf:info "<0-1>;;Number of FP blocks for L2-Protocol tunneling";
+        range "0..1";
+      }
+    }
+    leaf ipmacacl {
+      tailf:info "Set IP-MAC ACL entries";
+      type uint8 {
+        tailf:info "<0-6>;;Number of FP blocks for IP+MAC ACL";
+        range "0..6";
+      }
+    }
+    choice vman-choice {
+      leaf vman-qos {
+        tailf:info "Number of FP blocks for Vman Qos";
+        type uint8 {
+          tailf:info "<0-6>;;Number of FP blocks for Vman Qos";
+          range "0..6";
+        }
+      }
+      leaf vman-qos-dual-fp {
+        tailf:info "Number of FP blocks for Vman Qos should be 4";
+        type uint8 {
+          tailf:info "<0-6>;;Number of FP blocks for Vman Qos";
+          range "0..6";
+        }
+      }
+    }
+    leaf ecfmacl {
+      tailf:info "Set ECFM ACL entries";
+      type uint8 {
+        tailf:info "<0-5>;;Number of FP blocks for ECFM ACL";
+        range "0..5";
+      }
+    }
+    leaf openflow {
+      tailf:cli-break-sequence-commands;
+      tailf:info "Set OpenFlow ACL entries";
+      type uint8 {
+        tailf:info "<0-8>;;Number of FP blocks for openflow(multiples of 4)";
+        range "0..8";
+      }
+    }
+    leaf fcoeacl {
+      tailf:info "Set FCOE ACL entries";
+      type uint8 {
+        tailf:info "<0-6>;;Number of FP blocks for FCOE ACL";
+        range "0..6";
+      }
+    }
+    leaf iscsioptacl {
+      tailf:info "Set iSCSI optimization ACL entries";
+      type uint8 {
+        tailf:info "<0-2>;;Number of FP blocks for iSCSI optimization ACL";
+        range "0..2";
+      }
+    }
+  }
+  // cam-audit                       Configure CAM auditing parameters
+  // cam-acl-egress                  Configure Egress CAM ACL
+  // cam-acl-vlan                    Configure Vlan CAM ACL
+  // cam-optimization                Optimize Cam utilization
+  list class-map {
+    tailf:info "Configure Class Map for QoS";
+    key name;
+
+    leaf name {
+      type string {
+        tailf:info "WORD;;Class map name (max 32 chars)";
+      }
+    }
+    leaf op {
+      tailf:cli-drop-node-name;
+      tailf:cli-prefix-key;
+      type enumeration {
+        enum match-all {
+          tailf:info "Logical-AND all matching statements under this class map";
+        }
+        enum match-any {
+          tailf:info "Logical-OR all matching statements under this class map";
+        }
+      }
+    }
+
+    container match {
+      tailf:info "Classification criteria";
+      container ip {
+        tailf:info "IP specific values";
+        container access-group {
+          tailf:info "L3 Access List";
+          tailf:cli-compact-syntax;
+          tailf:cli-sequence-commands {
+            tailf:cli-reset-siblings;
+          }
+          leaf name {
+            tailf:cli-drop-node-name;
+            type string {
+              tailf:info "WORD;;Access group name (max 140 chars)";
+            }
+          }
+          leaf set-ip-dscp {
+            tailf:info "Mark input traffic";
+            type uint8 {
+              tailf:info "<0-63>;;Dscp value for marking the traffic";
+              range "0..63";
+            }
+          }
+        }
+        container dscp {
+          tailf:info "Match IP DSCP (DiffServ CodePoints)";
+          tailf:cli-compact-syntax;
+          tailf:cli-sequence-commands {
+            tailf:cli-reset-siblings;
+          }
+          leaf codepoint {
+            tailf:cli-drop-node-name;
+            type uint8 {
+              tailf:info "<0-63>;;Differentiated services codepoint value(s)";
+              range "0..63";
+            }
+          }
+          leaf set-ip-dscp {
+            tailf:info "Mark input traffic";
+            type uint8 {
+              tailf:info "<0-63>;;Dscp value for marking the traffic";
+              range "0..63";
+            }
+          }
+        }
+        container precedence {
+          tailf:info "Match IP precedence";
+          tailf:cli-compact-syntax;
+          tailf:cli-sequence-commands {
+            tailf:cli-reset-siblings;
+          }
+
+          leaf precedence {
+            tailf:cli-drop-node-name;
+            type uint8 {
+              tailf:info "<0-7>;;Precedence value(s)";
+              range "0..7";
+            }
+          }
+          leaf set-ip-dscp {
+            tailf:info "Mark input traffic";
+            type uint8 {
+              tailf:info "<0-63>;;Dscp value for marking the traffic";
+              range "0..63";
+            }
+          }
+        }
+      }
+      container mac {
+        tailf:info "MAC specific value";
+        leaf access-group {
+          tailf:info "L2 Access List";
+          type string {
+            tailf:info "WORD;;Access group name (max 140 chars)";
+          }
+        }
+        leaf dot1p {
+          tailf:info "Match MAC dot1p";
+          type uint8 {
+            tailf:info "<0-7>;;Dot1p value(s)";
+            range "0..7";
+          }
+        }
+        leaf vlan {
+          tailf:info "Match MAC vlan";
+          type uint16 {
+            tailf:info "<1-4094>;;VLAN number";
+            range "1..4094";
+          }
+        }
+      }
+    }
+  }
+  // clock                           Configure time-of-day clock
+  // configuration                   Enables exclusive configuration mode
+  // crypto                          SSH key generation
+  // control-plane-cpuqos            Control plane CPU Qos configuration
+  // dcb                             Data Center Bridging
+  // dcb-input                       Configure DCB input profile
+  // dcb-output                      Configure DCB output profile
+  // dcb-policy                      Configure DCB policy on stacking links
+  // default                         Set a command to its default
+  // default-vlan                    Change flooding on default vlan
+  // define                          Interface range macro definition
+  // dei                             Configure DEI
+  // dot1x                           Configure 802.1x
+  // ecmp-group                      ECMP group configuration
+  // end                             Exit from configuration mode
+  // ethernet                        Ethernet options
+  // exit                            Exit from configuration mode
+  // feature                         Feature enable options
+  // fefd-global                     Enable FEFD globally
+  // fips                            FIPS Configuration
+  // fip-snooping                    FIP snooping options
+  // ftp-server                      FTP configuration subcommands
+  // garp                            Configure GARP parameters
+  // hash-algorithm                  Hash algorithm command
+  // http-server                     Configure the HTTP server
+  // hypervisor                      Configure the hypervisor to perform VSN
+  // iscsi                           Enable iSCSI Optimizations
+  // lacp                            Configure LACP
+  // line                            Configure a terminal line
+  // link-bundle-distribution        Configure link-bundle
+  // load-balance                    Global traffic load-balance configuration
+  // logging                         Modify message logging facilities
+  container mac {
+    tailf:info "Global MAC configuration subcommands";
+    container access-list {
+      tailf:info "Named access-list";
+      list extended {
+        tailf:info "Extended Access List";
+        key "id";
+        leaf id {
+          type string {
+            tailf:info "WORD;;Access-list name (max 140 chars)";
+            length "1..140";
+          }
+        }
+        leaf description {
+          tailf:info "List description";
+          tailf:cli-full-command;
+          tailf:cli-multi-value;
+
+          type string {
+            tailf:info "LINE;;List description";
+          }
+        }
+        list seq {
+          tailf:info "Sequence numbers";
+          tailf:cli-suppress-mode;
+          tailf:cli-remove-before-change;
+          key "id";
+          leaf id {
+            type uint16 {
+              tailf:info "<0-65535>;;Sequence number";
+              range "0..65535";
+            }
+          }
+
+          choice seq-choice {
+            container deny {
+              tailf:info "Specify packets to reject";
+              tailf:cli-compact-syntax;
+              tailf:cli-sequence-commands {
+                tailf:cli-reset-siblings;
+              }
+              container source {
+                tailf:cli-sequence-commands;
+                tailf:cli-flatten-container;
+                tailf:cli-compact-syntax;
+                tailf:cli-drop-node-name;
+                choice source-choice {
+                  case a {
+                    leaf address {
+                      tailf:cli-drop-node-name;
+                      type yang:mac-address {
+                        tailf:info "nn:nn:nn:nn:nn:nn;;48-bit source MAC "
+                          +"address";
+                      }
+                    }
+                  }
+                  case b {
+                    leaf any {
+                      tailf:info "Any source MAC address";
+                      type empty;
+                    }
+                  }
+                  case c {
+                    leaf host {
+                      tailf:info "A single source host";
+                      type yang:mac-address {
+                        tailf:info "nn:nn:nn:nn:nn:nn;;48-bit hardware address";
+                      }
+                    }
+                  }
+                }
+              }
+              container dest {
+                tailf:cli-sequence-commands;
+                tailf:cli-flatten-container;
+                tailf:cli-compact-syntax;
+                tailf:cli-drop-node-name;
+                choice dest-choice {
+                  case a {
+                    leaf address {
+                      tailf:cli-drop-node-name;
+                      type yang:mac-address {
+                        tailf:info "nn:nn:nn:nn:nn:nn;;48-bit destination MAC "
+                          +"address";
+                      }
+                    }
+                  }
+                  case b {
+                    leaf any {
+                      tailf:info "Any source MAC address";
+                      type empty;
+                    }
+                  }
+                  case c {
+                    leaf host {
+                      tailf:info "A single source host";
+                      type inet:ipv6-address {
+                        tailf:info "nn:nn:nn:nn:nn:nn;;48-bit hardware address";
+                      }
+                    }
+                  }
+                }
+              }
+              // count                   Count packets
+              // ev2                     Encapsulation type
+              // llc                     Encapsulation type
+              // order                   QoS order of priority
+              // snap                    Encapsulation type
+            }
+            container permit {
+              tailf:info "Specify packets to accept";
+              tailf:cli-compact-syntax;
+              tailf:cli-sequence-commands {
+                tailf:cli-reset-siblings;
+              }
+              container source {
+                tailf:cli-sequence-commands;
+                tailf:cli-flatten-container;
+                tailf:cli-compact-syntax;
+                tailf:cli-drop-node-name;
+                choice source-choice {
+                  case a {
+                    leaf address {
+                      tailf:cli-drop-node-name;
+                      type yang:mac-address {
+                        tailf:info "nn:nn:nn:nn:nn:nn;;48-bit source MAC "
+                          +"address";
+                      }
+                    }
+                  }
+                  case b {
+                    leaf any {
+                      tailf:info "Any source MAC address";
+                      type empty;
+                    }
+                  }
+                  case c {
+                    leaf host {
+                      tailf:info "A single source host";
+                      type yang:mac-address {
+                        tailf:info "nn:nn:nn:nn:nn:nn;;48-bit hardware address";
+                      }
+                    }
+                  }
+                }
+              }
+              container dest {
+                tailf:cli-sequence-commands;
+                tailf:cli-flatten-container;
+                tailf:cli-compact-syntax;
+                tailf:cli-drop-node-name;
+                choice dest-choice {
+                  case a {
+                    leaf address {
+                      tailf:cli-drop-node-name;
+                      type yang:mac-address {
+                        tailf:info "nn:nn:nn:nn:nn:nn;;48-bit destination MAC "
+                          +"address";
+                      }
+                    }
+                  }
+                  case b {
+                    leaf any {
+                      tailf:info "Any source MAC address";
+                      type empty;
+                    }
+                  }
+                  case c {
+                    leaf host {
+                      tailf:info "A single source host";
+                      type inet:ipv6-address {
+                        tailf:info "nn:nn:nn:nn:nn:nn;;48-bit hardware address";
+                      }
+                    }
+                  }
+                }
+              }
+              // count                   Count packets
+              // ev2                     Encapsulation type
+              // llc                     Encapsulation type
+              // order                   QoS order of priority
+              // snap                    Encapsulation type
+            }
+          }
+        }
+      }
+      list standard {
+        tailf:info "Standard Access List";
+        key "id";
+        leaf id {
+          type string {
+            tailf:info "WORD;;Access-list name (max 140 chars)";
+            length "1..140";
+          }
+        }
+        leaf description {
+          tailf:info "List description";
+          tailf:cli-full-command;
+          tailf:cli-multi-value;
+
+          type string {
+            tailf:info "LINE;;List description";
+          }
+        }
+        list seq {
+          tailf:info "Sequence numbers";
+          tailf:cli-suppress-mode;
+          tailf:cli-remove-before-change;
+          key "id";
+          leaf id {
+            type uint16 {
+              tailf:info "<0-65535>;;Sequence number";
+              range "0..65535";
+            }
+          }
+
+          choice seq-choice {
+            container deny {
+              tailf:info "Specify packets to reject";
+              tailf:cli-compact-syntax;
+              tailf:cli-sequence-commands {
+                tailf:cli-reset-siblings;
+              }
+              container source {
+                tailf:cli-sequence-commands;
+                tailf:cli-flatten-container;
+                tailf:cli-compact-syntax;
+                tailf:cli-drop-node-name;
+                choice source-choice {
+                  case a {
+                    leaf address {
+                      tailf:cli-drop-node-name;
+                      type yang:mac-address {
+                        tailf:info "nn:nn:nn:nn:nn:nn;;48-bit source MAC "
+                          +"address";
+                      }
+                    }
+                  }
+                  case b {
+                    leaf any {
+                      tailf:info "Any source MAC address";
+                      type empty;
+                    }
+                  }
+                  case c {
+                    leaf host {
+                      tailf:info "A single source host";
+                      type yang:mac-address {
+                        tailf:info "nn:nn:nn:nn:nn:nn;;48-bit hardware address";
+                      }
+                    }
+                  }
+                }
+              }
+              container dest {
+                tailf:cli-sequence-commands;
+                tailf:cli-flatten-container;
+                tailf:cli-compact-syntax;
+                tailf:cli-drop-node-name;
+                choice dest-choice {
+                  case a {
+                    leaf address {
+                      tailf:cli-drop-node-name;
+                      type yang:mac-address {
+                        tailf:info "nn:nn:nn:nn:nn:nn;;48-bit destination MAC "
+                          +"address";
+                      }
+                    }
+                  }
+                  case b {
+                    leaf any {
+                      tailf:info "Any source MAC address";
+                      type empty;
+                    }
+                  }
+                  case c {
+                    leaf host {
+                      tailf:info "A single source host";
+                      type inet:ipv6-address {
+                        tailf:info "nn:nn:nn:nn:nn:nn;;48-bit hardware address";
+                      }
+                    }
+                  }
+                }
+              }
+              // count                   Count packets
+              // ev2                     Encapsulation type
+              // llc                     Encapsulation type
+              // order                   QoS order of priority
+              // snap                    Encapsulation type
+            }
+            container permit {
+              tailf:info "Specify packets to accept";
+              tailf:cli-compact-syntax;
+              tailf:cli-sequence-commands {
+                tailf:cli-reset-siblings;
+              }
+              container source {
+                tailf:cli-sequence-commands;
+                tailf:cli-flatten-container;
+                tailf:cli-compact-syntax;
+                tailf:cli-drop-node-name;
+                choice source-choice {
+                  case a {
+                    leaf address {
+                      tailf:cli-drop-node-name;
+                      type yang:mac-address {
+                        tailf:info "nn:nn:nn:nn:nn:nn;;48-bit source MAC "
+                          +"address";
+                      }
+                    }
+                  }
+                  case b {
+                    leaf any {
+                      tailf:info "Any source MAC address";
+                      type empty;
+                    }
+                  }
+                  case c {
+                    leaf host {
+                      tailf:info "A single source host";
+                      type yang:mac-address {
+                        tailf:info "nn:nn:nn:nn:nn:nn;;48-bit hardware address";
+                      }
+                    }
+                  }
+                }
+              }
+              container dest {
+                tailf:cli-sequence-commands;
+                tailf:cli-flatten-container;
+                tailf:cli-compact-syntax;
+                tailf:cli-drop-node-name;
+                choice dest-choice {
+                  case a {
+                    leaf address {
+                      tailf:cli-drop-node-name;
+                      type yang:mac-address {
+                        tailf:info "nn:nn:nn:nn:nn:nn;;48-bit destination MAC "
+                          +"address";
+                      }
+                    }
+                  }
+                  case b {
+                    leaf any {
+                      tailf:info "Any source MAC address";
+                      type empty;
+                    }
+                  }
+                  case c {
+                    leaf host {
+                      tailf:info "A single source host";
+                      type inet:ipv6-address {
+                        tailf:info "nn:nn:nn:nn:nn:nn;;48-bit hardware address";
+                      }
+                    }
+                  }
+                }
+              }
+              // count                   Count packets
+              // ev2                     Encapsulation type
+              // llc                     Encapsulation type
+              // order                   QoS order of priority
+              // snap                    Encapsulation type
+            }
+          }
+        }
+      }
+      // standard                Standard Access List
+    }
+    // control-plane           Control plane configuration
+  }
+  // mac-address-table               Mac Address Table Configuration Subcommands
+  // environment                     Configure Environment related paramenters
+  container monitor {
+    tailf:info "Monitor monitored ports";
+    list session {
+      tailf:info "Monitor session";
+      key "id";
+      leaf id {
+        type uint16 {
+          tailf:info "<0-65535>;;Monitor session ID";
+          range "0..65535";
+        }
+      }
+      leaf description {
+        tailf:info "Configuration description";
+        tailf:cli-full-command;
+        tailf:cli-multi-value;
+        type string {
+          tailf:info "LINE;;Interface description";
+        }
+      }
+      // end                     Exit from configuration mode
+      // exit                    Exit from monitor session mode
+      // mode                    Specifies destination type
+      container source {
+        tailf:info "Monitor source";
+        tailf:cli-compact-syntax;
+        tailf:cli-sequence-commands {
+          tailf:cli-reset-siblings;
+        }
+
+        choice source-interface {
+          leaf FortyGigE {
+            tailf:info "FortyGigabit Ethernet interface";
+            type leafref {
+              path "/interface/fortyGigE/id";
+            }
+          }
+          leaf TenGigabitEthernet {
+            tailf:info "TenGigabit Ethernet interface";
+            type leafref {
+              path "/interface/TenGigabitEthernet/id";
+            }
+          }
+        }
+        container destination {
+          tailf:info "Destination where monitored traffic will be sent to";
+          tailf:cli-flatten-container;
+          choice dest-interface {
+            leaf FortyGigE {
+              tailf:info "FortyGigabit Ethernet interface";
+              type leafref {
+                path "/interface/fortyGigE/id";
+              }
+            }
+            leaf TenGigabitEthernet {
+              tailf:info "TenGigabit Ethernet interface";
+              type leafref {
+                path "/interface/TenGigabitEthernet/id";
+              }
+            }
+          }
+        }
+        leaf direction {
+          tailf:info "Direction of traffic to monitor";
+          type enumeration {
+            enum both {
+              tailf:info "Monitor transmitting and receiving packets";
+            }
+            enum rx {
+              tailf:info "Monitor only receiving packets";
+            }
+            enum tx {
+              tailf:info "Monitor only transmitting packets";
+            }
+          }
+        }
+      }
+    }
+  }
+  container management {
+    tailf:info "Create a management route";
+    list route {
+      tailf:info "Add the route to management port";
+      key "id";
+      leaf id {
+        type union {
+          type ipv4-prefix;
+          type ipv6-prefix;
+        }
+      }
+
+      choice dest-choice {
+        leaf forwarding-router-ip {
+          tailf:cli-drop-node-name;
+          type inet:ip-address {
+            tailf:info "A.B.C.D;;Forwarding router's address";
+          }
+        }
+        leaf managementethernet {
+          tailf:info "Management Ethernet interface";
+          type empty;
+        }
+      }
+    }
+  }
+
+  container ip {
+    tailf:info "Global IP configuration subcommands";
+    container access-list {
+      tailf:info "Named access-list";
+      list extended {
+        tailf:info "Extended Access List";
+        key "id";
+        leaf id {
+          type string {
+            tailf:info "WORD;;Access-list name (max 140 chars)";
+          }
+        }
+        // deny                    Specify packets to reject
+        leaf description {
+          tailf:info "List description";
+          tailf:cli-multi-value;
+          tailf:cli-full-command;
+          type string {
+            tailf:info "LINE;;List description (max 80 chars)";
+            length "1..80";
+          }
+        }
+        // permit                  Specify packets to forward
+        // remark                  Specify access-list entry remark
+        list seq {
+          tailf:info "Sequence numbers";
+          tailf:cli-suppress-mode;
+          tailf:cli-remove-before-change;
+          key "id";
+          leaf id {
+            type uint32 {
+              tailf:info "<0-4294967290>;;Sequence number";
+              range "0..4294967290";
+            }
+          }
+
+          choice seq-choice {
+            container deny {
+              tailf:cli-compact-syntax;
+              tailf:cli-sequence-commands {
+                tailf:cli-reset-siblings;
+              }
+              tailf:info "Specify packets to reject";
+              choice deny-choice {
+                leaf proto-number {
+                  tailf:cli-drop-node-name;
+                  type uint8 {
+                    tailf:info "<0-255>;;An IP protocol number";
+                    range "0..255";
+                  }
+                }
+                leaf icmp {
+                  tailf:info "Internet control message protocol";
+                  type empty;
+                }
+                leaf ip {
+                  tailf:info "Any Internet protocol";
+                  type empty;
+                }
+                leaf tcp {
+                  tailf:info "Transmission control protocol";
+                  type empty;
+                }
+                leaf udp {
+                  tailf:info "User datagram protocol";
+                  type empty;
+                }
+              }
+              container src {
+                tailf:cli-drop-node-name;
+                tailf:cli-compact-syntax;
+                tailf:cli-flatten-container;
+                choice source-choice {
+                  case a {
+                    leaf address {
+                      tailf:cli-drop-node-name;
+                      type inet:ipv4-address {
+                        tailf:info "A.B.C.D;;Source address";
+                      }
+                    }
+                    leaf mask {
+                      tailf:cli-drop-node-name;
+                      type inet:ipv4-address {
+                        tailf:info "Mask;;A.B.C.D or /nn mask in dotted"
+                          +" decimal or in slash format";
+                      }
+                      mandatory true;
+                      when "../address" {
+                        tailf:dependency "../address";
+                      }
+                    }
+                  }
+                  case b {
+                    leaf any {
+                      tailf:info "Any source host";
+                      type empty;
+                    }
+                  }
+                  case c {
+                    leaf host {
+                      tailf:info "A single source host";
+                      type inet:ipv4-address {
+                        tailf:info "A.B.C.D;;Source address";
+                      }
+                    }
+                  }
+                }
+              }
+              container dest {
+                tailf:cli-drop-node-name;
+                tailf:cli-compact-syntax;
+                tailf:cli-flatten-container;
+                choice dest-choice {
+                  case a {
+                    leaf address {
+                      tailf:cli-drop-node-name;
+                      type inet:ipv4-address {
+                        tailf:info "A.B.C.D;;Destination address";
+                      }
+                    }
+                    leaf mask {
+                      tailf:cli-drop-node-name;
+                      type inet:ipv4-address {
+                        tailf:info "Mask;;A.B.C.D or /nn mask in dotted "
+                          +"decimal or in slash format";
+                      }
+                      mandatory true;
+                      when "../address" {
+                        tailf:dependency "../address";
+                      }
+                    }
+                  }
+                  case b {
+                    leaf any {
+                      tailf:info "Any destination host";
+                      type empty;
+                    }
+                  }
+                  case c {
+                    leaf host {
+                      tailf:info "A single destination host";
+                      type inet:ipv4-address {
+                        tailf:info "A.B.C.D;;Source address";
+                      }
+                    }
+                  }
+                }
+              }
+              leaf dscp {
+                tailf:cli-optional-in-sequence;
+                tailf:info "Match IP DSCP (DiffServ CodePoints)";
+                type uint8 {
+                  tailf:info "<0-63>;;Differentiated services codepoint value";
+                  range "0..63";
+                }
+              }
+              leaf fragments {
+                tailf:cli-optional-in-sequence;
+                tailf:info "Non-initial fragments of a datagram";
+                type empty;
+              }
+              leaf count {
+                tailf:cli-optional-in-sequence;
+                tailf:info "Count packets";
+                type empty;
+              }
+              leaf bytes {
+                tailf:cli-optional-in-sequence;
+                tailf:info "Count bytes";
+                when "../count" {
+                  tailf:dependency "../count";
+                }
+                type empty;
+              }
+              leaf order {
+                tailf:info "QoS order of priority";
+                type uint8 {
+                  tailf:info "<0-254>;;Specify the QoS order of priority "
+                    +"for the ACL entry";
+                  range "0..254";
+                }
+              }
+            }
+            container permit {
+              tailf:info "Specify packets to accept";
+              tailf:cli-compact-syntax;
+              tailf:cli-sequence-commands {
+                tailf:cli-reset-siblings;
+              }
+              choice deny-choice {
+                leaf proto-number {
+                  tailf:cli-drop-node-name;
+                  type uint8 {
+                    tailf:info "<0-255>;;An IP protocol number";
+                    range "0..255";
+                  }
+                }
+                leaf icmp {
+                  tailf:info "Internet control message protocol";
+                  type empty;
+                }
+                leaf ip {
+                  tailf:info "Any Internet protocol";
+                  type empty;
+                }
+                leaf tcp {
+                  tailf:info "Transmission control protocol";
+                  type empty;
+                }
+                leaf udp {
+                  tailf:info "User datagram protocol";
+                  type empty;
+                }
+              }
+              container src {
+                tailf:cli-drop-node-name;
+                tailf:cli-compact-syntax;
+                tailf:cli-flatten-container;
+                choice source-choice {
+                  case a {
+                    leaf address {
+                      tailf:cli-drop-node-name;
+                      type inet:ipv4-address {
+                        tailf:info "A.B.C.D;;Source address";
+                      }
+                    }
+                    leaf mask {
+                      tailf:cli-drop-node-name;
+                      type inet:ipv4-address {
+                        tailf:info "Mask;;A.B.C.D or /nn mask in dotted "
+                          +"decimal or in slash format";
+                      }
+                      mandatory true;
+                      when "../address" {
+                        tailf:dependency "../address";
+                      }
+                    }
+                  }
+                  case b {
+                    leaf any {
+                      tailf:info "Any source host";
+                      type empty;
+                    }
+                  }
+                  case c {
+                    leaf host {
+                      tailf:info "A single source host";
+                      type inet:ipv4-address {
+                        tailf:info "A.B.C.D;;Source address";
+                      }
+                    }
+                  }
+                }
+              }
+              container dest {
+                tailf:cli-drop-node-name;
+                tailf:cli-compact-syntax;
+                tailf:cli-flatten-container;
+                choice dest-choice {
+                  case a {
+                    leaf address {
+                      tailf:cli-drop-node-name;
+                      type inet:ipv4-address {
+                        tailf:info "A.B.C.D;;Destination address";
+                      }
+                    }
+                    leaf mask {
+                      tailf:cli-drop-node-name;
+                      type inet:ipv4-address {
+                        tailf:info "Mask;;A.B.C.D or /nn mask in dotted "
+                          +"decimal or in slash format";
+                      }
+                      mandatory true;
+                      when "../address" {
+                        tailf:dependency "../address";
+                      }
+                    }
+                  }
+                  case b {
+                    leaf any {
+                      tailf:info "Any destination host";
+                      type empty;
+                    }
+                  }
+                  case c {
+                    leaf host {
+                      tailf:info "A single destination host";
+                      type inet:ipv4-address {
+                        tailf:info "A.B.C.D;;Source address";
+                      }
+                    }
+                  }
+                }
+              }
+              leaf dscp {
+                tailf:cli-optional-in-sequence;
+                tailf:info "Match IP DSCP (DiffServ CodePoints)";
+                type uint8 {
+                  tailf:info "<0-63>;;Differentiated services codepoint value";
+                  range "0..63";
+                }
+              }
+              leaf fragments {
+                tailf:cli-optional-in-sequence;
+                tailf:info "Non-initial fragments of a datagram";
+                type empty;
+              }
+              leaf count {
+                tailf:cli-optional-in-sequence;
+                tailf:info "Count packets";
+                type empty;
+              }
+              leaf bytes {
+                tailf:cli-optional-in-sequence;
+                tailf:info "Count bytes";
+                when "../count" {
+                  tailf:dependency "../count";
+                }
+                type empty;
+              }
+              leaf order {
+                tailf:info "QoS order of priority";
+                type uint8 {
+                  tailf:info "<0-254>;;Specify the QoS order of priority "
+                    +"for the ACL entry";
+                  range "0..254";
+                }
+              }
+            }
+          }
+        }
+        // show                    Show Extended ACL configuration
+      }
+      list standard {
+        tailf:info "Standard Access List";
+        key "id";
+        leaf id {
+          type string {
+            tailf:info "WORD;;Access-list name (max 140 chars)";
+          }
+        }
+        // deny                    Specify packets to reject
+        leaf description {
+          tailf:info "List description";
+          tailf:cli-multi-value;
+          tailf:cli-full-command;
+          type string {
+            tailf:info "LINE;;List description (max 80 chars)";
+            length "1..80";
+          }
+        }
+        // permit                  Specify packets to forward
+        // remark                  Specify access-list entry remark
+        list seq {
+          tailf:cli-suppress-mode;
+          tailf:info "Sequence numbers";
+          tailf:cli-remove-before-change;
+          key "id";
+          leaf id {
+            type uint32 {
+              tailf:info "<0-4294967290>;;Sequence number";
+              range "0..4294967290";
+            }
+          }
+          choice seq-choice {
+            container deny {
+              tailf:info "Specify packets to reject";
+              tailf:cli-compact-syntax;
+              tailf:cli-sequence-commands {
+                tailf:cli-reset-siblings;
+              }
+              container source {
+                tailf:cli-flatten-container;
+                tailf:cli-compact-syntax;
+                choice source-choice {
+                  case a {
+                    leaf address {
+                      type inet:ipv4-address {
+                        tailf:info "A.B.C.D;;Address to match";
+                      }
+                    }
+                    leaf mask {
+                      type inet:ipv4-address {
+                        tailf:info "Mask;;A.B.C.D or /nn mask in dotted "
+                          +"decimal or in slash format";
+                      }
+                      mandatory true;
+                      when "../address" {
+                        tailf:dependency "../address";
+                      }
+                    }
+                  }
+                  case b {
+                    leaf any {
+                      tailf:info "Any source host";
+                      type empty;
+                    }
+                  }
+                  case c {
+                    leaf host {
+                      tailf:info "A single source host";
+                      type inet:ipv4-address {
+                        tailf:info "A.B.C.D;;Host address";
+                      }
+                    }
+                  }
+                }
+              }
+              leaf dscp {
+                tailf:cli-optional-in-sequence;
+                tailf:info "Match IP DSCP (DiffServ CodePoints)";
+                type uint8 {
+                  tailf:info "<0-63>;;Differentiated services codepoint value";
+                  range "0..63";
+                }
+              }
+              leaf fragments {
+                tailf:cli-optional-in-sequence;
+                tailf:info "Non-initial fragments of a datagram";
+                type empty;
+              }
+              leaf count {
+                tailf:cli-optional-in-sequence;
+                tailf:info "Count packets";
+                type empty;
+              }
+              leaf bytes {
+                tailf:cli-optional-in-sequence;
+                tailf:info "Count bytes";
+                when "../count" {
+                  tailf:dependency "../count";
+                }
+                type empty;
+              }
+              leaf order {
+                tailf:info "QoS order of priority";
+                type uint8 {
+                  tailf:info "<0-254>;;Specify the QoS order of priority "
+                    +"for the ACL entry";
+                  range "0..254";
+                }
+              }
+            }
+            container permit {
+              tailf:info "Specify packets to forward";
+              tailf:cli-compact-syntax;
+              tailf:cli-sequence-commands {
+                tailf:cli-reset-siblings;
+              }
+              container source {
+                tailf:cli-flatten-container;
+                tailf:cli-drop-node-name;
+                tailf:cli-compact-syntax;
+                tailf:cli-sequence-commands;
+                choice source-choice {
+                  case a {
+                    leaf address {
+                      tailf:cli-drop-node-name;
+                      type ipv4-prefix {
+                        tailf:info "A.B.C.D/Prefix;;Address to match";
+                      }
+                    }
+                  }
+                  case b {
+                    leaf any {
+                      tailf:info "Any source host";
+                      type empty;
+                    }
+                  }
+                  case c {
+                    leaf host {
+                      tailf:info "A single source host";
+                      type inet:ipv4-address {
+                        tailf:info "A.B.C.D;;Host address";
+                      }
+                    }
+                  }
+                }
+              }
+              leaf dscp {
+                tailf:cli-optional-in-sequence;
+                tailf:info "Match IP DSCP (DiffServ CodePoints)";
+                type uint8 {
+                  tailf:info "<0-63>;;Differentiated services codepoint value";
+                  range "0..63";
+                }
+              }
+              leaf fragments {
+                tailf:cli-optional-in-sequence;
+                tailf:info "Non-initial fragments of a datagram";
+                type empty;
+              }
+              leaf count {
+                tailf:cli-optional-in-sequence;
+                tailf:info "Count packets";
+                type empty;
+              }
+              leaf bytes {
+                tailf:cli-optional-in-sequence;
+                tailf:info "Count bytes";
+                when "../count" {
+                  tailf:dependency "../count";
+                }
+                type empty;
+              }
+              leaf order {
+                tailf:info "QoS order of priority";
+                type uint8 {
+                  tailf:info "<0-254>;;Specify the QoS order of priority "
+                    +"for the ACL entry";
+                  range "0..254";
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    // as-path                         BGP autonomous system path filter
+    // community-list                  Add a community list entry
+    // control-plane                   Control plane configuration
+    // dhcp                            DHCP configuration commands
+    // domain-list              Domain name to complete unqualified host name
+    // domain-lookup          Enable IP Domain Name System hostname translation
+    // domain-name                     Define the default domain name
+    // ecmp-group                      ECMP Group Configuration
+    // extcommunity-list               Add a Extended community list entry
+    // ftp                             FTP configuration commands
+    // helper-address                  DHCP relay agent configuration
+    // host                            Add an entry to the ip hostname table
+    // igmp                            Internet Group Management Protocol
+    // max-frag-count         Max. fragmented packets allowed in IP re-assembly
+    // mroute                          Multicast routes and counters
+    // msdp                            Multicast source discovery protocol
+    // multicast-limit                 Max entries in Multicast TIB
+    // multicast-msdp                  Enable IP multicast MSDP protocol
+    // multicast-routing               Enable IP multicast forwarding
+    // name-server                     Specify addess of name server to use
+    // pim                             Protocol Independent Multicast
+    // prefix-list                     Build a prefix list
+    // radius                          Interface configuration for RADIUS
+    // route                           Establish static routes
+    // scp                             SCP configuration commands
+    // source-route        Process packets with source routing header options
+    container ssh {
+      tailf:info "SSH configuration commands";
+      leaf authentication-retries {
+        tailf:info "Number of attempts to negotiate a connection "
+          +"with the remote host";
+        type uint8 {
+          tailf:info "<1-10>;;Max. authentication retries (default 3)";
+          range "1..10";
+        }
+      }
+      leaf connection-rate-limit {
+        tailf:info "Maximum SSH connections per minute";
+        type uint8 {
+          tailf:info "<1-10>;;Max. SSH connections per minute (default 10)";
+          range "1..10";
+        }
+      }
+      container hostbased-authentication {
+        tailf:info "Enable hostbased-authentication";
+        leaf enable {
+          tailf:info "Enable hostbased authentication";
+          type empty;
+        }
+      }
+      leaf key-size {
+        tailf:info "Size of server generated rsa v1 key";
+        type uint16 {
+          tailf:info "<512-869>;;Server generated key size (default 768)";
+          range "512..869";
+        }
+      }
+      container password-authentication {
+        tailf:info "Enable password authentication";
+        leaf enable {
+          tailf:info "Enable password authentication";
+          type empty;
+        }
+      }
+      leaf pub-key-file {
+        tailf:info "Public keys of trusted hosts from a file";
+        type string {
+          tailf:info "WORD;;File name for hostbased authentication";
+        }
+      }
+      leaf rhostsfile {
+        tailf:info "Trusted hosts and users for rhost authentication";
+        type string {
+          tailf:info "WORD;;File name for rhost authentication";
+        }
+      }
+      leaf rsa-authentication {
+        tailf:info "Enable RSA-authentication";
+        type enumeration {
+          enum enable {
+            tailf:info "Enable RSA authentication";
+          }
+        }
+      }
+      container server {
+        leaf enable {
+          tailf:info "Start the SSH server";
+          type empty;
+        }
+        leaf port {
+          tailf:info "Listening port of SSH server";
+          type uint16 {
+            tailf:info "<1-65535>;;Listening port for SSHDaemon (default 22)";
+            range "1..65535";
+          }
+        }
+        leaf version {
+          tailf:info "SSH protocol version";
+          type uint8 {
+            tailf:info "<1-2>;;SSH version";
+            range "1..2";
+          }
+        }
+      }
+    }
+    // tacacs                          Interface configuration for TACACS+
+    // telnet                          Specify telnet options
+    // tftp                            TFTP configuration commands
+  }
+  container ipv6 {
+    tailf:info "Global IPv6 configuration subcommands";
+    list access-list {
+      tailf:info "Named access-list";
+      key "id";
+      leaf id {
+        type string {
+          tailf:info "WORD;;Access-list name (max 140 chars)";
+        }
+      }
+      leaf cpu-qos {
+        tailf:cli-hide-in-submode;
+        tailf:info "Control-plane qos";
+        type empty;
+      }
+
+      leaf description {
+        tailf:info "List description";
+        tailf:cli-multi-value;
+        tailf:cli-full-command;
+        type string {
+          tailf:info "LINE;;List description (max 80 chars)";
+          length "1..80";
+        }
+      }
+      list seq {
+        tailf:info "Sequence numbers";
+        tailf:cli-suppress-mode;
+        tailf:cli-remove-before-change;
+        key "id";
+        leaf id {
+          type uint32 {
+            tailf:info "<0-4294967290>;;Sequence number";
+            range "0..4294967290";
+          }
+        }
+
+        choice seq-choice {
+          container deny {
+            tailf:info "Specify packets to reject";
+            tailf:cli-compact-syntax;
+            tailf:cli-sequence-commands {
+              tailf:cli-reset-siblings;
+            }
+            choice proto-choice {
+              leaf proto-number {
+                tailf:cli-drop-node-name;
+                type uint8 {
+                  tailf:info "<0-255>;;An IPv6 protocol number";
+                  range "0..255";
+                }
+              }
+              leaf icmp {
+                tailf:info "Internet control message protocol version 6";
+                type empty;
+              }
+              leaf ipv6 {
+                tailf:info "Any Internet protocol version 6";
+                type empty;
+              }
+              leaf tcp {
+                tailf:info "Transmission control protocol";
+                type empty;
+              }
+              leaf udp {
+                tailf:info "User datagram protocol";
+                type empty;
+              }
+            }
+            container source {
+              tailf:cli-sequence-commands;
+              tailf:cli-flatten-container;
+              tailf:cli-compact-syntax;
+              tailf:cli-drop-node-name;
+              choice source-choice {
+                case a {
+                  leaf address {
+                    tailf:cli-drop-node-name;
+                    type ipv6-prefix {
+                      tailf:info "X:X:X:X::X/Mask;;Source address";
+                    }
+                  }
+                }
+                case b {
+                  leaf any {
+                    tailf:info "Any source host";
+                    type empty;
+                  }
+                }
+                case c {
+                  leaf host {
+                    tailf:info "A single source host";
+                    type inet:ipv6-address {
+                      tailf:info "X:X:X:X::X;;Source address";
+                    }
+                  }
+                }
+              }
+            }
+            container dest {
+              tailf:cli-sequence-commands;
+              tailf:cli-flatten-container;
+              tailf:cli-compact-syntax;
+              tailf:cli-drop-node-name;
+              choice dest-choice {
+                case a {
+                  leaf address {
+                    tailf:cli-drop-node-name;
+                    type ipv6-prefix {
+                      tailf:info "X:X:X:X::X/Mask;;Destination address";
+                    }
+                  }
+                }
+                case b {
+                  leaf any {
+                    tailf:info "Any source host";
+                    type empty;
+                  }
+                }
+                case c {
+                  leaf host {
+                    tailf:info "A single source host";
+                    type inet:ipv6-address {
+                      tailf:info "X:X:X:X::X;;Destination address";
+                    }
+                  }
+                }
+              }
+            }
+            leaf count {
+              tailf:info "Count packets";
+              type empty;
+            }
+            leaf bytes {
+              tailf:info "Count bytes";
+              when "../count" {
+                tailf:dependency "../count";
+              }
+              type empty;
+            }
+          }
+          container permit {
+            tailf:info "Specify packets to accept";
+            tailf:cli-compact-syntax;
+            tailf:cli-sequence-commands {
+              tailf:cli-reset-siblings;
+            }
+
+            choice proto-choice {
+              leaf proto-number {
+                tailf:cli-drop-node-name;
+                type uint8 {
+                  tailf:info "<0-255>;;An IPv6 protocol number";
+                  range "0..255";
+                }
+              }
+              leaf icmp {
+                tailf:info "Internet control message protocol version 6";
+                type empty;
+              }
+              leaf ipv6 {
+                tailf:info "Any Internet protocol version 6";
+                type empty;
+              }
+              leaf tcp {
+                tailf:info "Transmission control protocol";
+                type empty;
+              }
+              leaf udp {
+                tailf:info "User datagram protocol";
+                type empty;
+              }
+            }
+            container source {
+              tailf:cli-sequence-commands;
+              tailf:cli-flatten-container;
+              tailf:cli-compact-syntax;
+              choice source-choice {
+                case a {
+                  leaf address {
+                    tailf:cli-drop-node-name;
+                    type ipv6-prefix {
+                      tailf:info "X:X:X:X::X/Mask;;Source address";
+                    }
+                  }
+                }
+                case b {
+                  leaf any {
+                    tailf:info "Any source host";
+                    type empty;
+                  }
+                }
+                case c {
+                  leaf host {
+                    tailf:info "A single source host";
+                    type inet:ipv6-address {
+                      tailf:info "X:X:X:X::X;;Source address";
+                    }
+                  }
+                }
+              }
+            }
+            container dest {
+              tailf:cli-sequence-commands;
+              tailf:cli-flatten-container;
+              tailf:cli-compact-syntax;
+              choice dest-choice {
+                case a {
+                  leaf address {
+                    tailf:cli-drop-node-name;
+                    type ipv6-prefix {
+                      tailf:info "X:X:X:X::X/Mask;;Destination address";
+                    }
+                  }
+                }
+                case b {
+                  leaf any {
+                    tailf:info "Any source host";
+                    type empty;
+                  }
+                }
+                case c {
+                  leaf host {
+                    tailf:info "A single source host";
+                    type inet:ipv6-address {
+                      tailf:info "X:X:X:X::X;;Destination address";
+                    }
+                  }
+                }
+              }
+            }
+            leaf count {
+              tailf:info "Count packets";
+              type empty;
+            }
+            leaf bytes {
+              tailf:info "Count bytes";
+              when "../count" {
+                tailf:dependency "../count";
+              }
+              type empty;
+            }
+          }
+        }
+      }
+    }
+    // control-plane           Control plane configuration
+    // flowlabel-zero          Set Flow Label value to zero in IPv6 header
+    // host                    Add an entry to the ipv6 hostname table
+    // name-server             Specify IPv6 addess of name server to use
+    // neighbor                Add an IPV6 static neighbor
+    // prefix-list             Build a prefix list
+    // route                   Establish static routes
+    // router                  Enable an IPv6 routing process
+    // unicast-routing         Enable IPv6 unicast routing
+  }
+
+  container ntp {
+    tailf:info "Configure NTP";
+    // authenticate            Authenticate time sources
+    // authentication-key      Authentication key for trusted time sources
+    list server {
+      tailf:info "Configure NTP server";
+      tailf:cli-suppress-mode;
+      tailf:cli-compact-syntax;
+      tailf:cli-reset-container;
+      key "id";
+      leaf id {
+        type string {
+          tailf:info "WORD;;NTP server address or name";
+        }
+      }
+      leaf key {
+        tailf:info "Configure peer authentication key";
+        type uint32 {
+          tailf:info "<1-4294967295>;;Peer key number";
+          range "1..4294967295";
+        }
+      }
+      leaf prefer {
+        tailf:info "Prefer this peer when possible";
+        type empty;
+      }
+      leaf version {
+        tailf:info "Configure NTP version";
+        type uint8 {
+          tailf:info "<1-4>;;NTP version number";
+          range "1..4";
+        }
+      }
+    }
+    // source                  Configure interface for source address
+    // trusted-key             Key numbers for trusted time sources
+    // update-calendar         Periodically update calendar with NTP time
+  }
+  // openflow                        Configure OpenFlow instance
+  // password-attributes             Configure password attributes
+  list policy-map-input {
+    tailf:info "Configure input QoS policy map";
+    key "id";
+    leaf id {
+      type string {
+        tailf:info "WORD;;Input policy map name (max 32 chars)";
+        length "1..32";
+      }
+    }
+    leaf description {
+      tailf:info "Configuration description";
+      tailf:cli-multi-value;
+      type string {
+        tailf:info "LINE;;Description text";
+      }
+    }
+    list service-queue {
+      tailf:info "Specify a service queue number";
+      tailf:cli-suppress-mode;
+      tailf:cli-compact-syntax;
+      key "id";
+      leaf id {
+        type uint8 {
+          tailf:info "<0-255>;;Queue id";
+          range "0..255";
+        }
+      }
+
+      leaf class-map {
+        tailf:info "Class map keyword";
+        type string {
+          tailf:info "WORD;;Class map name (max 32 chars)";
+        }
+      }
+      leaf qos-policy {
+        tailf:info "QoS policy keyword";
+        type string {
+          tailf:info "WORD;;QoS policy name (max 32 chars)";
+        }
+      }
+    }
+    container trust {
+      tailf:info "Specify dynamic classification to trust [dscp/dot1p]";
+      container diffserv {
+        tailf:info "DSCP";
+        tailf:cli-reset-container;
+        presence true;
+        leaf fallback {
+          tailf:info "Fall back to trust diffserv";
+          type empty;
+        }
+      }
+      container dot1p {
+        tailf:info "Dot1p";
+        tailf:cli-reset-container;
+        presence true;
+        leaf fallback {
+          tailf:info "Fall back to trust dot1p";
+          type empty;
+        }
+      }
+    }
+  }
+  list policy-map-output {
+    tailf:info "Configure output QoS policy map";
+    key "id";
+    leaf id {
+      type string {
+        tailf:info "WORD;;Output policy map name (max 32 chars)";
+        length "1..32";
+      }
+    }
+
+    leaf description {
+      tailf:info "Configuration description";
+      tailf:cli-multi-value;
+      type string {
+        tailf:info "LINE;;Description text";
+      }
+    }
+    leaf policy-aggregate {
+      tailf:info "Specify an aggregate QoS policy";
+      type string {
+        tailf:info "WORD;;QoS policy name (max 32 chars)";
+        length "1..32";
+      }
+    }
+    list service-queue {
+      tailf:info "Specify a service queue number";
+      key "id";
+      leaf id {
+        type uint8 {
+          tailf:info "<0-255>;;Queue id";
+          range "0..255";
+        }
+      }
+      leaf qos-policy {
+        tailf:info "QoS policy keyword";
+        type string {
+          tailf:info "WORD;;QoS policy name (max 32 chars)";
+          length "1..32";
+        }
+      }
+    }
+  }
+  // port-channel                    Configure port-channel group parameters
+  // priority-group                  Configure priority group for ETS
+  // privilege                       Command privilege parameters
+  container protocol {
+    tailf:info "Select a protocol to configure";
+    leaf frrp {
+      tailf:info "FRRP configuration";
+      type uint8 {
+        tailf:info "<1-255>;;Ring ID";
+        range "1..255";
+      }
+    }
+    leaf gvrp {
+      tailf:info "GVRP configuration";
+      type empty;
+    }
+    leaf lldp {
+      tailf:info "Link Layer Discovery Protocol";
+      type empty;
+    }
+  }
+  // protocol-tunnel                 Configure protocol tunneling
+  // qos-policy-input                Configure input QoS policy
+  // qos-policy-output               Configure output QoS policy
+  // qos-rate-adjust      Configure the number of bytes added to each frame
+  //                      for rate policing/shaping
+  // radius-server                   Set up RADIUS server
+  leaf reload-type {
+    tailf:info "Configure the reload type";
+    type enumeration {
+      enum bmp {
+        tailf:info "Reload with the default BMP config";
+      }
+      enum normal-reload {
+        tailf:info "Reload with the normal reload";
+      }
+    }
+  }
+  // rmon                            Configure RMON alarm/event tables
+  // route-map            Create route-map or enter route-map command mode
+  // router                          Enable a routing process
+  // script                          Start or stop a script
+  // service                         Service selected component
+  // service-class      Define service class to policy based QoS/Routing mapping
+  // sflow                           sFlow configuration
+  // snmp                            Modify SNMP parameters
+  // snmp-server                     Modify SNMP parameters
+  // storm-control                   Configure storm-control
+  // strict-priority            Configure a Queue as a strict priority queue
+  // tacacs-server                   Set up TACACS+ server
+  // uplink-state-group          Uplink state group creation and configurations
+  // util-threshold                  Cpu or memory utilization configurations
+  // virtual-ip                      Virtual IP address
+  // vlan-stack                      Vlan-stack command
+  // vlt                             Enable Virtual Link Trunk
+
+  leaf wred-profile {
+    tailf:info "Create a WRED profile";
+    type string {
+      tailf:info "WORD;;Wred-profile name (max 32 chars)";
+      length "1..32";
+    }
+  }
+
+  container line {
+    tailf:info "Configure a terminal line";
+
+    leaf console {
+      tailf:info "Primary terminal line";
+      type uint8 {
+        tailf:info "<0-0>;;First line number";
+        range "0";
+      }
+    }
+    list vty {
+      tailf:info "Virtual terminal";
+      tailf:cli-suppress-mode;
+      tailf:cli-compact-syntax;
+      key "id";
+      leaf id {
+        type uint8 {
+          tailf:info "<0-9>;;First line number";
+          range "0..9";
+        }
+      }
+
+      leaf second {
+        tailf:cli-drop-node-name;
+        tailf:cli-hide-in-submode;
+        type uint8 {
+          tailf:info "<0-9>;;Second line number";
+          range "0..9";
+        }
+      }
+
+      // access-class           Filter connections based on an IP access list
+      // accounting             Accounting parameters
+      // authorization          Authorization parameters
+      // enable                 Enable privileged level password authentication
+      // exec-banner            Enable the display of the EXEC banner
+      // exec-timeout           Set the EXEC timeout
+      // exit                   Exit from line configuration mode
+      // logging                Modify message logging facilities
+      // login                  Enable password checking
+      // motd-banner            Enable the display of the MOTD banner
+      // no                     Negate a command or set its defaults
+      // password               Set a password
+      // privilege              Change privilege level for line
+      // show                   Show line configuration
+      // timeout                Timeouts for the line
+
+    }
+
+  }
+
+
+}

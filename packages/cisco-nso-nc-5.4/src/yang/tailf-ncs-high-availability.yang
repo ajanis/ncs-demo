@@ -1,0 +1,273 @@
+submodule tailf-ncs-high-availability {
+  yang-version 1.1;
+  belongs-to tailf-ncs {
+    prefix ncs;
+  }
+  import ietf-inet-types {
+    prefix inet;
+  }
+
+  import tailf-common {
+    prefix tailf;
+  }
+
+  description
+    "This submodule contains a collection of YANG definitions for
+     defining and managing NCS High Availability setups.
+
+     Copyright 2020 Cisco Systems, Inc.
+     All rights reserved.
+     Permission is hereby granted to redistribute this file without
+     modification.";
+
+  revision 2020-06-25 {
+    description
+      "Released as part of NCS-5.4.
+
+       Initial revision";
+  }
+  typedef ha-role {
+    type enumeration {
+      enum none {
+        tailf:code-name ha-none;
+      }
+      enum slave;
+      enum master;
+    }
+  }
+  container high-availability{
+    description "Configuration, status and actions concerning NSO Built-in HA";
+     leaf token {
+       type tailf:aes-256-cfb-128-encrypted-string;
+    }
+    leaf enabled {
+      description "Enabling of NSO Built-in HA";
+      config false;
+      type boolean;
+      default false;
+      tailf:cdb-oper {
+        tailf:persistent true;
+      }
+    }
+    container status {
+      description "Status of NSO HA";
+      when "../enabled = 'true'";
+      config false;
+      leaf mode {
+        description "Current active HA role";
+        type ncs:ha-role;
+        tailf:callpoint ncs {
+          tailf:internal;
+        }
+      }
+      leaf current-id {
+        description "Currently active HA ID";
+        when "../mode = 'master' or ../mode = 'slave'";
+        type string;
+        tailf:callpoint ncs {
+          tailf:internal;
+        }
+      }
+      leaf assigned-role {
+        description "Role assigned by action, failover or startup";
+        type ncs:ha-role;
+        tailf:callpoint ncs {
+          tailf:internal;
+        }
+      }
+      leaf be-slave-result {
+        description "Result of latest attempt to connect to as slave";
+        type string;
+        tailf:callpoint ncs {
+          tailf:internal;
+        }
+      }
+      leaf master-id {
+        description "Id of assigned master node";
+        type string;
+        tailf:callpoint ncs {
+          tailf:internal;
+        }
+      }
+      list connected-slave {
+        description "HA Ids of slaves currently connected to this node";
+        tailf:callpoint ncs {
+          tailf:internal;
+        }
+        key id;
+        leaf id {
+          description "HA Id of connected slave node";
+          type string;
+        }
+        leaf address {
+          description "IP Address of connected slave node";
+          type inet:ip-address;
+         }
+      }
+    }
+
+    list ha-node {
+      key id;
+      unique "address";
+      leaf id {
+        mandatory true;
+        type string;
+      }
+      leaf address {
+        description "Ip Address of the ncs instance";
+        type inet:ip-address;
+        mandatory true;
+      }
+      leaf nominal-role {
+        description "Default HA-role of node";
+        type ncs:ha-role;
+        must "current() != 'master' or
+          not(../../ha-node[id != current()/../id][nominal-role = 'master'])" {
+          error-message "At most one node can be configured as master";
+        }
+      }
+      leaf failover-master {
+        when "../nominal-role = 'slave'
+              and ../../settings/enable-failover ='true'";
+        must "current() = 'false' or
+         not(../../ha-node[id != current()/../id][failover-master = 'true'])" {
+          error-message "At most one node can serve as a failover master";
+        }
+        type boolean;
+        default false;
+      }
+    }
+    container settings{
+      leaf enable-failover {
+        description "Activates failover for nodes with nominal-role master
+                     or nominal role slave + failover master set";
+        type boolean;
+        default false;
+      }
+      leaf reconnect-slaves {
+        description "If set, nodes assigned as slave will attempt to
+                     reconnect to the HA Setup after loss of connection to
+                     master";
+        type boolean;
+        default false;
+      }
+      container start-up {
+        leaf assume-nominal-role {
+        description "Controls if a node should attempt to assume its nominal
+                     role on start-up of NSO or enabling of built-in HA.
+                     Interacts with join-ha and nominal-role as follows:
+                     nominal-role master, join-ha false - assume master role.
+                     nominal-role master, join-ha true - attempt once to query
+                     configured HA nodes for available master, if none found
+                     assume master role.
+                     nominal-role slave, join-ha false - attempt once to connect
+                     as slave to ha-node with nominal-role master.
+                     nominal-role slave, join-ha true - query configured ha
+                     nodes for available master and attempt to join. Retry
+                     according to configured interval.";
+        type boolean;
+        default false;
+      }
+      leaf join-ha {
+        description "If set, a Node with nominal role slave will attempt join
+                     the HA setup on startup, by querying configured ha nodes
+                     for an available master.
+                     If assume-nominal-role is false, a node with nominal-role
+                     master will also attempt to join as slave.
+                     Retries will be made according to configured interval.";
+        type boolean;
+        default false;
+      }
+      }
+      leaf reconnect-interval {
+        description "Interval in seconds between reconnect attempts";
+        type uint32;
+        default 10;
+      }
+      leaf reconnect-attempts {
+        description "Number of attempts to reconnect to lost master before
+                     initiating failover";
+        type uint32;
+        default 3;
+      }
+    }
+    tailf:action be-master {
+      description "Order the local node to assume ha role master";
+      tailf:actionpoint ncsinternal {
+        tailf:internal;
+      }
+      output {
+        leaf result {
+          type string;
+        }
+      }
+    }
+    tailf:action be-none {
+      description "Order the local node to assume ha role none";
+      tailf:actionpoint ncsinternal {
+        tailf:internal;
+      }
+      output {
+        leaf result {
+          type string;
+        }
+      }
+    }
+    tailf:action be-slave-to {
+      description "Order the local node to connect as slave to the provided
+                   ha node";
+      tailf:actionpoint ncsinternal {
+        tailf:internal;
+      }
+      input {
+        leaf node {
+          mandatory true;
+          type leafref {
+            path "../../ha-node/id";
+          }
+        }
+      }
+      output {
+        leaf result {
+          type string;
+        }
+      }
+    }
+    tailf:action local-node-id {
+      description "Identify the which of the nodes in /high-availability/ha-node
+                   (if any) corresponds to the local NSO instance";
+      tailf:actionpoint ncsinternal {
+        tailf:internal;
+      }
+      output {
+        leaf id {
+          type string;
+        }
+      }
+    }
+    tailf:action enable {
+      description "Enable NSO built in HA and optionally assume a ha role
+                   according to /high-availability/settings/start-up/
+                   parameters";
+      tailf:actionpoint ncsinternal {
+        tailf:internal;
+      }
+      output {
+        leaf result {
+          type string;
+        }
+      }
+    }
+    tailf:action disable {
+      description "Enable NSO built in HA and assume a ha role none";
+      tailf:actionpoint ncsinternal {
+        tailf:internal;
+      }
+      output {
+        leaf result {
+          type string;
+        }
+      }
+    }
+  }
+}

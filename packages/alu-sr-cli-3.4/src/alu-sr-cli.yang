@@ -1,0 +1,18 @@
+module alu-sr-cli {
+  yang-version 1.1;
+  namespace "http://tail-f.com/ns/ned-id/alu-sr-cli";
+  prefix alu-sr-cli;
+
+  import tailf-common {
+    prefix tailf;
+  }
+
+  import tailf-ncs-ned {
+    prefix ned;
+  }
+
+  identity alu-sr-cli {
+    tailf:abstract;
+    base ned:cli-ned-id;
+  }
+}

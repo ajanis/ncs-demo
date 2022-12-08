@@ -1,0 +1,10 @@
+! asa-stats:version
+
+<root>
+ <container :: ./>
+  <leaf :: name :: asa/>
+  <leaf :: version :: Software Version (\S+)/>
+  <leaf :: model :: Hardware:\s+(\S+),/>
+  <leaf :: serial-number :: Serial Number:\s+(\S+)/>
+ </container>
+</root>

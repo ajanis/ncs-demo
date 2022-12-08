@@ -1,0 +1,13 @@
+module cisco-nso-nc-4.7 {
+  yang-version 1.1;
+  namespace "http://tail-f.com/ns/ned-id/cisco-nso-nc-4.7";
+  prefix cisco-nso-nc-4.7;
+
+  import cisco-nso-nc {
+    prefix family;
+  }
+
+  identity cisco-nso-nc-4.7 {
+    base family:cisco-nso-nc;
+  }
+}
