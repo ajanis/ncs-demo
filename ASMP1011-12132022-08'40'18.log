@@ -1,0 +1,963 @@
+﻿ASMP1011#sh run
+Building configuration...
+
+Current configuration : 26876 bytes
+!
+! Last configuration change at 18:44:08 GMT Tue Dec 6 2022 by KKurup1
+! NVRAM config last updated at 18:44:08 GMT Tue Dec 6 2022 by KKurup1
+!
+version 15.2
+no service pad
+service tcp-keepalives-in
+service tcp-keepalives-out
+service timestamps debug datetime msec show-timezone
+service timestamps log datetime msec show-timezone
+service password-encryption
+service compress-config
+!
+hostname ASMP1011
+!
+boot-start-marker
+boot system flash bootflash:cat4500e-entservicesk9-mz.152-4.E8.bin
+boot-end-marker
+!
+!
+vrf definition mgmtVrf
+ !
+ address-family ipv4
+ exit-address-family
+ !
+ address-family ipv6
+ exit-address-family
+!
+logging buffered 128000
+no logging console
+logging event link-status global
+enable secret 5 $1$RcnI$PdBOmJGD16oLaDmy1MqVV/
+!
+username ops privilege 15 secret 5 $1$nIKe$Cx3S2XlEoQ6N048xwwTNb.
+aaa new-model
+!
+!
+aaa group server tacacs+ tacacs1
+ server-private 10.253.11.233 key 7 113E0B245610325A4522330B3D10740C06
+ server-private 10.255.62.201 key 7 00330127455932504E2954611C3A443907
+ ip tacacs source-interface Vlan310
+!
+aaa authentication login default group tacacs1 local enable
+aaa authentication login console local enable
+aaa authentication enable default group tacacs1 enable
+aaa authorization config-commands
+aaa authorization exec default group tacacs1 local if-authenticated 
+aaa authorization commands 1 default group tacacs1 local if-authenticated 
+aaa authorization commands 15 default group tacacs1 local if-authenticated 
+aaa accounting exec default start-stop group tacacs1
+aaa accounting commands 1 default start-stop group tacacs1
+aaa accounting commands 15 default start-stop group tacacs1
+aaa accounting network default start-stop group tacacs1
+aaa accounting connection default start-stop group tacacs1
+aaa accounting system default start-stop group tacacs1
+!
+!
+!
+!
+!
+!
+aaa session-id common
+clock timezone GMT 0 0
+!
+!
+!
+!
+!
+udld aggressive
+
+!
+!
+!
+!
+no ip source-route
+!
+no ip domain-lookup
+ip domain-name t-mobile.net
+ip name-server 5.196.2.120
+ip name-server 5.198.2.120
+!
+!
+vtp domain Polaris
+vtp mode transparent
+!
+!
+errdisable flap-setting cause link-flap max-flaps 5 time 120
+errdisable recovery cause udld
+errdisable recovery cause security-violation
+errdisable recovery cause channel-misconfig
+errdisable recovery cause link-flap
+errdisable recovery cause gbic-invalid
+power redundancy-mode redundant
+!
+spanning-tree mode rapid-pvst
+spanning-tree loopguard default
+spanning-tree portfast edge default
+spanning-tree portfast edge bpduguard default
+spanning-tree extend system-id
+!
+vlan internal allocation policy ascending
+!
+vlan 160
+ name DNS_10.253.236.0/25
+!
+vlan 300
+ name ISMP2391-5.220.0.0/24
+!
+vlan 301
+ name ISMP2181-5.220.1.0/24
+!
+vlan 302
+ name ISMP2391-5.220.2.0/24
+!
+vlan 303
+ name ISMP2181-5.220.3.0/24
+!
+vlan 304
+ name ISMP2391-5.220.4.0/24
+!
+vlan 305
+ name ISMP2181-5.220.5.0/24
+!
+vlan 306
+ name ISMP2391-5.220.6.0/24
+!
+vlan 307
+ name ISMP2181-5.220.7.0/24
+!
+vlan 308
+ name ISMP2391-5.220.8.0/24
+!
+vlan 309
+ name ISMP2181-5.220.9.0/24
+!
+vlan 310
+ name ISMP2181-5.220.10.0/24
+!
+vlan 350
+ name ISMP2391-5.220.250.0/24
+!
+vlan 400
+ name ISMP2391-10.253.0.0/24
+!
+vlan 401
+ name ISMP2181-10.253.1.0/24
+!
+vlan 402
+ name ISMP2391-10.253.2.0/24
+!
+vlan 403
+ name ISMP2181-10.253.3.0/24
+!
+vlan 404
+ name ISMP2391-10.253.4.0/24
+!
+vlan 405
+ name ISMP2181-10.253.5.0/24
+!
+vlan 406
+ name ISMP2391-10.253.6.0/24
+!
+vlan 407
+ name ISMP2181-10.253.7.0/24
+!
+vlan 408
+ name ISMP2391-10.253.8.0/24
+!
+vlan 409
+ name ISMP2181-10.253.9.0/24
+!
+vlan 410
+ name ISMP2391-10.253.10.0/24
+!
+vlan 414
+ name ISMP2391-10.253.14.0/23
+!
+vlan 436
+ name MGMT-10.253.36.0/24
+!
+vlan 437
+ name MGMT-10.253.37.0/24
+!
+vlan 444
+ name ISMP2181-2391_NMNET-2_10.253.44.
+!
+vlan 445
+ name ISMP2181-2391_NMNET-2_10.253.45.
+!
+vlan 2000
+ name Native_Vlan
+lldp run
+!
+!
+class-map match-any ALL-TRAFFIC
+ match any 
+class-map match-any POAP-TRAFFIC
+ match access-group name POAP-SERVER
+!
+policy-map POLICE-ALL-TRAFFIC-2.35-Mbps
+ class POAP-TRAFFIC
+ class ALL-TRAFFIC
+  police cir 2350000 bc 73437
+   conform-action transmit 
+   exceed-action drop 
+!
+! 
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+interface FastEthernet1
+ vrf forwarding mgmtVrf
+ no ip address
+ shutdown
+ speed auto
+ duplex auto
+!
+interface GigabitEthernet1/1
+ description 101.06_CSMP1011_ETH1
+ switchport access vlan 310
+ switchport mode access
+ storm-control broadcast include multicast
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/2
+ description 101.01_ARBP1011_MGMT0
+ switchport access vlan 404
+ switchport mode access
+ storm-control broadcast include multicast
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/3
+ description 101.03_ARBP1013_MGMT0
+ switchport access vlan 404
+ switchport mode access
+ storm-control broadcast include multicast
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/4
+ description 101.05_ARBP1015_MGMT0
+ switchport access vlan 404
+ switchport mode access
+ storm-control broadcast include multicast
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/5
+ description 101.07_ARBP1017_MGMT0
+ switchport access vlan 404
+ switchport mode access
+ storm-control broadcast include multicast
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/6
+ description 101.02_PLP1BS01_NIC_1 
+ switchport access vlan 408
+ switchport mode access
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree portfast edge
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/7
+ description 101.01_PLP1BS02_NIC_1 
+ switchport access vlan 408
+ switchport mode access
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree portfast edge
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/8
+ description 101.01_PLP1BS03_NIC_1 
+ switchport access vlan 408
+ switchport mode access
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree portfast edge
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/9
+ description 101.01_PLP1BS04_NIC_1 
+ switchport access vlan 408
+ switchport mode access
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree portfast edge
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/10
+ description 101.01_PLP1BS05_PCIE1_1 
+ switchport access vlan 408
+ switchport mode access
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree portfast edge
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/11
+ description 101.01_PLP1BS06_PCIE1_1 
+ switchport access vlan 408
+ switchport mode access
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree portfast edge
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/12
+ description 101.01_PLP1BS07_PCIE1-1 
+ switchport access vlan 408
+ switchport mode access
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree portfast edge
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/13
+ description 101.01_PLP1BS08_PCIE1-1 
+ switchport access vlan 408
+ switchport mode access
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree portfast edge
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/14
+ description 101.02_PLP1BS80_NIC_1 
+ switchport access vlan 408
+ switchport mode access
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree portfast edge
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/15
+ description 101.02_PLP1BS81_NIC_1 
+ switchport access vlan 408
+ switchport mode access
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree portfast edge
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/16
+ description 101.02_PLP1CL01_PCIE1_1 
+ switchport access vlan 408
+ switchport mode access
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree portfast edge
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/17
+ description 101.02_PLP1CL02_PCIE1_1 
+ switchport access vlan 408
+ switchport mode access
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree portfast edge
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/18
+ description 101.02_PLP1CL80_PCIE1_1 
+ switchport access vlan 408
+ switchport mode access
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree portfast edge
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/19
+ description 101.02_PLP1CL81_PCIE1_1 
+ switchport access vlan 408
+ switchport mode access
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree portfast edge
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/20
+ description 101.07_PLP1OM37_PCIE1_1 
+ switchport access vlan 408
+ switchport mode access
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree portfast edge
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/21
+ description 101.07_PLP1OM38_PCIE1_1 
+ switchport access vlan 408
+ switchport mode access
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree portfast edge
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/22
+ description 101.07_PLP1OM39_PCIE1_1 
+ switchport access vlan 408
+ switchport mode access
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree portfast edge
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/23
+ description 101.07_PLP1OM40_PCIE1_1 
+ switchport access vlan 408
+ switchport mode access
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree portfast edge
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/24
+ description 101.07_PLP1OM41_PCIE1_1 
+ switchport access vlan 408
+ switchport mode access
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree portfast edge
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/25
+ description 101.07_PLP1OM42_PCIE1_1 
+ switchport access vlan 408
+ switchport mode access
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree portfast edge
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/26
+ description 101.05_PLP1MG01_PCIE1-1
+ switchport access vlan 408
+ switchport mode access
+ storm-control broadcast include multicast
+ storm-control broadcast level 1.00
+ storm-control action shutdown
+ storm-control action trap
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/27
+ description 101.05_PLP1MG80_iLO 
+ switchport access vlan 408
+ switchport mode access
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree portfast edge
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/28
+ description 101.05_PLP1MG81_iLO 
+ switchport access vlan 408
+ switchport mode access
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree portfast edge
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/29
+ description 101.05_PLP1SA03_ILO 
+ switchport access vlan 408
+ switchport mode access
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree portfast edge
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/30
+ description 101.03_PLP1BP01_ILO_2 
+ switchport access vlan 408
+ switchport mode access
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree portfast edge
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/31
+ description 103.015_PLP1ST01_SP-A 
+ switchport access vlan 408
+ switchport mode access
+ storm-control broadcast include multicast
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/32
+ description 101.08_ARBP1019_MGMT0
+ switchport access vlan 404
+ switchport mode access
+ storm-control broadcast include multicast
+ storm-control broadcast level 1.00
+ storm-control action shutdown
+ storm-control action trap
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/33
+ description 101.11_PLP1VA01_IO-R-ILO
+ switchport access vlan 160
+ switchport mode access
+ storm-control broadcast include multicast
+ storm-control broadcast level 10.00
+ storm-control action shutdown
+ storm-control action trap
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/34
+ description 101.11_PLP1VA01_IO-R-NIC-02
+ switchport access vlan 160
+ switchport mode access
+ storm-control broadcast include multicast
+ storm-control broadcast level 10.00
+ storm-control action shutdown
+ storm-control action trap
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/35
+ description 101.11_PLP1VA02_IO-R-NIC-01
+ switchport access vlan 160
+ switchport mode access
+ storm-control broadcast include multicast
+ storm-control broadcast level 10.00
+ storm-control action shutdown
+ storm-control action trap
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/36
+ description 101.09_PLP1SM01_02-MGMT2
+ switchport access vlan 160
+ switchport mode access
+ storm-control broadcast include multicast
+ storm-control broadcast level 10.00
+ storm-control action shutdown
+ storm-control action trap
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/37
+ description Auto_Cable_Testing_WO2723344_5_07/10/2016
+ no switchport
+ ip address 192.168.123.26 255.255.255.254
+!
+interface GigabitEthernet1/38
+ shutdown
+ storm-control broadcast include multicast
+ storm-control broadcast level 5.00
+ storm-control action trap
+!
+interface GigabitEthernet1/39
+ shutdown
+ storm-control broadcast include multicast
+ storm-control broadcast level 5.00
+ storm-control action trap
+!
+interface GigabitEthernet1/40
+ description 101.05_PLP1MG01_iLO 
+ switchport access vlan 408
+ switchport mode access
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree portfast edge
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/41
+ description 101.01_PLP1SA01_ILO 
+ switchport access vlan 408
+ switchport mode access
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree portfast edge
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/42
+ description 101.02_PLP1CL80_iLO 
+ switchport access vlan 408
+ switchport mode access
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree portfast edge
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/43
+ description 101.02_PLP1CL01_iLO 
+ switchport access vlan 408
+ switchport mode access
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree portfast edge
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/44
+ description 101.02_PLP1BS80_iLO 
+ switchport access vlan 408
+ switchport mode access
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree portfast edge
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/45
+ description 101.01_PLP1BS07_ILO 
+ switchport access vlan 408
+ switchport mode access
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree portfast edge
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/46
+ description 101.01_PLP1BS05_iLO 
+ switchport access vlan 408
+ switchport mode access
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree portfast edge
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/47
+ description 101.01_PLP1BS03_iLO 
+ switchport access vlan 408
+ switchport mode access
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree portfast edge
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet1/48
+ description 101.02_PLP1BS01_iLO 
+ switchport access vlan 408
+ switchport mode access
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree portfast edge
+ spanning-tree bpduguard enable
+!
+interface TenGigabitEthernet1/49
+ description 218.16_ISMP2181_E7-10
+ switchport trunk allowed vlan 160,300-310,350,400-407,409,410,414,436,437,444
+ switchport trunk allowed vlan add 445
+ switchport trunk native vlan 2000
+ switchport mode trunk
+ mtu 9198
+ storm-control broadcast include multicast
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree portfast network
+!
+interface TenGigabitEthernet1/50
+ description 239.16_ISMP2391_E7-10
+ switchport trunk allowed vlan 160,300-310,350,400-407,409,410,414,436,437,444
+ switchport trunk allowed vlan add 445
+ switchport trunk native vlan 2000
+ switchport mode trunk
+ mtu 9198
+ storm-control broadcast include multicast
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree portfast network
+!
+interface TenGigabitEthernet1/51
+ description 218.16_ISMP2181_E8-2
+ switchport trunk allowed vlan 160,408
+ switchport trunk native vlan 2000
+ switchport mode trunk
+ mtu 9198
+ storm-control broadcast include multicast
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree portfast network
+!
+interface TenGigabitEthernet1/52
+ description 239.16_ISMP2391_E8-2
+ switchport trunk allowed vlan 160,408
+ switchport trunk native vlan 2000
+ switchport mode trunk
+ mtu 9198
+ storm-control broadcast include multicast
+ storm-control broadcast level 5.00
+ storm-control action trap
+ spanning-tree portfast network
+!
+interface Vlan1
+ no ip address
+ shutdown
+ arp timeout 1800
+!
+interface Vlan310
+ description ISMP2181-5.220.10.0/24
+ mtu 9198
+ ip address 5.220.10.32 255.255.255.0
+ arp timeout 1800
+!
+no ip http server
+no ip http secure-server
+ip forward-protocol nd
+!
+ip ftp source-interface Vlan310
+ip tftp source-interface Vlan310
+ip route 0.0.0.0 0.0.0.0 5.220.10.1 name NMNET_default
+ip ssh time-out 60
+ip ssh source-interface Vlan310
+ip ssh version 2
+!
+ip access-list standard ALLOW-SSH-NMNET
+ permit 5.0.0.0 0.255.255.255
+ permit 10.248.0.0 0.0.7.255
+ip access-list standard POAP-SERVER
+ permit 10.46.45.73
+ permit 5.196.33.80
+ permit 10.255.16.21
+ip access-list standard SNMP-RO-NMNET
+ remark +----------------------------------------------------------------------
+ remark + SNMP Read-Only Acesss (NMNET)
+ remark +---------------------------------------------------------------------+
+ permit 5.0.0.0 0.255.255.255
+ permit 10.245.0.0 0.0.255.255
+ permit 10.248.0.0 0.7.255.255
+ip access-list standard SNMP-RW-NMNET
+ remark Tier 2 IP Ops Jumpbox
+ permit 5.196.72.58
+ permit 5.196.72.89
+ permit 5.196.72.93
+ remark +----------------------------------------------------------------------
+ remark + SNMP Read-Write Acesss (NMNET)
+ remark +---------------------------------------------------------------------+
+ remark HP NAS Production/Staging
+ permit 5.196.73.80
+ permit 5.196.73.81
+ permit 5.196.73.82
+ip access-list standard SNMPv2-ACL
+ permit any
+ip access-list standard SNMPv3-EIT
+ remark REV;20190919
+ permit any
+!
+ip access-list extended ssh-only
+ permit tcp 5.0.0.0 0.255.255.255 any eq 22
+ permit tcp 10.245.0.0 0.0.255.255 any eq 22
+ permit tcp 10.248.0.0 0.7.255.255 any eq 22
+!
+logging trap debugging
+logging origin-id string 5.220.10.32
+logging source-interface Vlan310
+logging host 10.253.182.93 transport udp port 2025
+logging host 10.255.160.63 transport udp port 2025
+access-list 1 permit 10.251.6.82
+access-list 1 permit 10.251.6.81
+access-list 1 permit 10.251.6.80
+access-list 1 permit 10.251.6.67
+access-list 1 permit 10.251.6.66
+access-list 1 permit 10.251.6.72
+access-list 1 remark [ SNMP Filter ]
+access-list 1 permit 5.196.73.72
+access-list 1 permit 5.198.255.253
+access-list 1 permit 5.196.73.65
+access-list 1 permit 5.196.73.66
+access-list 1 permit 5.196.73.67
+access-list 1 permit 5.200.20.20
+access-list 1 permit 5.198.2.15
+access-list 1 permit 5.196.73.80
+access-list 1 permit 5.196.73.81
+access-list 1 permit 5.196.73.82
+access-list 1 permit 10.252.9.28
+access-list 1 permit 10.252.9.27
+access-list 1 permit 5.232.12.27
+access-list 1 permit 5.232.12.28
+access-list 1 permit 5.248.1.0 0.0.0.255
+access-list 1 permit 5.249.1.0 0.0.0.255
+access-list 1 permit 5.248.129.0 0.0.0.255
+access-list 1 permit 5.249.129.0 0.0.0.255
+access-list 1 permit 5.196.255.0 0.0.0.255
+access-list 1 permit 5.248.66.0 0.0.0.255
+access-list 1 permit 5.196.72.0 0.0.0.255
+access-list 1 permit 5.196.70.0 0.0.0.255
+access-list 1 permit 10.251.0.0 0.0.0.127
+access-list 1 permit 10.251.7.0 0.0.0.255
+access-list 1 permit 10.252.7.0 0.0.0.255
+access-list 3 remark Deny everything for NTP
+access-list 3 deny   any
+access-list 4 remark Permit NTP servers we sync to
+access-list 4 permit 5.196.0.121
+access-list 4 permit 5.198.0.122
+access-list 4 permit 5.198.0.121
+access-list 4 permit 5.196.0.122
+access-list 4 deny   any
+!
+!
+snmp-server user HPtraps01 HPtraps01 v1 
+snmp-server user HPtraps01 HPtraps01 v2c 
+snmp-server user HPtraps02 HPtraps02 v1 
+snmp-server user HPtraps02 HPtraps02 v2c 
+snmp-server group RO-GROUP v3 priv read ROOT-VIEW access SNMPv3-EIT
+snmp-server view ROOT-VIEW iso included
+snmp-server view NO_BAD_SNMP iso included
+snmp-server view NO_BAD_SNMP internet included
+snmp-server view NO_BAD_SNMP snmpUsmMIB excluded
+snmp-server view NO_BAD_SNMP snmpVacmMIB excluded
+snmp-server view NO_BAD_SNMP snmpCommunityMIB excluded
+snmp-server view NO_BAD_SNMP transmission.94 excluded
+snmp-server view NO_BAD_SNMP mib-2.34.9 excluded
+snmp-server view NO_BAD_SNMP ciscoMgmt.35 excluded
+snmp-server view NO_BAD_SNMP ciscoMgmt.95 excluded
+snmp-server view NO_BAD_SNMP ciscoMgmt.130 excluded
+snmp-server view NO_BAD_SNMP ciscoMgmt.219 excluded
+snmp-server view NO_BAD_SNMP ciscoMgmt.252 excluded
+snmp-server view NO_BAD_SNMP ciscoMgmt.254 excluded
+snmp-server view NO_BAD_SNMP ciscoMabMIB excluded
+snmp-server view NO_BAD_SNMP ciscoExperiment.997 excluded
+snmp-server trap-source Vlan310
+snmp-server queue-length 500
+snmp-server location 4405 Grant Road, East Wenatchee, WA 98802
+snmp-server contact TierII IP 1-866-783-9557 Optx4
+snmp-server enable traps snmp authentication linkdown linkup coldstart warmstart
+snmp-server enable traps transceiver all
+snmp-server enable traps call-home message-send-fail server-fail
+snmp-server enable traps tty
+snmp-server enable traps eigrp
+snmp-server enable traps ospf state-change
+snmp-server enable traps ospf errors
+snmp-server enable traps ospf retransmit
+snmp-server enable traps ospf lsa
+snmp-server enable traps ospf cisco-specific state-change nssa-trans-change
+snmp-server enable traps ospf cisco-specific state-change shamlink interface-old
+snmp-server enable traps ospf cisco-specific state-change shamlink neighbor
+snmp-server enable traps ospf cisco-specific errors
+snmp-server enable traps ospf cisco-specific retransmit
+snmp-server enable traps ospf cisco-specific lsa
+snmp-server enable traps auth-framework sec-violation
+snmp-server enable traps flex-links status
+snmp-server enable traps fru-ctrl
+snmp-server enable traps entity
+snmp-server enable traps ethernet cfm cc mep-up mep-down cross-connect loop config
+snmp-server enable traps ethernet cfm crosscheck mep-missing mep-unknown service-up
+snmp-server enable traps ether-oam
+snmp-server enable traps flash insertion removal
+snmp-server enable traps l2tc threshold sys-threshold
+snmp-server enable traps power-ethernet police
+snmp-server enable traps cpu threshold
+snmp-server enable traps rep
+snmp-server enable traps vtp
+snmp-server enable traps vlancreate
+snmp-server enable traps vlandelete
+snmp-server enable traps envmon fan shutdown supply temperature status
+snmp-server enable traps entity-diag boot-up-fail hm-test-recover hm-thresh-reached scheduled-test-fail
+snmp-server enable traps port-security
+snmp-server enable traps ethernet evc status create delete
+snmp-server enable traps energywise
+snmp-server enable traps ipsla
+snmp-server enable traps bgp
+snmp-server enable traps cef resource-failure peer-state-change peer-fib-state-change inconsistency
+snmp-server enable traps config-copy
+snmp-server enable traps config
+snmp-server enable traps config-ctid
+snmp-server enable traps event-manager
+snmp-server enable traps hsrp
+snmp-server enable traps ipmulticast
+snmp-server enable traps isis
+snmp-server enable traps msdp
+snmp-server enable traps pim neighbor-change rp-mapping-change invalid-pim-message
+snmp-server enable traps bridge newroot topologychange
+snmp-server enable traps stpx inconsistency root-inconsistency loop-inconsistency
+snmp-server enable traps errdisable
+snmp-server enable traps ethernet cfm alarm
+snmp-server enable traps vlan-membership
+snmp-server enable traps bulkstat collection transfer
+snmp-server enable traps mac-notification change move threshold
+snmp-server enable traps rf
+snmp-server host 10.252.195.11 version 2c pKlzXaSuxdri9LNB5OGa7Oz1Poe7tP 
+snmp-server host 10.252.195.12 version 2c pKlzXaSuxdri9LNB5OGa7Oz1Poe7tP 
+snmp-server host 10.254.199.12 version 2c pKlzXaSuxdri9LNB5OGa7Oz1Poe7tP 
+snmp-server host 10.254.199.13 version 2c pKlzXaSuxdri9LNB5OGa7Oz1Poe7tP 
+snmp ifmib ifindex persist
+!
+!
+banner exec ^C
+
+     Your consent to the above conditions is acknowledged....
+      
+
+^C
+banner login ^C
+
+    This system is for the use of authorized users only!!!!!!!!!!!!   
+    Individuals using this computer system without authority, or in   
+    excess of their authority, are subject to having all of their     
+    activities on this system monitored and recorded by system        
+    personnel.    
+
+^C
+banner motd ^C
+
+    This system is for the use of authorized users only!!!!!!!!!!!!   
+    Individuals using this computer system without authority, or in   
+    excess of their authority, are subject to having all of their     
+    activities on this system monitored and recorded by system        
+    personnel.                                                        
+    In the course of monitoring individuals improperly using this     
+    system, or in the course of system maintenance, the activities    
+    of authorized users may also be monitored.                        
+    Anyone using this system expressly consents to such monitoring    
+    and is advised that if such monitoring reveals possible           
+    evidence of criminal activity, system personnel may provide the   
+    evidence of such monitoring to law enforcement officials.  
+
+^C
+!
+line con 0
+ session-timeout 120 
+ exec-timeout 15 0
+ stopbits 1
+line vty 0 4
+ session-timeout 120 
+ access-class ssh-only in vrf-also
+ exec-timeout 15 0
+ transport preferred ssh
+ transport input ssh
+ transport output ssh
+line vty 5 15
+ session-timeout 120 
+ access-class ssh-only in vrf-also
+ exec-timeout 15 0
+ transport preferred ssh
+ transport input ssh
+ transport output ssh
+!
+ntp source Vlan310
+ntp access-group peer 4
+ntp access-group serve 3
+ntp access-group query-only 3
+ntp update-calendar
+ntp server 5.196.0.121
+ntp server 5.198.0.121
+ntp server 5.196.0.122
+mac address-table notification mac-move
+mac address-table aging-time 14460
+!
+end
+

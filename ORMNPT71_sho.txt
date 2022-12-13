@@ -1,0 +1,516 @@
+ORMNPT71# sh cdp neigh
+Capability Codes: R - Router, T - Trans Bridge, B - Source Route Bridge
+                  S - Switch, H - Host, I - IGMP, r - Repeater, P - Phone, 
+                  D - Remote, C - CVTA, M - Two-port Mac Relay 
+
+Device ID        Local Intrfce     Holdtme    Capability  Platform  Port ID
+
+Total cdp entries displayed : 0
+ORMNPT71#
+ORMNPT71#
+ORMNPT71# sh ip int brief | ex down
+Interface              IP-Address      OK? Method Status                Protocol
+GigabitEthernet1/1     unassigned      YES unset  up                    up      
+GigabitEthernet1/48    5.192.97.142    YES NVRAM  up                    up      
+Vlan664                5.192.110.109   YES NVRAM  up                    up      
+
+ORMNPT71#
+ORMNPT71#
+ORMNPT71# sh int status | in connected
+Gi1/1     701.01_CSMNPT71_ET connected    664        a-full a-1000 10/100/1000-TX
+Gi1/48    Earthlink_AS65300_ connected    routed     a-full a-1000 10/100/1000-TX
+ORMNPT71#
+ORMNPT71#
+ORMNPT71# sh runn
+Building configuration...
+
+Current configuration : 12336 bytes
+!
+! Last configuration change at 00:02:56 GMT Sun Jan 30 2022
+!
+version 15.2
+no service pad
+service tcp-keepalives-in
+service tcp-keepalives-out
+service timestamps debug datetime msec show-timezone
+service timestamps log datetime msec show-timezone
+service password-encryption
+service compress-config
+!
+hostname ORMNPT71
+!
+boot-start-marker
+boot system flash bootflash:cat4500e-entservicesk9-mz.152-4.E8.bin
+boot-end-marker
+!
+!
+vrf definition mgmtVrf
+ !
+ address-family ipv4
+ exit-address-family
+ !
+ address-family ipv6
+ exit-address-family
+!
+logging buffered 128000
+no logging console
+logging event link-status global
+enable secret 5 $1$r1oM$/fN4cPonTgrsElicOglYd0
+!
+username ops privilege 15 secret 5 $1$LcX.$Gy03LJxE9xOB7tj4eRpEE/
+aaa new-model
+!
+!
+aaa group server tacacs+ tacacs1
+ server-private 10.253.11.233 single-connection key 7 046C19274E23751848111D3807284D2A3F
+ server-private 10.255.62.201 single-connection key 7 113E0B245610325A4522330B3D10740C06
+ ip tacacs source-interface GigabitEthernet1/48
+!
+aaa authentication login default group tacacs1 local enable
+aaa authentication login console local enable
+aaa authentication enable default group tacacs1 enable
+aaa authorization config-commands
+aaa authorization exec default group tacacs1 local if-authenticated 
+aaa authorization commands 1 default group tacacs1 local if-authenticated 
+aaa authorization commands 15 default group tacacs1 local if-authenticated 
+aaa authorization reverse-access default none 
+aaa accounting exec default start-stop group tacacs1
+aaa accounting commands 1 default start-stop group tacacs1
+aaa accounting commands 15 default start-stop group tacacs1
+aaa accounting network default start-stop group tacacs1
+aaa accounting connection default start-stop group tacacs1
+aaa accounting system default start-stop group tacacs1
+!
+!
+!
+!
+!
+!
+aaa session-id common
+clock timezone GMT 0 0
+!
+!
+!
+!
+!
+!
+!
+!
+!
+no ip source-route
+no ip icmp rate-limit unreachable
+!
+no ip domain-lookup
+ip domain-name t-mobile.net
+ip name-server 10.176.80.242
+!
+!
+ntp max-associations 2
+vtp mode transparent
+!
+!
+errdisable recovery cause bpduguard
+errdisable recovery cause security-violation
+errdisable recovery cause channel-misconfig
+errdisable recovery cause link-flap
+errdisable recovery cause gbic-invalid
+power redundancy-mode redundant
+!
+spanning-tree mode pvst
+spanning-tree portfast edge bpduguard default
+spanning-tree extend system-id
+spanning-tree vlan 664 priority 24576
+!
+vlan internal allocation policy ascending
+!
+vlan 664
+ name Out_of_Band_5.192.110.108/30
+!
+ip telnet source-interface GigabitEthernet1/48
+! 
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+interface FastEthernet1
+ vrf forwarding mgmtVrf
+ no ip address
+ shutdown
+ speed auto
+ duplex auto
+!
+interface GigabitEthernet1/1
+ description 701.01_CSMNPT71_ETH1
+ switchport access vlan 664
+ logging event link-status
+ storm-control broadcast level 10.00
+ storm-control action shutdown
+!
+interface GigabitEthernet1/2
+ switchport access vlan 664
+ switchport mode access
+!
+interface GigabitEthernet1/3
+ shutdown
+!
+interface GigabitEthernet1/4
+ shutdown
+!
+interface GigabitEthernet1/5
+ shutdown
+!
+interface GigabitEthernet1/6
+ shutdown
+!
+interface GigabitEthernet1/7
+ shutdown
+!
+interface GigabitEthernet1/8
+ shutdown
+!
+interface GigabitEthernet1/9
+ shutdown
+!
+interface GigabitEthernet1/10
+ shutdown
+!
+interface GigabitEthernet1/11
+ shutdown
+!
+interface GigabitEthernet1/12
+ shutdown
+!
+interface GigabitEthernet1/13
+ shutdown
+!
+interface GigabitEthernet1/14
+ shutdown
+!
+interface GigabitEthernet1/15
+ shutdown
+!
+interface GigabitEthernet1/16
+ shutdown
+!
+interface GigabitEthernet1/17
+ shutdown
+!
+interface GigabitEthernet1/18
+ shutdown
+!
+interface GigabitEthernet1/19
+ shutdown
+!
+interface GigabitEthernet1/20
+ shutdown
+!
+interface GigabitEthernet1/21
+ shutdown
+!
+interface GigabitEthernet1/22
+ shutdown
+!
+interface GigabitEthernet1/23
+ shutdown
+!
+interface GigabitEthernet1/24
+ shutdown
+!
+interface GigabitEthernet1/25
+ shutdown
+!
+interface GigabitEthernet1/26
+ shutdown
+!
+interface GigabitEthernet1/27
+ shutdown
+!
+interface GigabitEthernet1/28
+ shutdown
+!
+interface GigabitEthernet1/29
+ shutdown
+!
+interface GigabitEthernet1/30
+ shutdown
+!
+interface GigabitEthernet1/31
+ shutdown
+!
+interface GigabitEthernet1/32
+ shutdown
+!
+interface GigabitEthernet1/33
+ shutdown
+!
+interface GigabitEthernet1/34
+ shutdown
+!
+interface GigabitEthernet1/35
+ shutdown
+!
+interface GigabitEthernet1/36
+ shutdown
+!
+interface GigabitEthernet1/37
+ shutdown
+!
+interface GigabitEthernet1/38
+ shutdown
+!
+interface GigabitEthernet1/39
+ shutdown
+!
+interface GigabitEthernet1/40
+ shutdown
+!
+interface GigabitEthernet1/41
+ shutdown
+!
+interface GigabitEthernet1/42
+ shutdown
+!
+interface GigabitEthernet1/43
+ shutdown
+!
+interface GigabitEthernet1/44
+ shutdown
+!
+interface GigabitEthernet1/45
+ shutdown
+!
+interface GigabitEthernet1/46
+ shutdown
+!
+interface GigabitEthernet1/47
+ shutdown
+!
+interface GigabitEthernet1/48
+ description Earthlink_AS65300_T00001\DS1\\_OOB
+ no switchport
+ ip address 5.192.97.142 255.255.255.252
+!
+interface TenGigabitEthernet1/49
+ shutdown
+!
+interface TenGigabitEthernet1/50
+ shutdown
+!
+interface TenGigabitEthernet1/51
+ shutdown
+!
+interface TenGigabitEthernet1/52
+ shutdown
+!
+interface Vlan1
+ no ip address
+ shutdown
+ arp timeout 1800
+!
+interface Vlan664
+ description Out_of_Band_5.192.110.108/30
+ ip address 5.192.110.109 255.255.255.252
+ arp timeout 1800
+!
+router bgp 65139
+ bgp log-neighbor-changes
+ network 5.192.110.108 mask 255.255.255.252
+ neighbor 5.192.97.141 remote-as 65300
+ neighbor 5.192.97.141 description eBGP to Earthlink
+ neighbor 5.192.97.141 prefix-list DENY-ALL in
+!
+no ip http server
+no ip http secure-server
+ip forward-protocol nd
+!
+ip tftp source-interface GigabitEthernet1/48
+ip route 0.0.0.0 0.0.0.0 GigabitEthernet1/48 5.192.97.141 name Default_Route_to_Earthlink
+ip ssh version 2
+!
+ip access-list standard ALLOW-SSH-NMNET
+ permit 5.0.0.0 0.255.255.255
+ip access-list standard SNMP-RO-EIT
+ remark +---------------------------------------------------------------------
+ remark |             SNMP Read-Only Access (EIT)
+ remark +---------------------------------------------------------------------+
+ permit any
+ip access-list standard SNMP-RO-NMNET
+ remark +----------------------------------------------------------------------
+ remark + SNMP Read-Only Acesss (NMNET)
+ remark +---------------------------------------------------------------------+
+ permit 5.0.0.0 0.255.255.255
+ permit 10.245.0.0 0.0.255.255
+ permit 10.248.0.0 0.7.255.255
+ip access-list standard SNMP-RW-EIT
+ permit 10.46.43.42
+ permit 10.46.43.41
+ remark +---------------------------------------------------------------------
+ remark |             SNMP Read-Write Access (EIT)
+ remark +---------------------------------------------------------------------+
+ remark HP-NA Production/Staging
+ permit 10.46.43.40
+ remark Tier 2 IP Operations Jump Box
+ permit 10.46.44.73
+ permit 10.46.44.168
+ permit 10.46.44.164
+ip access-list standard SNMP-RW-NMNET
+ remark Tier 2 IP Ops Jumpbox
+ permit 5.196.72.58
+ permit 5.196.72.89
+ permit 5.196.72.93
+ remark +----------------------------------------------------------------------
+ remark + SNMP Read-Write Acesss (NMNET)
+ remark +---------------------------------------------------------------------+
+ remark HP NAS Production/Staging
+ permit 5.196.73.80
+ permit 5.196.73.81
+ permit 5.196.73.82
+ remark +----------------------------------------------------------------------
+ remark + SNMP Read-Write Acesss (NMNET)
+ remark +---------------------------------------------------------------------+
+ip access-list standard SNMPv2-ACL
+ permit any
+ip access-list standard SNMPv3-EIT
+ remark REV;20190919
+ permit any
+!
+ip access-list extended ssh-only
+ permit tcp 5.0.0.0 0.255.255.255 any eq 22
+ permit tcp 10.245.0.0 0.0.255.255 any eq 22
+ permit tcp 10.248.0.0 0.7.255.255 any eq 22
+ip access-list extended ssh-only-EIT
+ permit tcp 10.0.0.0 0.255.255.255 any eq 22
+ permit tcp 5.0.0.0 0.255.255.255 any eq 22
+!
+!
+ip prefix-list DENY-ALL seq 5 deny 0.0.0.0/0 le 32
+logging trap debugging
+logging host 10.253.182.93 transport udp port 2025
+logging host 10.255.160.63 transport udp port 2025
+access-list 1 remark SNMP Filter
+access-list 1 permit 5.0.0.0 0.255.255.255
+access-list 1 permit 10.251.0.0 0.0.255.255
+access-list 1 permit 10.252.0.0 0.0.255.255
+access-list 3 remark Deny everything for NTP
+access-list 3 deny   any
+access-list 4 remark Permit NTP servers we sync to
+access-list 4 permit 5.196.0.121
+access-list 4 permit 5.198.0.122
+access-list 4 permit 5.198.0.121
+access-list 4 permit 5.196.0.122
+access-list 4 deny   any
+!
+!
+snmp-server user HPtraps01 HPtraps01 v1 
+snmp-server user HPtraps01 HPtraps01 v2c 
+snmp-server user HPtraps02 HPtraps02 v1 
+snmp-server user HPtraps02 HPtraps02 v2c 
+snmp-server group RO-GROUP v3 priv read ROOT-VIEW access SNMPv3-EIT
+snmp-server view ROOT-VIEW iso included
+snmp-server trap-source GigabitEthernet1/48
+snmp-server location snmp-server location 3650 131st Ave SE Bellevue WA 98006
+snmp-server contact TierII IP 1-866-783-9557 Optx4
+snmp-server enable traps snmp authentication linkdown linkup coldstart warmstart
+snmp-server enable traps tty
+snmp-server enable traps fru-ctrl
+snmp-server enable traps entity
+snmp-server enable traps flash insertion removal
+snmp-server enable traps vtp
+snmp-server enable traps vlancreate
+snmp-server enable traps vlandelete
+snmp-server enable traps envmon fan shutdown supply temperature status
+snmp-server enable traps port-security
+snmp-server enable traps ipsla
+snmp-server enable traps bgp
+snmp-server enable traps config-copy
+snmp-server enable traps config
+snmp-server enable traps hsrp
+snmp-server enable traps bridge newroot topologychange
+snmp-server enable traps syslog
+snmp-server enable traps ike policy add
+snmp-server enable traps ike policy delete
+snmp-server enable traps ike tunnel start
+snmp-server enable traps ike tunnel stop
+snmp-server enable traps ipsec cryptomap add
+snmp-server enable traps ipsec cryptomap delete
+snmp-server enable traps ipsec cryptomap attach
+snmp-server enable traps ipsec cryptomap detach
+snmp-server enable traps ipsec tunnel start
+snmp-server enable traps ipsec tunnel stop
+snmp-server enable traps ipsec too-many-sas
+snmp-server enable traps rf
+snmp-server host 10.252.195.11 version 2c pKlzXaSuxdri9LNB5OGa7Oz1Poe7tP 
+snmp-server host 10.252.195.12 version 2c pKlzXaSuxdri9LNB5OGa7Oz1Poe7tP 
+snmp-server host 10.254.199.12 version 2c pKlzXaSuxdri9LNB5OGa7Oz1Poe7tP 
+snmp-server host 10.254.199.13 version 2c pKlzXaSuxdri9LNB5OGa7Oz1Poe7tP 
+snmp ifmib ifindex persist
+!
+!
+banner login ^C
+
+    This system is for the use of authorized users only!!!!!!!!!!!!   
+    Individuals using this computer system without authority, or in   
+    excess of their authority, are subject to having all of their     
+    activities on this system monitored and recorded by system        
+    personnel.    
+
+^C
+banner motd ^C
+
+    This system is for the use of authorized users only!!!!!!!!!!!!   
+    Individuals using this computer system without authority, or in   
+    excess of their authority, are subject to having all of their     
+    activities on this system monitored and recorded by system        
+    personnel.                                                        
+    In the course of monitoring individuals improperly using this     
+    system, or in the course of system maintenance, the activities    
+    of authorized users may also be monitored.                        
+    Anyone using this system expressly consents to such monitoring    
+    and is advised that if such monitoring reveals possible           
+    evidence of criminal activity, system personnel may provide the   
+    evidence of such monitoring to law enforcement officials.  
+
+^C
+!
+line con 0
+ session-timeout 120 
+ exec-timeout 15 0
+ stopbits 1
+line vty 0 4
+ session-timeout 120 
+ access-class ssh-only in vrf-also
+ exec-timeout 15 0
+ transport preferred ssh
+ transport input ssh
+ transport output ssh
+line vty 5 15
+ session-timeout 120 
+ access-class ssh-only in vrf-also
+ exec-timeout 15 0
+ transport preferred ssh
+ transport input ssh
+ transport output ssh
+!
+ntp source GigabitEthernet1/48
+ntp access-group peer 4
+ntp access-group serve 3
+ntp access-group query-only 3
+ntp update-calendar
+ntp server 10.251.4.4
+ntp server 10.252.4.4
+mac address-table aging-time 14460
+!
+end
+
+ORMNPT71#
+ORMNPT71#
