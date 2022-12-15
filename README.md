@@ -22,7 +22,16 @@ You can use any directory names and installation paths that you wish.
   - Download files from Cisco
   - Create directory structure
   - Move install packages into ~/nso/ncs-571-pkgs directory
-  - **Python 2.7.9 required, create python virtual environment,pyenv,etc.**
+  - ***Python 2.7.9-13 is required.  Install system-wide, create a python virtual environment, or set up pyenv.***
+    - Set up pyenv and pyenv-virtualenv (optional)
+    ```bash
+    curl https://pyenv.run | bash
+    pyenv install 2.7.13
+    ```
+    ***NOTE: If using pyenv, you will want to set the python version in the NSO package directory, and the NCS project (ncs-demo) directory.***
+    ```
+    echo 2.7.13 > .python-version
+     ```
   - Create NSO local installation in ~nso/nso-installation
   - Source ncsrc file (add to your shell profile)
   - Create NCS project in ~/nso/ncs-installation/ncs-demo  **(Repository includes this example project)**
@@ -824,6 +833,48 @@ admin@ncs(config-access-DemoUser)# commit
 Commit complete.
 ```
 
+## Post-Setup
+
 * Navigate to Web UI at: http://127.0.0.1:8080
 * Demonstarate Copying Service to additional device
 * Modify Service parameters and apply configs to remaining devices
+<hr>
+
+## Appendices
+
+
+### Windows Setup
+  * Install WSL / Ubuntu 20.04
+  [https://medium.com/data-engineering-on-cloud/setup-ubuntu-20-04-using-wsl-on-windows-11-61a6451aab65](https://medium.com/data-engineering-on-cloud/setup-ubuntu-20-04-using-wsl-on-windows-11-61a6451aab65)
+  * Install prerequisite packages
+  ```bash
+  sudo apt-get update; sudo apt-get install --no-install-recommends make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev ant libxslt git
+  ```
+  * Continue setup according to  [Quick Install Reference](#quick-install-reference)
+
+<hr>
+
+
+### Importing configurations from real devices
+
+<hr>
+
+### Using Git for centralized NSO environment
+ * Creating NSO project repository
+ * Bootstrapping NSO installation from shared repository
+ * Using Git as a team
+<hr>
+
+### Migrating configurations to different device/os
+ * Simulated source and destination devices and operating systems
+ * Migrate configurations
+ * Save updated/modified configurations for destination devices
+ * Add configurations to repository
+<hr>
+
+### Physical Device Management
+ * Onboarding physical devices
+ * Adding and testing configurations created on simulated devices
+ * Write configurations to physical devices
+ * Save new physical device configurations
+ * Rollback
